@@ -4,8 +4,8 @@
 (cleanup family) · **Owner:** M07 · **Suites:** EV-09
 (tests/v2/fidelity/, tests/v2/structure/), EV-19 (cleanup fields)
 
-`localflow.v2.cleanup` (`prompts`, `document_nodes`, `validation`,
-`engine`, `model`) renders the user's intended wording without ever
+`localflow.v2.cleanup` (`prompts`, `document_nodes`, `lexicon`,
+`correction_retention`, `validation`, `engine`, `model`) renders the user's intended wording without ever
 answering, executing or rewriting the dictation. V1
 (`localflow.cleanup.TranscriptCleaner`) stays intact and selectable
 (`cleanup_implementation: "v1"`) as the ablation control and fallback;
@@ -75,6 +75,22 @@ hashed (`corrections_prompt_revision` = `m07c:<sha256-12>`); both are
 recorded per job. No determinism claim across runtimes is made
 (S13/R02).
 
+**Prefix cache.** `ModelRunner` prefills each prompt in `PREFILL_STEP`
+(2048) token blocks and caches whole blocks of an instruction prefix, so
+the cached and uncached paths process the prompt in the same groups.
+Only prompts the cleanup engine renders through `render_cached` are
+cached; that call records where the final user turn starts from the
+message list, so dictated text containing a turn marker cannot move the
+boundary, and the final dictation is never cached. Transform prompts use
+`render` and are never cached, so they cannot evict the cleanup prefix.
+`PREFIX_CACHE_SLOTS` (2) holds the cleanup and corrections prompt
+families, least recently used dropped first; each request generates from
+a private copy of the stored state. Load warms the cache with a real
+cleanup prompt. A prompt with no cacheable block is passed on as the
+tokens already encoded. The opt-in `test_prompt_cache_parity`
+(`LOCALFLOW_PREFIX_CACHE_PARITY=1`) checks cached against uncached tokens
+on the real model and reports the mlx-lm version, which is not pinned.
+
 ## Windows (long utterances, S13)
 
 The fixed 35/50-word chunking is gone. `plan_windows`:
@@ -121,15 +137,22 @@ after the previous accepted span, so duplicate correction spans delete
 in spoken order and an earlier deletion can never redirect a later one
 to the wrong occurrence.
 
-Proposals are **provisional**. Deterministic guards, each rejecting with
-a recorded reason:
+Proposals are **provisional**. Each accepted proposal is parsed once into
+its neighbourhood (`lexicon.neighbourhood`: the old value's words, the
+first words after the marker in the same sentence, a frame word leading
+both, and whether the replacement closes its clause) and admitted as one
+`AdmittedCorrection` record (span, marker offset, exact restart and
+qualifier move). Applying the deletion, the observation record, the
+comparison view and validation all read that record; nothing re-derives
+admission. Shared word classes and the number and unit grammar live in
+`lexicon`. Deterministic guards, each rejecting with a recorded reason:
 
 | Guard | Reason |
 |---|---|
 | a proposal batch cut off by the output limit applies nothing | `batch_truncated` |
 | the span ends with a marker (on a word boundary) | `no_marker_ending` |
 | not a bare marker | `bare_marker` |
-| ≤ 6 words | `span_too_long` |
+| ≤ 6 words (`SPAN_MAX_WORDS`); a complete fraction head may reach 8 words when the whole fraction correction binds. A line over 80 characters (`SPAN_MAX_CHARS`) is not read as a proposal | `span_too_long` |
 | the text occurs in the window no more often than it was proposed — never resolved to a first match | `ambiguous_occurrence` |
 | resolvable at/after the cursor | `offsets_unresolved` |
 | no overlap with a protected span | `protected_span` |
@@ -137,13 +160,28 @@ a recorded reason:
 | the outdated value X (before the marker) has a content word | `no_outdated_value` |
 | a replacement Y with a content word follows the marker in the same sentence | `no_replacement` |
 | `i mean it/that/this` is emphasis | `emphasis_not_correction` |
-| through a single-word marker (`actually`, `sorry`, `no` — also ordinary words), X and Y are visibly parallel: both numbers, both weekdays, both months, sharing a content word, or closed numeric metric-length values | `not_parallel` |
+| through a single-word marker (`actually`, `sorry`, `no` — also ordinary words), X and Y are visibly parallel: both numbers, both weekdays, both months, sharing a content word, closed numeric metric-length values, a repeated `as` frame with one closed complement, or two closed identifiers; the replacement does not open a new predicate | `not_parallel` |
 | replacing a weekday/month with another cannot also delete preceding content words (for example, `check Monday no wait Tuesday` may delete `Monday no wait`, but not `check`) | `overbroad_calendar_value` |
 
+**Closure.** A replacement closes its clause when, after an optional
+repeated frame word and one article, its value is followed by the end of
+the text, a comma, semicolon or line break, or sentence punctuation
+before a space (`lexicon.CLAUSE_END`). The `as` frame (`as suspect,
+actually, as fine.`) and the identifier branch (`sample_index, sorry,
+record_cache.`) apply only to closed replacements; `as soon as the bank
+confirms` and `worker_b is running` continue into a clause and fall back
+to the other parallel checks. A digit inside an identifier (`worker_1`)
+is part of a name, not a number. Through a single-word marker, an
+auxiliary right after the replacement value, or after a number and its
+noun, makes the value a new subject (`Monday, no Tuesday is a holiday`):
+not parallel. The replacement may repeat the article that stands before
+the old value (`on the 12th, no, the 14th`). A repeated `every` is itself
+the evidence for a frequency correction (`every month, no every
+quarter`).
+
 A metric-length pair may change its numeric value and metric prefix when
-both values name meters/metres and the replacement ends at punctuation or
-the window end. Extra descriptions and open replacement clauses do not
-qualify. A proposal containing one fused alphabetic word may restore the
+both values name meters/metres and the replacement closes its clause.
+Extra descriptions and open replacement clauses do not qualify. A proposal containing one fused alphabetic word may restore the
 space between two unique adjacent source words; the recovered proposal
 must then resolve to one exact contiguous source span and pass every
 existing bound and guard. Ambiguous nominal phrases, apologies and
@@ -153,26 +191,58 @@ At most 6 apply per window. Protected spans are rebased **per window**
 (window-local coordinates, this window's texts only) before validation
 and the corrections guard. Deletions apply right-to-left in Python to
 form the model's input; the surviving replacement and reason clause
-stay by construction. An exact source qualifier attached to an outdated
-quantity moves beside the replacement quantity when that replacement
-does not explicitly supersede it. Its wording remains required; an obsolete
-value cannot return through the word-addition allowance. Incompatible
-qualifiers cause fallback. Original proposal and moved-source coordinates
-remain in the observation record.
+stay by construction.
 
-A compound `I mean actually` restart may remove a repeated `it <modal> be`
-frame only when the original subject is `it` or a determiner followed by
-one to three plain words, the adjacent modal predicate is identical, and
+**Retained details.** An exact source detail attached to an outdated
+quantity (`4 liters of dye, no wait, 6 liters`) moves beside the
+replacement quantity when the replacement repeats the quantity's unit and
+does not state its own detail of the same relation. A frame word leading
+both quantities (`with 4 liters of dye, sorry, with 6 liters`) is set
+aside, and the replacement must repeat it. A detail starts with one of
+`lexicon.DETAIL_PREPOSITIONS`, and it ends before a clause link
+(`lexicon.CLAUSE_LINKS`), `only` or punctuation. A restated recipient
+after `to` must be a bounded noun phrase or pronoun on both sides.
+Explicit presence→absence (`with dye … without dye`) replaces the
+descriptor; other opposing relations reject (`opposing_quantity_qualifier`).
+A quantity detail the rule cannot bind (a spelled number, a determiner
+before the number, an unrepeated frame, an unresolved replacement)
+rejects as `unresolved_quantity_qualifier`. The moved wording remains
+required; an obsolete value cannot return through the word-addition
+allowance. Original proposal and moved-source coordinates remain in the
+observation record.
+
+**Fractions.** A complete fraction head (`7 quarters of a turn`: a
+positive count agreeing with `half`/`halves`/`quarter`/`quarters`, `of
+a`/`an`, and one measure unit) corrected to `1 half` or `1 quarter` of the
+same unit needs no move when the replacement closes its clause, the count
+starts its own source token, the marker is not a bare `no`, and no
+quotation, code span or fence overlaps or touches the correction.
+
+**Frequency frames.** A value-only proposal inside `every 18 cycles,
+sorry, every 27 cycles` includes the first `every` when both complete
+quantity heads repeat it with the same unit. A repeated preposition
+around a short corrected value is included the same way; the frame must
+sit on the value's own line.
+
+**Repeated restarts.** A compound `I mean actually` restart may remove a
+repeated `it <modal> be` frame (any of `lexicon.MODALS`) only when the
+original subject is `it` or a determiner followed by one to three plain words, the adjacent modal predicate is identical, and
 both numeric values use the same explicit unit. Subject postmodifiers,
 function words, quantifiers and visible plural forms are excluded.
 Changed subjects, modality, negation, units, protected text and sentence
 boundaries do not gain deletion permission. The additional restart range is
-recorded separately from the marker-terminated proposal. A repeated
-preposition around a short corrected value can include the extra source
-preposition in the deletion, preventing recovery from duplicating it.
+recorded separately from the marker-terminated proposal.
+
+**Quote-sensitive rules.** The fraction exception, the incomplete-restart
+authorization and the list-connective placement abstain only when a
+quotation, inline code span or fence (`lexicon.quoted_regions`) overlaps
+or touches their own span. An apostrophe after a letter (`don't`,
+`patients'`) is not a quote; a quote or code mark without a partner makes
+the whole text one region.
 
 Validation uses the source with only these exact qualifier moves and
-accepted deletion spans rebased into that comparison view. The decision
+accepted deletion spans rebased into that comparison view
+(`correction_retention.correction_view`). The decision
 settles each proposal as `selected`
 (kept in the returned text) or `rolled_back`; a truncated pass's
 proposals are `superseded` by the split retry that re-proposes them.
@@ -206,25 +276,28 @@ quoted; quotes inside the text are never stripped.
 
 ## Validation (S14, E09)
 
-`validation.validate(original_window_text, candidate, protected=,
-vocabulary_pairs=, continued_list_start=, correction_spans=)` returns a
-report of components, each labeled **deterministic** or **heuristic**.
-The reference retains the original window's words, with exact inherited
-qualifiers moved beside their replacements when required. Accepted
-correction deletions ride as rebased `(start, end, marker_start)` spans;
-retained qualifiers stay ordinary required words. Original coordinates
-remain in the correction record.
+`validation.validate(source, candidate, protected=, vocabulary_pairs=,
+continued_list_start=, correction_spans=, protected_positions=)`
+returns a report of components, each labeled **deterministic** or
+**heuristic**. `source` is the window's comparison view: the original
+window text with exact inherited qualifiers moved beside their
+replacements. Accepted correction deletions ride as rebased `(start,
+end, marker_start)` spans; retained qualifiers stay ordinary required
+words; `protected_positions` are the window's protected occurrences.
+Original coordinates remain in the correction record. Comparison atoms
+are words (hyphenated tokens split, apostrophes ignored) and whole
+identifiers (`sample_index`, `name:value`), which never split into words.
 
 | Component | Kind | Fails → |
 |---|---|---|
 | `coverage` | deterministic | critical — every source word survives in order or is authorized away (flagged deletion ranges, question-flagged); no word inside a protected occurrence is ever authorized away, so the designated occurrence — not an equal text elsewhere — survives |
-| `clause_scope` | deterministic | critical — an explicit source boundary (`. ! ? ;` or a line break) next to a negated or conditional sentence survives as an output boundary (`. ! ? ; :`, newline or dash); merging "Do not deploy. Run tests." into one clause fails; unpunctuated source is unconstrained |
-| `numeric_values` | deterministic | critical — typed numeric occurrences survive **in order** with sign, unit (`%`, `$ € £`, unit words) and identity (times, leading-zero codes, versions/ranges, letter-digit identifiers like `Qwen3-4B` — case-exact unless the source spelling is all lowercase — and commas that are not thousands grouping); grouping and number words are representation (`thirty percent` ↔ `30%`). Source list markers are structure: each ordered list's start number survives. An output list marker is structure only when it opens a list (1, a spoken-enumeration value, a source start, the seam-continued start) or follows its predecessor — otherwise it is an invented value |
+| `clause_scope` | deterministic | critical — an explicit source boundary (`. ! ? ;` or a line break) next to a negated or conditional sentence survives as an output boundary (`. ! ? ; :`, newline or dash); merging "Do not deploy. Run tests." into one clause fails. A new break may not detach a trailing `only` from its clause, or separate `only` from the condition, subordinator or preposition after it (`only if`, `only then`), unless a new subject and finite auxiliary follow `only`; and new terminal punctuation may not strand a conjunction (`water and. I want`) |
+| `numeric_values` | deterministic | critical — typed numeric occurrences survive **in order** with sign, unit (`%`, `$ € £`, unit words) and identity (times, leading-zero codes, versions/ranges, letter-digit identifiers like `Qwen3-4B` — case-exact unless the source spelling is all lowercase — and commas that are not thousands grouping); grouping and number words are representation (`thirty percent` ↔ `30%`). Source list markers are structure: each ordered list's start number survives. Rendered list labels, taken from the `document_nodes` parse, never bind a value; a label must open a list (1, a spoken-enumeration value, a source start, the seam-continued start) or follow its predecessor — otherwise it is an invented value. A source quantity therefore cannot become a label (`1 apple` is not `1. Apple`); bare source numbers stand behind labels only as a spoken run 1, 2, 3 … whose members open a clause and are followed by a comma or a determiner or subject pronoun (`One, check …`, `1 the east wing …`) |
 | `protected_tokens` | deterministic | critical — each protected occurrence survives with exact bytes, as often as protected, on token boundaries; a dictated literal (`literal_escape`, `quoted`) may take an initial capital, a `generated` span may not |
-| `literal_spans` | deterministic | critical (quoted text verbatim) |
+| `literal_spans` | deterministic | critical — each quoted source literal keeps its own delimited output occurrence of the same kind (double or single quotes; glyph style may change), verbatim apart from an initial capital |
 | `negation_coverage` | deterministic | critical — the negation multiset is preserved exactly: none lost, none added (a correction's marker is not content) |
 | `uncertainty_coverage` | deterministic | critical — the hedge multiset is preserved exactly |
-| `technical_tokens` | deterministic | critical — paths, flags, versions, emails, URLs, case-significant words (`MB`, `UserID`, `iOS`) with exact case, and operator symbols (`= + < > ≤ ≥ ≠`) by count (a spoken `equals`/`plus`/`minus` may add its symbol); a `?` may be added, never dropped |
+| `technical_tokens` | deterministic | critical — paths, flags, versions, emails, URLs, identifiers, case-significant words (`MB`, `UserID`, `iOS`) with exact case, and operator symbols (`= + < > ≤ ≥ ≠`) by count (a spoken `equals`/`plus`/`minus` may add its symbol); a `?` may be added, never dropped. Pipes keep their count, and each standalone pipe or pipe run stays in its original gap between the same aligned words, with the same numbers, punctuation and line breaks; only horizontal spacing there may change |
 | `novelty` | deterministic | critical — no word, including articles, prepositions, pronouns and auxiliaries, appears more often than in the source plus matched vocabulary replacements; `a`/`an` share an existing occurrence allowance. Removed correction words cannot fund additions. This catches invented facts, grammar completion, repeated clauses and copied read-only context |
 | `names` | heuristic | finding only |
 | `structure` | deterministic on explicit blocks; heuristic on spoken enumerations | fail / finding |
@@ -232,24 +305,39 @@ remain in the correction record.
 Authorized deletions (never inside a protected occurrence): accepted
 corrections (their spans — whose words may not reappear: novelty does
 not count them), pure fillers, immediate function-word stutter (plus
-the doubled preposition a correction leaves), and the first copy of an
+the doubled preposition a correction leaves), the earlier copy of an
+exact restatement that changes only a number, and the first copy of an
 immediately repeated incomplete opening such as `that we that we should`.
+
+An exact restatement (`assign 4 rooms with extra linen to Marta. Sorry, 6
+rooms with extra linen to Marta.`) authorizes the earlier copy and its
+marker as a correction span when every word around the number repeats
+after the marker: up to three repeated words before the number, at least
+two after it, each copy within one sentence, the restated copy closing its
+clause, and no quotation, protected text or other correction touching it.
+It applies only when the output dropped one copy and the marker; the
+restated words and the new number stay required, so a dropped qualifier,
+a changed recipient or identifier, the same number, an apology that opens
+a clause, a negation in the old copy or a kept old value still fail.
 That opening is `that`/`which`/`who`/`whom` plus a subject pronoun before a
 retained finite auxiliary. Exactly two copies and their preceding word
 must share one clause with only horizontal spacing; a proposed deletion
 qualifies only when the second copy and auxiliary remain at their matched
 position and all other required words survive in order. The removed copy
 cannot fund new words, and unchanged text grants no deletion permission.
-Quote, apostrophe or backtick source windows, existing list-item lines,
-and overlap with protected, correction, vocabulary, list-marker or numeric
-representation spans exclude this rule. It does not authorize repeated
-finite phrases (`who had who had`) or temporal words (`then then`). Other
+A quotation, code span or fence touching the opening, an existing
+list-item line, and overlap with protected, correction, vocabulary,
+list-marker or numeric representation spans exclude this rule. It does
+not authorize repeated finite phrases (`who had who had`), temporal words
+(`then then`) or other repeats beyond the stutter list: `had had`, `that
+that`, `then then` and `we know we know` can be grammatical or emphatic,
+so such repeats are kept. Other
 authorized deletions are interjectors at a phrase
 start (text start or after `. ! ? ; :`/newline, possibly after other
 fillers — never mid-phrase), number-word→digit representation changes
 whose value survives, spoken-list markers when ≥ 2 items are rendered
-and the marker's own content (words a correction removed skipped) opens
-a rendered item — a sentence-final marker only where the output turns
+and the marker's own content (fillers and words a correction removed
+skipped) opens a rendered item — a sentence-final marker only where the output turns
 its sentence into a `…:` intro directly before an item — and **matched
 vocabulary replacements**: an alias occurrence
 in the source is authorized only while the output holds a corresponding
@@ -271,7 +359,9 @@ safe cut nearest its word midpoint (`_safe_cuts`) and retry the halves
 protected spans sliced from the child's own text, so a sub-window
 fallback rolls back to true source text (AC02). When both halves
 validate, their assembly is revalidated as a candidate for the whole
-window (cross-seam order, duplication, multiplicity). With no safe cut,
+window (cross-seam order, duplication, multiplicity), with each half's
+admitted corrections rebased into the parent window by offset rather
+than admitted again against the parent text. With no safe cut,
 a half that still fails, or a rejected assembly, the window ships its
 normalized source with an explicit incomplete notice — a truncated
 model output is never pasted as success (`incomplete: true`,
@@ -282,13 +372,19 @@ model output is never pasted as success (`incomplete: true`,
 Per-window fallback ladder: validated clean output → the window's
 normalized source (corrections rolled back with it — unvalidated
 correction deletions never survive a rejected candidate, M07-AC02).
-Before fallback, one fused candidate word can recover the exact space
-between two adjacent source words when the match is unique and contains
-no source punctuation. A candidate missing only a small number of source
-words may recover them; if that restoration leaves only a stranded joining
-conjunction, the new boundary can be reattached. Every recovered candidate
-passes the complete validator again. Ambiguous matches or other failures
-keep the fallback.
+Before fallback, a bounded repair loop runs at most one step per repair:
+splitting one fused candidate word at the exact space between two unique
+adjacent source words (when `coverage` and `novelty` are the only
+failures); removing a new break that detached a restriction or
+conjunction (when `clause_scope` is the only failure), absorbing only
+the spacing beside the break; and restoring a few dropped source words
+(when `coverage` is the only failure, at most `SALVAGE_MAX_WORDS` and
+`SALVAGE_MAX_SHARE` of the window), reattaching a restriction the
+restored words detach. A restored connective opens a list item only when
+that item is a sentence. A step is taken only when its result has
+strictly fewer failures than its input and no new ones, and every step's
+result passes the complete validator. A candidate the loop cannot make
+valid is reported and rolled back as the model wrote it.
 A V2 engine failure — load failure or an in-flight exception — answers
 with the unchanged normalized input (path `llm_fallback_normalized`,
 reason `cleanup_engine_failed`, `termination.kind: "engine_error"`):
@@ -385,9 +481,13 @@ None of this is a label: correctness stays `unreviewed`.
   contraction changes (`do not` ↔ `don't`), number-word phrases the
   compact parser reads as sums (`nineteen ninety nine`, `five thirty`,
   `a hundred`), dictated emails (`dot`/`at` → `.`/`@`), a spoken list
-  whose connective (`and`) is dropped without a spoken marker, and a
+  whose connective (`and`) is dropped without a spoken marker, a
   correction that removes a negation or hedge word from its outdated
-  value.
+  value, bare digit labels followed by a word they could count (`1 open
+  the panel. 2 inspect all 2 leads.` rendered as a numbered list), a
+  merge of a conditional fragment into the next sentence (`If X. We
+  should Y.`), and a correction whose old value plus a compound marker
+  exceeds the word cap.
 - A split-retry half gets no read-only context from its parent window
   and both halves get the parent's list continuation; the assembly is
   revalidated and renumbered as one run.

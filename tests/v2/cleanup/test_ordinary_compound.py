@@ -46,9 +46,9 @@ class OrdinaryCompoundTests(unittest.TestCase):
                 marker = correction_marker_start(source, span)
                 self.assertEqual(repeated_restart(source, span, marker), (None, None))
                 accepted, rejected = parse_correction_output(deletion, source, [])
-                self.assertEqual(accepted, [(span, deletion)])
+                self.assertEqual([(c.span, c.delete) for c in accepted], [(span, deletion)])
                 self.assertFalse(rejected)
-                self.assertEqual(correction_view(source, [(*span, marker)])[:2],
+                self.assertEqual(correction_view(source, accepted)[:2],
                                  (source, [(*span, marker)]))
                 result = clean(source, target, deletion)
                 self.assertEqual(result.text, target)
@@ -76,8 +76,8 @@ class OrdinaryCompoundTests(unittest.TestCase):
         ):
             with self.subTest(source=source):
                 accepted, rejected = parse_correction_output(deletion, source, [])
-                self.assertFalse(accepted)
-                self.assertEqual(rejected[0].reason, reason)
+                self.assertEqual(accepted, [])
+                self.assertEqual([r.reason for r in rejected], [reason])
 
     def test_pronouns_and_named_predicates_are_not_plain_replacements(self):
         for replacement in (
@@ -95,8 +95,8 @@ class OrdinaryCompoundTests(unittest.TestCase):
                 deletion = "7 volts, I mean actually"
                 source = f"The meter should be {deletion} {replacement}."
                 accepted, rejected = parse_correction_output(deletion, source, [])
-                self.assertFalse(accepted)
-                self.assertEqual(rejected[0].reason, "unresolved_repeated_restart")
+                self.assertEqual(accepted, [])
+                self.assertEqual([r.reason for r in rejected], ["unresolved_repeated_restart"])
                 result = clean(source, "The meter should be 9 volts.", deletion)
                 self.assertEqual(result.text, source)
 
@@ -122,11 +122,11 @@ class OrdinaryCompoundTests(unittest.TestCase):
                 accepted, rejected = parse_correction_output(deletion, source, [])
                 self.assertTrue(accepted)
                 self.assertFalse(rejected)
-                spans = [(s, e, correction_marker_start(source, (s, e)))
-                         for (s, e), _ in accepted]
-                view, spans, _ = correction_view(source, spans)
+                view, spans, _ = correction_view(source, accepted)
                 self.assertTrue(validate(view, target, correction_spans=spans).accepted)
-                self.assertFalse(validate(view, damaged, correction_spans=spans).accepted)
+                # The admitted correction never covers the words the damage drops.
+                report = validate(view, damaged, correction_spans=spans)
+                self.assertIn("coverage", [c.name for c in report.critical_failures])
 
     def test_protected_original_span_stays_rejected(self):
         deletion = "draft_a.toml, I mean actually"
@@ -134,8 +134,8 @@ class OrdinaryCompoundTests(unittest.TestCase):
         start = source.index("draft_a.toml")
         accepted, rejected = parse_correction_output(
             deletion, source, [(start, start + len("draft_a.toml"), "literal")])
-        self.assertFalse(accepted)
-        self.assertEqual(rejected[0].reason, "protected_span")
+        self.assertEqual(accepted, [])
+        self.assertEqual([r.reason for r in rejected], ["protected_span"])
 
     def test_original_coordinates_survive_unicode_and_a_qualifier_move(self):
         source = ("Label the µ sample. Use 3 liters of resin, no wait 5 liters. "

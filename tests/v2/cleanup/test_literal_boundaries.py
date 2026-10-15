@@ -6,12 +6,37 @@ import unittest
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[3]))
 
 from localflow.v2.cleanup.engine import CleanupEngine
-from localflow.v2.cleanup.validation import validate
+from localflow.v2.cleanup.validation import _touches, quoted_regions, validate
 
 
 def literal_component(source, output):
     return next(c for c in validate(source, output).components
                 if c.name == "literal_spans")
+
+
+class QuotedRegionTests(unittest.TestCase):
+    def test_apostrophes_after_a_letter_are_not_quotes(self):
+        for text in ("Don't stop; it's fine.", "Don’t stop.", "The patients' notes stay."):
+            with self.subTest(text=text):
+                self.assertEqual(quoted_regions(text), [])
+
+    def test_paired_quotes_and_code_are_local_regions(self):
+        text = "Say \"go\" now, use `fast` mode and 'it's fine' later."
+        self.assertEqual([text[a:b] for a, b in quoted_regions(text)],
+                         ['"go"', "`fast`", "'it's fine'"])
+        text = "Run this:\n~~~~\nmake test\n~~~~\nThen stop."
+        self.assertEqual([text[a:b] for a, b in quoted_regions(text)],
+                         ["~~~~\nmake test\n~~~~"])
+
+    def test_unpaired_marks_make_the_whole_text_one_region(self):
+        for text in ('Say "go now.', "Use `fast mode.", "Run ~~~\ncode", "Back in the '90s."):
+            with self.subTest(text=text):
+                self.assertEqual(quoted_regions(text), [(0, len(text))])
+
+    def test_touching_includes_adjacent_offsets(self):
+        self.assertTrue(_touches([(4, 8)], 8, 12))
+        self.assertTrue(_touches([(4, 8)], 0, 4))
+        self.assertFalse(_touches([(4, 8)], 9, 12))
 
 
 class LiteralBoundaryTests(unittest.TestCase):

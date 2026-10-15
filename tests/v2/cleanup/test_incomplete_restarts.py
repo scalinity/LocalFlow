@@ -29,6 +29,10 @@ POSITIVES = (
 )
 
 
+def failures(report):
+    return {c.name for c in report.critical_failures}
+
+
 def context(source, output, **kwargs):
     return _auth_context(source, output, kwargs.get("vocabulary_pairs"), None,
                          kwargs.get("correction_spans"),
@@ -98,7 +102,7 @@ class IncompleteRestartTests(unittest.TestCase):
         for source, proposal in cases:
             with self.subTest(source=source):
                 self.assertEqual(context(source, proposal).restart_spans, [])
-                self.assertFalse(validate(source, proposal).accepted)
+                self.assertIn("coverage", failures(validate(source, proposal)))
 
     def test_boundaries_and_three_copies_do_not_qualify(self):
         for source in (
@@ -113,7 +117,7 @@ class IncompleteRestartTests(unittest.TestCase):
             proposal = PROPOSAL if not source.startswith("1.") else "1. " + PROPOSAL + "\n2. Keep it."
             with self.subTest(source=source):
                 self.assertEqual(context(source, proposal).restart_spans, [])
-                self.assertFalse(validate(source, proposal).accepted)
+                self.assertIn("coverage", failures(validate(source, proposal)))
 
     def test_quotes_apostrophes_and_backticks_exclude_new_authorization(self):
         for opening, closing in (("\"", "\""), ("'", "'"), ("`", "`"),
@@ -122,10 +126,18 @@ class IncompleteRestartTests(unittest.TestCase):
             proposal = "Keep " + opening + PROPOSAL + closing
             with self.subTest(opening=opening, closing=closing):
                 self.assertEqual(context(source, proposal).restart_spans, [])
-                self.assertFalse(validate(source, proposal).accepted)
-        source = "Don't change the title. " + SOURCE
-        proposal = "Don't change the title. " + PROPOSAL
-        self.assertEqual(context(source, proposal).restart_spans, [])
+                self.assertIn("coverage", failures(validate(source, proposal)))
+
+    def test_contractions_elsewhere_in_a_long_window_leave_the_rule_active(self):
+        # Contractions are ordinary in dictation; only a quotation or code
+        # span at the restart itself makes the rule abstain.
+        filler = ("It's fine, so don't rush. We can't skip the log and it "
+                  "isn't optional for the 'night' shift. ") * 10
+        source = filler + SOURCE + " " + filler
+        proposal = filler + PROPOSAL + " " + filler
+        self.assertGreater(len(source.split()), 200)
+        self.assertEqual(len(context(source, proposal).restart_spans), 1)
+        self.assertTrue(validate(source, proposal).accepted)
 
     def test_protected_occurrences_and_other_authorizations_do_not_overlap(self):
         first = SOURCE.index("that we")
@@ -136,8 +148,8 @@ class IncompleteRestartTests(unittest.TestCase):
             with self.subTest(protected=span):
                 self.assertEqual(context(SOURCE, PROPOSAL,
                                          protected_positions=[span]).restart_spans, [])
-                self.assertFalse(validate(SOURCE, PROPOSAL,
-                                          protected_positions=[span]).accepted)
+                self.assertEqual(failures(validate(SOURCE, PROPOSAL,
+                                                   protected_positions=[span])), {"coverage"})
         for field in ("correction_spans", "vocab_spans", "enum_spans", "numeric_spans"):
             with self.subTest(overlap=field):
                 ctx = _AuthCtx(**{field: [(first, first + 7)]})
@@ -154,7 +166,7 @@ class IncompleteRestartTests(unittest.TestCase):
         ):
             with self.subTest(proposal=proposal):
                 self.assertEqual(context(SOURCE, proposal).restart_spans, [])
-                self.assertFalse(validate(SOURCE, proposal).accepted)
+                self.assertIn("coverage", failures(validate(SOURCE, proposal)))
 
     def test_a_later_copy_cannot_replace_the_required_occurrence(self):
         source = ("The first result that we that we should publish is negative. "
@@ -162,14 +174,15 @@ class IncompleteRestartTests(unittest.TestCase):
         proposal = ("The first result should publish is negative. "
                     "The second result that we should publish is positive.")
         self.assertEqual(context(source, proposal).restart_spans, [])
-        self.assertFalse(validate(source, proposal).accepted)
+        self.assertEqual(failures(validate(source, proposal)), {"coverage"})
 
     def test_removed_opening_words_cannot_fund_new_content(self):
-        for tail in (", that we.", ", we that.", " and we know that."):
+        for tail, expected in ((", that we.", {"coverage"}), (", we that.", {"coverage"}),
+                               (" and we know that.", {"coverage", "novelty"})):
             proposal = PROPOSAL[:-1] + tail
             with self.subTest(proposal=proposal):
                 self.assertEqual(context(SOURCE, proposal).restart_spans, [])
-                self.assertFalse(validate(SOURCE, proposal).accepted)
+                self.assertEqual(failures(validate(SOURCE, proposal)), expected)
 
     def test_multiple_deletions_and_partial_identity_bind_separately(self):
         source = SOURCE + " " + POSITIVES[1][0]
@@ -184,11 +197,13 @@ class IncompleteRestartTests(unittest.TestCase):
         source = SOURCE.replace("should publish", "should not publish, perhaps")
         proposal = PROPOSAL.replace("should publish", "should not publish, perhaps")
         self.assertTrue(validate(source, proposal).accepted)
-        for changed in (proposal.replace("not ", ""),
-                        proposal.replace(", perhaps", ""),
-                        proposal.replace("perhaps", "probably")):
+        for changed, expected in (
+                (proposal.replace("not ", ""), {"coverage", "negation_coverage"}),
+                (proposal.replace(", perhaps", ""), {"coverage", "uncertainty_coverage"}),
+                (proposal.replace("perhaps", "probably"),
+                 {"coverage", "uncertainty_coverage", "novelty"})):
             with self.subTest(proposal=changed):
-                self.assertFalse(validate(source, changed).accepted)
+                self.assertEqual(failures(validate(source, changed)), expected)
 
     def test_single_word_stutter_policy_is_unchanged(self):
         self.assertTrue({"then", "had", "that", "can"}.isdisjoint(STUTTER_WORDS))

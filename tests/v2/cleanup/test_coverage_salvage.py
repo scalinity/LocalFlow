@@ -147,8 +147,7 @@ def test_list_placement_does_not_rewrite_quoted_or_protected_content():
 
     for quoted_clause in ("'don't sit on the chair, then stand by the table'",
                           "'sit\non the chair, then stand by the table'",
-                          "\"sit on the chair, then stand by the table",
-                          "don't sit on the chair, then stand by the table"):
+                          "\"sit on the chair, then stand by the table"):
         source = f"Do 2 actions: repeat {quoted_clause} in the room."
         proposal = source.replace("Do 2 actions: repeat", "Do 2 actions:\n1. Repeat")
         proposal = proposal.replace(", then stand", ".\n2. Stand")
@@ -163,6 +162,27 @@ def test_list_placement_does_not_rewrite_quoted_or_protected_content():
     protected = [(start, start + len("then stand"))]
     assert restore_missing_words(source, proposal, protected_positions=protected) is None
     assert engine_for(proposal).clean(source, protected_spans=protected).text == source
+
+
+def test_contractions_do_not_stop_list_placement_in_a_long_window():
+    # Only quoted or code text at the connective blocks the placement; the
+    # contraction inside the item and elsewhere in the window does not.
+    filler = ("It's a short visit, so don't rush. We can't skip the log "
+              "and it isn't optional. ") * 12
+    source = (f"{filler}\n\nDo 2 actions: don't sit on the chair, "
+              "then stand by the table in the room.")
+    proposal = (f"{filler}\n\nDo 2 actions:\n1. Don't sit on the chair.\n"
+                "2. Stand by the table in the room.")
+    expected = proposal.replace("2. Stand", "2. Then stand")
+    assert len(source.split()) > 200
+    assert restore_missing_words(source, proposal) == (expected, 1)
+
+
+def test_connective_never_opens_a_fragment_item():
+    source = "We need 3 things from the shop: milk, eggs, and butter for the cake."
+    proposal = "We need 3 things from the shop:\n\n- Milk\n- Eggs\n- Butter for the cake"
+    assert restore_missing_words(source, proposal) is None
+    assert engine_for(proposal).clean(source).text == source
 
 
 def test_unresolved_cross_item_attachment_preserves_source():
@@ -237,6 +257,8 @@ if __name__ == "__main__":
              test_existing_source_list_boundary_does_not_get_guessed_placement,
              test_within_item_conjunction_stays_inside_that_item,
              test_list_placement_does_not_rewrite_quoted_or_protected_content,
+             test_contractions_do_not_stop_list_placement_in_a_long_window,
+             test_connective_never_opens_a_fragment_item,
              test_unresolved_cross_item_attachment_preserves_source,
              test_unpunctuated_connective_or_temporal_tail_preserves_source,
              test_item_start_case_preserves_source_names_and_capital_i,

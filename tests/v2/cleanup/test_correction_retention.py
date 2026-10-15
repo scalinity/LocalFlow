@@ -6,7 +6,7 @@ import unittest
 
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[3]))
 
-from localflow.v2.cleanup.engine import (CleanupEngine, correction_marker_start,
+from localflow.v2.cleanup.engine import (CleanupEngine,
                                         parse_correction_output,
                                         _has_correction_marker)
 from localflow.v2.cleanup.correction_retention import correction_view
@@ -201,6 +201,98 @@ class CorrectionRetentionTests(unittest.TestCase):
         self.assertEqual(len(assembly), 1)
         self.assertTrue(assembly[0]["accepted"])
 
+    def test_retry_assembly_rebases_half_admissions_instead_of_recomputing(self):
+        # The parent window holds an apostrophe that the half with the
+        # correction does not. The assembly must reuse that half's admission
+        # rather than re-deriving it against the parent text.
+        first = ("Advance the rotor by 7 quarters of a turn, sorry, 1 half turn, "
+                 "then lock the housing and log the reading.")
+        second = "Don't open the cover until the gauge settles."
+        source = first + " " + second
+        target = ("Advance the rotor by 1 half turn, then lock the housing and "
+                  "log the reading. " + second)
+        calls = 0
+
+        def generate(prompt, max_tokens):
+            nonlocal calls
+            if "Find the self-corrections" in prompt:
+                return {"text": "7 quarters of a turn, sorry", "output_tokens": 8,
+                        "limit_hit": False}
+            calls += 1
+            if calls == 1:
+                return {"text": "Advance", "output_tokens": 1, "limit_hit": True}
+            body = prompt.rsplit("<|user|>\n", 1)[1].rsplit("<|assistant|>", 1)[0]
+            text = json.loads(body)["transcript"].replace("by , 1", "by 1")
+            return {"text": text, "output_tokens": 15, "limit_hit": False}
+
+        result = CleanupEngine(generate, model_id="fixture").clean(source)
+        self.assertEqual(result.text, target)
+        self.assertEqual(result.path, "llm")
+        self.assertEqual(result.corrections["applied"], 1)
+        assembly = [o for o in result.observations if o.get("stage") == "retry_assembly"]
+        self.assertEqual([o["accepted"] for o in assembly], [True])
+
+    def test_frame_led_quantity_keeps_its_detail_beside_the_replacement(self):
+        for source, deletion, target, lossy in (
+            ("Fill the tank with 4 liters of dye, sorry, with 6 liters.",
+             "with 4 liters of dye, sorry", "Fill the tank with 6 liters of dye.",
+             "Fill the tank with 6 liters."),
+            ("Meet at 5 pm on Monday, sorry, at 6 pm.", "at 5 pm on Monday, sorry",
+             "Meet at 6 pm on Monday.", "Meet at 6 pm."),
+        ):
+            with self.subTest(source=source):
+                accepted, rejected = parse_correction_output(deletion, source, [])
+                self.assertEqual(rejected, [])
+                self.assertIsNotNone(accepted[0].move)
+                result, _ = clean(source, target, deletion)
+                self.assertEqual(result.text, target)
+                self.assertEqual(result.path, "llm")
+                result, _ = clean(source, lossy, deletion)
+                self.assertEqual(result.text, source)
+
+    def test_unbindable_quantity_detail_keeps_the_source(self):
+        # A spelled number, a determiner before the number, or a frame the
+        # replacement does not repeat leaves the detail without a place.
+        for source, deletion in (
+            ("Fill the tank with four liters of dye, sorry, six liters.",
+             "four liters of dye, sorry"),
+            ("Fill the tank with the 4 liters of dye, sorry, 6 liters.",
+             "the 4 liters of dye, sorry"),
+            ("Fill the tank with 4 liters of dye, sorry, 6 liters.",
+             "with 4 liters of dye, sorry"),
+        ):
+            with self.subTest(source=source):
+                accepted, rejected = parse_correction_output(deletion, source, [])
+                self.assertEqual(accepted, [])
+                self.assertEqual([r.reason for r in rejected],
+                                 ["unresolved_quantity_qualifier"])
+                lossy = source.replace(deletion + ", ", "").replace("with the ", "with ")
+                result, _ = clean(source, lossy, deletion)
+                self.assertEqual(result.text, source)
+
+    def test_from_and_by_details_stay_beside_the_replacement(self):
+        for source, deletion, target, lossy in (
+            ("Pour 4 liters from the tank, sorry, 6 liters.", "4 liters from the tank, sorry",
+             "Pour 6 liters from the tank.", "Pour 6 liters."),
+            ("Cut 5 meters by 3 meters, sorry, 6 meters.", "5 meters by 3 meters, sorry",
+             "Cut 6 meters by 3 meters.", "Cut 6 meters."),
+        ):
+            with self.subTest(source=source):
+                result, _ = clean(source, target, deletion)
+                self.assertEqual(result.text, target)
+                self.assertEqual(result.path, "llm")
+                result, _ = clean(source, lossy, deletion)
+                self.assertEqual(result.text, source)
+
+    def test_detail_moves_before_a_following_subordinate_clause(self):
+        for link in ("when", "once", "since"):
+            with self.subTest(link=link):
+                source = f"Use 4 liters of dye, no wait, 6 liters {link} the tank is clean."
+                target = f"Use 6 liters of dye {link} the tank is clean."
+                result, _ = clean(source, target, "4 liters of dye, no wait")
+                self.assertEqual(result.text, target)
+                self.assertEqual(result.path, "llm")
+
     def test_qualifier_cannot_move_to_another_equal_quantity(self):
         source = ("Use 4 liters of dye, no wait, 6 liters, "
                   "and reserve 6 liters for cleaning.")
@@ -263,10 +355,8 @@ class CorrectionRetentionTests(unittest.TestCase):
         accepted, rejected = parse_correction_output(
             "4 liters of dye, no wait\n3 grams of varnish, no wait", source, [])
         self.assertFalse(rejected)
-        spans = [(a, b, correction_marker_start(source, (a, b)))
-                 for (a, b), _ in accepted]
         view, moved_corrections, positions = correction_view(
-            source, spans, [(i, i + 1) for i in range(len(source))])
+            source, accepted, [(i, i + 1) for i in range(len(source))])
         self.assertEqual(view,
                          "Note α: Use 4 liters, no wait, 6 liters of dye, and reserve "
                          "3 grams, no wait, 5 grams of varnish for batch_12.")
@@ -320,15 +410,84 @@ class CorrectionRetentionTests(unittest.TestCase):
                 self.assertEqual(result.path, "llm")
 
     def test_as_frame_does_not_authorize_an_unrelated_clause_or_emphasis(self):
-        for source, deletion in (
-            ("We actually shipped it.", "We actually"),
+        for source, deletion, reason in (
+            ("We actually shipped it.", "We actually", "no_outdated_value"),
             ("Treat it as suspect and notify Mira, actually, as fine.",
-             "as suspect and notify Mira, actually"),
-            ("Act as guide. Actually, as host.", "as guide. Actually"),
+             "as suspect and notify Mira, actually", "not_parallel"),
+            ("Act as guide. Actually, as host.", "as guide. Actually", "crosses_sentence"),
         ):
             with self.subTest(source=source):
-                accepted, _ = parse_correction_output(deletion, source, [])
-                self.assertFalse(accepted)
+                accepted, rejected = parse_correction_output(deletion, source, [])
+                self.assertEqual(accepted, [])
+                self.assertEqual([r.reason for r in rejected], [reason])
+
+    def test_as_frame_replacement_must_close_its_clause(self):
+        # Comparative and conditional frames continue past the first word,
+        # so deleting the old complement would rewrite the clause.
+        for source, deletion, wrong in (
+            ("Mark the invoice as paid, actually, as soon as the bank confirms.",
+             "as paid, actually", "Mark the invoice as soon as the bank confirms."),
+            ("Log the call as resolved, actually, as soon as Mira confirms.",
+             "as resolved, actually", "Log the call as soon as Mira confirms."),
+            ("List it as optional, actually, as well as the cables.",
+             "as optional, actually", "List it as well as the cables."),
+            ("Treat it as suspect, actually, as fine and notify Mira.",
+             "as suspect, actually", "Treat it as fine and notify Mira."),
+        ):
+            with self.subTest(source=source):
+                accepted, rejected = parse_correction_output(deletion, source, [])
+                self.assertEqual(accepted, [])
+                self.assertEqual([r.reason for r in rejected], ["not_parallel"])
+                result, _ = clean(source, wrong, deletion)
+                self.assertEqual(result.text, source)
+
+    def test_replacement_may_repeat_the_article_before_the_old_value(self):
+        for source, deletion, target in (
+            ("Voice the reed stops on the 12th, no, the 14th, only if it stays dry.",
+             "12th, no", "Voice the reed stops on the 14th, only if it stays dry."),
+            ("Meet on Monday, no, the Tuesday after the review.", "Monday, no",
+             "Meet on the Tuesday after the review."),
+        ):
+            with self.subTest(source=source):
+                accepted, rejected = parse_correction_output(deletion, source, [])
+                self.assertEqual([c.delete for c in accepted], [deletion])
+                self.assertEqual(rejected, [])
+                result, _ = clean(source, target, deletion)
+                self.assertEqual(result.text, target)
+        # The article does not hide a replacement that starts a new clause.
+        for source, deletion in (("Fix the 5, no the 6 is broken.", "5, no"),
+                                 ("Use the 5, sorry, the 6 are fine.", "5, sorry")):
+            with self.subTest(source=source):
+                accepted, rejected = parse_correction_output(deletion, source, [])
+                self.assertEqual(accepted, [])
+                self.assertEqual([r.reason for r in rejected], ["not_parallel"])
+
+    def test_single_word_replacement_that_opens_a_predicate_is_not_parallel(self):
+        # The replacement is the subject of a new clause; a bare "no" there
+        # is a negation, not a correction marker.
+        for source, deletion, wrong in (
+            ("Book it for Monday, no Tuesday is a holiday.", "Monday, no",
+             "Book it for Tuesday is a holiday."),
+            ("Set it to 5, no 6 is too many.", "5, no", "Set it to 6 is too many."),
+            ("Order 4 trays, sorry, 6 trays are on the shelf.", "4 trays, sorry",
+             "Order 6 trays are on the shelf."),
+        ):
+            with self.subTest(source=source):
+                accepted, rejected = parse_correction_output(deletion, source, [])
+                self.assertEqual(accepted, [])
+                self.assertEqual([r.reason for r in rejected], ["not_parallel"])
+                result, _ = clean(source, wrong, deletion)
+                self.assertEqual(result.text, source)
+        for source, deletion in (
+            ("Use 6 towels, no 5 towels for the corner suites.", "6 towels, no"),
+            ("Do 5 exercises, actually 4 exercises that they can do at home.",
+             "5 exercises, actually"),
+            ("Meet on Tuesday, sorry, Thursday, at 10 AM.", "Tuesday, sorry"),
+            ("Start at 8 am, no, 9 am, and take rooms 301 to 312.", "8 am, no"),
+        ):
+            with self.subTest(source=source):
+                accepted, rejected = parse_correction_output(deletion, source, [])
+                self.assertTrue(accepted, rejected)
 
 
 class SourceRepairTests(unittest.TestCase):
@@ -354,11 +513,13 @@ class SourceRepairTests(unittest.TestCase):
                          ("not 7 centimeters", "2 meters")):
             with self.subTest(old=old, new=new):
                 source = f"Use {old}, no {new}."
-                accepted, _ = parse_correction_output(f"{old}, no", source, [])
-                self.assertFalse(accepted)
+                accepted, rejected = parse_correction_output(f"{old}, no", source, [])
+                self.assertEqual(accepted, [])
+                self.assertEqual([r.reason for r in rejected], ["not_parallel"])
         source = "Use 7 centimeters. No 2 meters remain available."
-        accepted, _ = parse_correction_output("7 centimeters. No", source, [])
-        self.assertFalse(accepted)
+        accepted, rejected = parse_correction_output("7 centimeters. No", source, [])
+        self.assertEqual(accepted, [])
+        self.assertEqual([r.reason for r in rejected], ["crosses_sentence"])
 
     def test_untyped_nominal_replacements_remain_ambiguous(self):
         for verb in ("picked", "selected", "use"):
@@ -389,8 +550,9 @@ class SourceRepairTests(unittest.TestCase):
              "the blue notebook, sorry"),
         ):
             with self.subTest(source=source):
-                accepted, _ = parse_correction_output(deletion, source, [])
-                self.assertFalse(accepted)
+                accepted, rejected = parse_correction_output(deletion, source, [])
+                self.assertEqual(accepted, [])
+                self.assertEqual([r.reason for r in rejected], ["not_parallel"])
 
     def test_a_new_finite_clause_cannot_replace_an_unrelated_object(self):
         source = "We picked the blue notebook, sorry, the clerk left."
@@ -418,8 +580,9 @@ class SourceRepairTests(unittest.TestCase):
                          ("by motor", "by pulley handle if ready")):
             with self.subTest(old=old, new=new):
                 source = f"Power the winch {old}, sorry {new}."
-                accepted, _ = parse_correction_output(f"{old}, sorry", source, [])
-                self.assertFalse(accepted)
+                accepted, rejected = parse_correction_output(f"{old}, sorry", source, [])
+                self.assertEqual(accepted, [])
+                self.assertEqual([r.reason for r in rejected], ["not_parallel"])
 
     def test_omitted_as_frame_remains_ambiguous(self):
         source = "Mark the seal as blue, no amber, and record the shade."
@@ -427,8 +590,9 @@ class SourceRepairTests(unittest.TestCase):
         result, _ = clean(source, target, "blue, no")
         self.assertEqual(result.text, source)
         self.assertEqual(result.corrections["applied"], 0)
-        accepted, _ = parse_correction_output("as blue, no", source, [])
-        self.assertFalse(accepted)
+        accepted, rejected = parse_correction_output("as blue, no", source, [])
+        self.assertEqual(accepted, [])
+        self.assertEqual([r.reason for r in rejected], ["not_parallel"])
 
     def test_ordinary_apologies_and_no_phrases_are_not_value_corrections(self):
         for source, deletion, wrong in (
@@ -442,24 +606,27 @@ class SourceRepairTests(unittest.TestCase):
              "The tool worked as doubt."),
         ):
             with self.subTest(source=source):
-                accepted, _ = parse_correction_output(deletion, source, [])
-                self.assertFalse(accepted)
+                accepted, rejected = parse_correction_output(deletion, source, [])
+                self.assertEqual(accepted, [])
+                self.assertEqual([r.reason for r in rejected], ["not_parallel"])
                 result, _ = clean(source, wrong, deletion)
                 self.assertEqual(result.text, source)
                 self.assertEqual(result.corrections["applied"], 0)
 
     def test_predicative_as_rejects_unbounded_or_ambiguous_replacements(self):
-        for source, deletion in (
-            ("Mark the seal blue, no amber.", "blue, no"),
-            ("Mark the seal as blue, no amber remains.", "blue, no"),
-            ("Mark the seal as blue, no dark amber.", "blue, no"),
-            ("Mark the seal as blue, no never.", "blue, no"),
-            ("Mark the seal as blue. No amber.", "blue. No"),
-            ("Mark it as blue, no amber, and mark it as blue, no red.", "blue, no"),
+        for source, deletion, reason in (
+            ("Mark the seal blue, no amber.", "blue, no", "not_parallel"),
+            ("Mark the seal as blue, no amber remains.", "blue, no", "not_parallel"),
+            ("Mark the seal as blue, no dark amber.", "blue, no", "not_parallel"),
+            ("Mark the seal as blue, no never.", "blue, no", "not_parallel"),
+            ("Mark the seal as blue. No amber.", "blue. No", "crosses_sentence"),
+            ("Mark it as blue, no amber, and mark it as blue, no red.", "blue, no",
+             "ambiguous_occurrence"),
         ):
             with self.subTest(source=source):
-                accepted, _ = parse_correction_output(deletion, source, [])
-                self.assertFalse(accepted)
+                accepted, rejected = parse_correction_output(deletion, source, [])
+                self.assertEqual(accepted, [])
+                self.assertEqual([r.reason for r in rejected], [reason])
 
     def test_new_correction_shapes_keep_source_protection(self):
         for source, deletion, literal in (
@@ -472,8 +639,8 @@ class SourceRepairTests(unittest.TestCase):
                 start = source.index(literal)
                 accepted, rejected = parse_correction_output(
                     deletion, source, [(start, start + len(literal), "literal")])
-                self.assertFalse(accepted)
-                self.assertEqual(rejected[0].reason, "protected_span")
+                self.assertEqual(accepted, [])
+                self.assertEqual([r.reason for r in rejected], ["protected_span"])
 
     def test_new_shapes_do_not_waive_identifier_time_or_negation_failures(self):
         for source, target, deletion in (
@@ -517,16 +684,16 @@ class SourceRepairTests(unittest.TestCase):
         ):
             with self.subTest(source=source, deletion=deletion):
                 accepted, rejected = parse_correction_output(deletion, source, [])
-                self.assertFalse(accepted)
-                self.assertEqual(rejected[0].reason, "offsets_unresolved")
+                self.assertEqual(accepted, [])
+                self.assertEqual([r.reason for r in rejected], ["offsets_unresolved"])
 
     def test_recovered_proposal_still_checks_protection_evidence_and_word_limit(self):
         source = "Replace the air vent, no wait, the roof panel."
         start = source.index("air vent")
         accepted, rejected = parse_correction_output(
             "the airvent, no wait", source, [(start, start + 8, "literal")])
-        self.assertFalse(accepted)
-        self.assertEqual(rejected[0].reason, "protected_span")
+        self.assertEqual(accepted, [])
+        self.assertEqual([r.reason for r in rejected], ["protected_span"])
         for source, deletion, reason in (
             ("The air vent, sorry, we cannot replace it.",
              "The airvent, sorry", "not_parallel"),
@@ -535,12 +702,12 @@ class SourceRepairTests(unittest.TestCase):
         ):
             with self.subTest(source=source):
                 accepted, rejected = parse_correction_output(deletion, source, [])
-                self.assertFalse(accepted)
-                self.assertEqual(rejected[0].reason, reason)
+                self.assertEqual(accepted, [])
+                self.assertEqual([r.reason for r in rejected], [reason])
 
     def test_compound_correction_removes_only_the_exact_repeated_predicate(self):
         for predicate, unit in (("should be", "C"), ("must be", "psi"),
-                                ("could be", "liters")):
+                                ("could be", "liters"), ("shall be", "psi")):
             with self.subTest(predicate=predicate, unit=unit):
                 subject = "The ink temperature" if unit == "C" else "The reading"
                 deletion = f"12 {unit}, I mean actually"
@@ -589,8 +756,10 @@ class SourceRepairTests(unittest.TestCase):
                 source = f"{before} I mean actually {after}"
                 deletion = source[source.index("12"):source.index("actually") + 8]
                 accepted, rejected = parse_correction_output(deletion, source, [])
-                self.assertFalse(accepted)
-                self.assertTrue(rejected)
+                self.assertEqual(accepted, [])
+                self.assertEqual([r.reason for r in rejected],
+                                 ["crosses_sentence" if before.endswith(".")
+                                  else "unresolved_repeated_restart"])
                 result, _ = clean(source, "The reading should be 14 psi.", deletion)
                 self.assertEqual(result.text, source)
 
@@ -677,17 +846,24 @@ class SourceRepairTests(unittest.TestCase):
                 self.assertEqual(result.path, "llm")
                 self.assertNotIn("by by", inputs[0])
 
+    def test_repeated_frame_does_not_reach_back_across_a_line_break(self):
+        source = "Ship the crates to \nnoon, no wait, to 11."
+        accepted, rejected = parse_correction_output("noon, no wait", source, [])
+        self.assertEqual([c.delete for c in accepted], ["noon, no wait"])
+        self.assertEqual(rejected, [])
+
     def test_repeated_frame_does_not_expand_across_a_clause_or_protection(self):
         source = "Send it to Mira, no wait to Lin."
         start = source.index("to Mira")
         accepted, rejected = parse_correction_output(
             "Mira, no wait", source, [(start, start + 2, "literal")])
-        self.assertFalse(accepted)
-        self.assertEqual(rejected[0].reason, "protected_span")
+        self.assertEqual(accepted, [])
+        self.assertEqual([r.reason for r in rejected], ["protected_span"])
         source = "Send it to Mira and notify Sam, actually to Lin."
-        accepted, _ = parse_correction_output(
+        accepted, rejected = parse_correction_output(
             "Mira and notify Sam, actually", source, [])
-        self.assertFalse(accepted)
+        self.assertEqual(accepted, [])
+        self.assertEqual([r.reason for r in rejected], ["not_parallel"])
 
     def test_unique_fused_pair_restores_exact_source_words(self):
         source = "Inspect the pallet fork and record the result."
@@ -697,6 +873,26 @@ class SourceRepairTests(unittest.TestCase):
         decision = next(o for o in result.observations
                         if o.get("kind") == "cleanup_decision")
         self.assertTrue(decision["source_word_boundary_restored"])
+
+    def test_word_split_then_restores_a_dropped_word(self):
+        # Each repair must leave fewer failures than it found; the split
+        # leaves only coverage, which the word restoration then fixes.
+        source = "inspect the pallet fork and record the result in the shared log today"
+        proposal = "Inspect the palletfork and record the result in the log today."
+        expected = "Inspect the pallet fork and record the result in the shared log today."
+        result, _ = clean(source, proposal, "NONE")
+        self.assertEqual(result.text, expected)
+        self.assertEqual(result.path, "llm")
+        decision = next(o for o in result.observations
+                        if o.get("kind") == "cleanup_decision")
+        self.assertTrue(decision["source_word_boundary_restored"])
+        self.assertEqual(decision["salvaged_words"], 1)
+        added = proposal.replace("the log", "the new log")
+        result, _ = clean(source, added, "NONE")
+        self.assertEqual(result.text, source)
+        decision = next(o for o in result.observations
+                        if o.get("kind") == "cleanup_decision")
+        self.assertNotIn("source_word_boundary_restored", decision)
 
     def test_word_split_never_licenses_other_novel_content(self):
         source = "Inspect the pallet fork and record the result."

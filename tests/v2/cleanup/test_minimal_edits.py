@@ -35,25 +35,36 @@ class AddedWordTests(unittest.TestCase):
                 self.assertIn("novelty", [c.name for c in report.critical_failures])
                 self.assertEqual(clean_proposal(source, output).text, source)
 
+    def test_a_filler_after_a_spoken_list_marker_does_not_hide_its_item(self):
+        source = ("We found 3 problems. First, the stress marker is missing. Second, the "
+                  "abbreviation maps twice. Third, uh numbers above ten thousand are read "
+                  "digit by digit.")
+        output = ("We found 3 problems.\n\n1. The stress marker is missing.\n2. The "
+                  "abbreviation maps twice.\n3. Numbers above ten thousand are read digit "
+                  "by digit.")
+        self.assertTrue(validate(source, output).accepted)
+        self.assertEqual(clean_proposal(source, output).text, output)
+
     def test_existing_article_substitution_has_no_extra_occurrence(self):
         self.assertTrue(validate("Write a RFC.", "Write an RFC.").accepted)
-        self.assertFalse(validate("Write a RFC.", "Write an RFC and an RFC.").accepted)
+        report = validate("Write a RFC.", "Write an RFC and an RFC.")
+        self.assertEqual([c.name for c in report.critical_failures], ["novelty"])
 
     def test_explicit_vocabulary_can_supply_function_words(self):
         self.assertTrue(validate(
             "Inspect mini hub.", "Inspect the hub.",
             vocabulary_pairs=(("mini hub", "the hub"),)).accepted)
-        self.assertFalse(validate(
-            "Inspect mini hub.", "Inspect the hub for her.",
-            vocabulary_pairs=(("mini hub", "the hub"),)).accepted)
+        report = validate("Inspect mini hub.", "Inspect the hub for her.",
+                          vocabulary_pairs=(("mini hub", "the hub"),))
+        self.assertEqual([c.name for c in report.critical_failures], ["novelty"])
 
     def test_obsolete_value_cannot_return_as_an_added_recipient(self):
         source = "Send it to Mark no wait to Lisa."
         span = (source.index("Mark"), source.index(" to Lisa"), source.index("no wait"))
         self.assertTrue(validate(source, "Send it to Lisa.",
                                  correction_spans=[span]).accepted)
-        self.assertFalse(validate(source, "Send it to Lisa and Mark.",
-                                  correction_spans=[span]).accepted)
+        report = validate(source, "Send it to Lisa and Mark.", correction_spans=[span])
+        self.assertEqual([c.name for c in report.critical_failures], ["novelty"])
 
 
 class TechnicalPunctuationTests(unittest.TestCase):
@@ -132,6 +143,8 @@ class RestrictionAndPreservationTests(unittest.TestCase):
              "Finish the test. Only Mira can approve it."),
             ("Save the draft only she can publish it",
              "Save the draft. Only she can publish it."),
+            ("Review the photos only I am allowed to edit them",
+             "Review the photos. Only I am allowed to edit them."),
         ):
             with self.subTest(output=output):
                 self.assertTrue(validate(source, output).accepted)
@@ -153,7 +166,8 @@ class RestrictionAndPreservationTests(unittest.TestCase):
              "Use copies. Only since the originals are missing."),
         ):
             with self.subTest(output=output):
-                self.assertFalse(validate(source, output).accepted)
+                self.assertEqual([c.name for c in validate(source, output).critical_failures],
+                                 ["clause_scope"])
 
     def test_valid_punctuation_and_readable_prose_stay_verbatim(self):
         for source in (

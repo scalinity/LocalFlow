@@ -5,7 +5,12 @@ import unittest
 
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[3]))
 from localflow.v2.cleanup.engine import CleanupEngine, parse_correction_output
-from localflow.v2.cleanup.validation import validate, restore_missing_words
+from localflow.v2.cleanup.validation import (validate, restore_missing_words,
+                                            restore_restriction_punctuation)
+
+
+def failures(report):
+    return {c.name for c in report.critical_failures}
 
 
 def engine(proposal, corrections="NONE"):
@@ -19,15 +24,26 @@ class ScopeTests(unittest.TestCase):
     def test_new_boundary_before_trailing_only_is_rejected(self):
         source = "Review the archived photographs only do not touch the negatives"
         wrong = "Review the archived photographs. Only do not touch the negatives."
-        self.assertFalse(validate(source, wrong).accepted)
+        self.assertEqual(failures(validate(source, wrong)), {"clause_scope"})
         self.assertTrue(validate(source, "Review the archived photographs only. Do not touch the negatives.").accepted)
+
+    def test_restriction_repair_keeps_spacing_away_from_the_break(self):
+        source = ("Notes:\n  - keep a  =  b in the config\n"
+                  "  - review the archived photographs only do not touch the negatives")
+        output = ("Notes:\n  - Keep a  =  b in the config.\n"
+                  "  - Review the archived photographs. Only do not touch the negatives.")
+        fixed = restore_restriction_punctuation(source, output)
+        self.assertEqual(fixed, "Notes:\n  - Keep a  =  b in the config.\n"
+                                "  - Review the archived photographs only do not touch "
+                                "the negatives.")
+        self.assertEqual(failures(validate(source, fixed)), set())
 
     def test_condition_cannot_be_split_inside_only_if(self):
         source = "Release the package only if every check succeeds"
         for output in ("Release the package. Only if every check succeeds.",
                        "Release the package only. If every check succeeds."):
             with self.subTest(output=output):
-                self.assertFalse(validate(source, output).accepted)
+                self.assertEqual(failures(validate(source, output)), {"clause_scope"})
 
     def test_legitimate_initial_only_and_only_then_stay_available(self):
         for source, output in (
@@ -56,7 +72,7 @@ class ScopeTests(unittest.TestCase):
         for separator in (",", ".", ";", "\n"):
             proposal = "Finish the alignment only" + separator + " then start the recorder."
             with self.subTest(separator=separator):
-                self.assertFalse(validate(source, proposal).accepted)
+                self.assertEqual(failures(validate(source, proposal)), {"clause_scope"})
                 result = engine(proposal).clean(source)
                 self.assertIn("only then", result.text)
                 self.assertEqual(result.path, "llm")
@@ -71,14 +87,16 @@ class IdentifierTests(unittest.TestCase):
             ("Keep sample_index and sample_index.", "Keep sample_index and sample_index_extra."),
         ):
             with self.subTest(source=source):
-                self.assertFalse(validate(source, output).accepted)
+                self.assertIn("technical_tokens", failures(validate(source, output)))
 
     def test_prose_separator_after_path_is_not_part_of_identifier(self):
         source = "Write to /var/data/run_11 and then close the window"
         output = "Write to /var/data/run_11, and then close the window."
         self.assertTrue(validate(source, output).accepted)
-        self.assertFalse(validate(source, output.replace("run_11,", "run_110,")).accepted)
-        self.assertFalse(validate(source, output.replace("run_11,", "run_11/extra,")).accepted)
+        self.assertIn("technical_tokens",
+                      failures(validate(source, output.replace("run_11,", "run_110,"))))
+        self.assertIn("technical_tokens",
+                      failures(validate(source, output.replace("run_11,", "run_11/extra,"))))
 
     def test_identifier_corrections_accept_separators_and_exact_replacements(self):
         for source, deletion, output in (
@@ -93,14 +111,35 @@ class IdentifierTests(unittest.TestCase):
                 self.assertEqual(result.text, output)
                 self.assertEqual(result.path, "llm")
 
+    def test_identifier_replacement_that_opens_a_clause_is_not_parallel(self):
+        # "no worker_b is running" negates a new clause; deleting
+        # "worker_a, no" would drop that negation with the old value.
+        for source, deletion, wrong in (
+            ("Restart worker_a, no worker_b is running.", "worker_a, no",
+             "Restart worker_b is running."),
+            ("Restart worker_1, no worker_2 is running.", "worker_1, no",
+             "Restart worker_2 is running."),
+            ("Use sample_index, actually, record_cache is slower.", "sample_index, actually",
+             "Use record_cache is slower."),
+        ):
+            with self.subTest(source=source):
+                accepted, rejected = parse_correction_output(deletion, source, [])
+                self.assertEqual(accepted, [])
+                self.assertEqual([r.reason for r in rejected], ["not_parallel"])
+                result = engine(wrong, deletion).clean(source)
+                self.assertEqual(result.text, source)
+
     def test_protected_and_ambiguous_identifier_deletions_stay_rejected(self):
         source = "Use sample_index, sorry, record_cache."
         start = source.index("sample_index")
-        accepted, _ = parse_correction_output("sample_index, sorry", source,
-                                             [(start, start + len("sample_index"), "literal")])
-        self.assertFalse(accepted)
-        accepted, _ = parse_correction_output("sample_index, sorry", source + " " + source, [])
-        self.assertFalse(accepted)
+        accepted, rejected = parse_correction_output(
+            "sample_index, sorry", source, [(start, start + len("sample_index"), "literal")])
+        self.assertEqual(accepted, [])
+        self.assertEqual([r.reason for r in rejected], ["protected_span"])
+        accepted, rejected = parse_correction_output("sample_index, sorry",
+                                                     source + " " + source, [])
+        self.assertEqual(accepted, [])
+        self.assertEqual([r.reason for r in rejected], ["ambiguous_occurrence"])
 
     def test_word_restoration_keeps_identifier_spelling(self):
         source = "Rename the helper to sample_index, sorry, record_cache for the lookup today."
@@ -113,8 +152,10 @@ class IdentifierTests(unittest.TestCase):
     def test_restoration_never_inserts_inside_a_retained_numeric_token(self):
         source = "Set REGION 6201 then save the output for tomorrow."
         output = "Set REGION 6201. Save the output for tomorrow."
-        restored = restore_missing_words(source, output)
-        self.assertTrue(restored is None or "REGION 6201" in restored[0], restored)
+        # The word before a retained number cannot locate the dropped "then"
+        # without risking a split of "REGION 6201", so nothing is restored.
+        self.assertIsNone(restore_missing_words(source, output))
+        self.assertEqual(engine(output).clean(source).text, source)
 
 
 if __name__ == "__main__":

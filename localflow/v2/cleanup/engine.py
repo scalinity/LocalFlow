@@ -27,8 +27,12 @@ from dataclasses import dataclass, field
 
 from . import document_nodes as dn
 from . import prompts
-from .correction_retention import (correction_view, qualifier_retention,
-                                   repeated_restart, retention_moves)
+from .lexicon import (CLAUSE_END, CORRECTION_MARKERS, FILLERS, FINITE_AUXILIARIES, FRAME_PREPOSITIONS, FRAME_WORDS,
+                      FUNCTION_WORDS, IDENTIFIER_TOKEN_RE, METER, NUMBER, NUMBER_WORDS,
+                      POSITIVE_NUMBER, SCALE_WORDS, TECH_TOKEN_RE, Neighbourhood,
+                      alternation, neighbourhood)
+from .correction_retention import (FRACTION_HEAD, AdmittedCorrection, correction_view,
+                                   fraction_binds, qualifier_retention, repeated_restart)
 from .validation import (validate, restore_missing_words,
                          restore_restriction_punctuation, ValidationReport)
 
@@ -42,27 +46,28 @@ WINDOW_MAX_WORDS = 200
 # this many words and at most this share of the window.
 SALVAGE_MAX_WORDS = 8
 SALVAGE_MAX_SHARE = 0.10
+# A repair chain is at most one step per repair kind.
+SALVAGE_MAX_STEPS = 3
 
 # Correction-span guards shared with V1 semantics: a valid deletion
 # ends with the correction marker, is short, and never a bare marker.
+# A complete five-word fraction head ("3 halves of an hour") may take a
+# marker of up to three words when the whole fraction correction binds.
 SPAN_MAX_WORDS = 6
+FRACTION_SPAN_MAX_WORDS = 8
+# A proposal line longer than this is not a correction span.
+SPAN_MAX_CHARS = 80
 # Existing direct triggers, including standalone "actually". Ambiguous
 # "no"/"sorry" admission additionally reuses the evidence guards below.
 CORRECTION_MARKER_RE = re.compile(
     r"\b(no wait|no sorry|no actually|actually no|wait no|i mean|"
     r"no espera|espera no|digo|scratch that|scratch|actually)\b",
     re.IGNORECASE)
-SPAN_ENDS_WITH_MARKER_RE = re.compile(
-    r"\b(no wait|no sorry|no actually|actually no|wait no|i mean actually|i mean|no espera|"
-    r"espera no|digo|scratch that|scratch|actually|sorry|no)$",
-    re.IGNORECASE)
+SPAN_ENDS_WITH_MARKER_RE = re.compile(rf"\b({alternation(CORRECTION_MARKERS)})$",
+                                      re.IGNORECASE)
 # "i mean it/that/this" is emphasis, never a correction.
 _EMPHASIS_AFTER_I_MEAN = frozenset({"it", "that", "this"})
-BARE_MARKERS = {
-    "no wait", "no sorry", "no actually", "actually no", "wait no",
-    "i mean", "i mean actually", "no espera", "espera no", "digo", "scratch", "scratch that",
-    "actually", "sorry", "no",
-}
+BARE_MARKERS = CORRECTION_MARKERS
 
 # The corrections proposal format is V1's production-proven line format
 # (localflow.cleanup.CORRECTIONS_PROMPT — the model lists the exact words
@@ -453,7 +458,6 @@ def correction_marker_start(window_text: str, span: tuple) -> int:
 
 
 def _has_content(text: str) -> bool:
-    from .validation import FUNCTION_WORDS
     return any(w.lower() not in FUNCTION_WORDS and
                w.lower() not in BARE_MARKERS
                for w in re.findall(r"[^\W_]+(?:['’][^\W_]+)*", text))
@@ -463,53 +467,46 @@ def _has_content(text: str) -> bool:
 # "no matter what", "sorry to ask"); a correction through one needs a
 # visibly parallel replacement.
 _SINGLE_WORD_MARKERS = frozenset({"actually", "sorry", "no"})
+_ARTICLES = frozenset({"a", "an", "the"})
 _WEEKDAYS = frozenset({"monday", "tuesday", "wednesday", "thursday",
                        "friday", "saturday", "sunday"})
 _MONTHS = frozenset({"january", "february", "march", "april", "may",
                      "june", "july", "august", "september", "october",
                      "november", "december"})
-_REPEATED_PREPOSITIONS = frozenset({"as", "at", "by", "for", "from", "in",
-                                   "of", "on", "to", "with"})
 
 
 def _is_value_word(w: str) -> bool:
-    from .validation import _NUMBERS, _SCALES
-    return any(c.isdigit() for c in w) or w in _NUMBERS or w in _SCALES
+    return any(c.isdigit() for c in w) or w in NUMBER_WORDS or w in SCALE_WORDS
 
 
-_METRIC_LENGTH = re.compile(
-    r"[+-]?\d+(?:[.,]\d+)*[ \t]+"
-    r"(?:(?:nano|micro|milli|centi|deci|deca|hecto|kilo|mega|giga)?met(?:er|re)s?)",
-    re.IGNORECASE)
+_METRIC_LENGTH = re.compile(rf"{NUMBER}[ \t]+{METER}s?", re.IGNORECASE)
 
 
-def _parallel_metric_lengths(source: str, span: tuple, marker: int) -> bool:
+def _parallel_metric_lengths(n: Neighbourhood) -> bool:
     """Recognize a closed pair of numeric values in one known unit family.
 
     Different metric prefixes may accompany the corrected number. Neither
     extra old descriptions nor an unbounded replacement clause qualifies.
     """
-    start, end = span
-    old = source[start:marker].strip(" \t,;:")
+    old = n.text[n.start:n.marker].strip(" \t,;:")
     if not _METRIC_LENGTH.fullmatch(old):
         return False
-    tail = source[end:].lstrip(" \t,")
+    tail = n.text[n.end:].lstrip(" \t,")
     new = _METRIC_LENGTH.match(tail)
-    return new is not None and bool(re.match(
-        r"[ \t]*(?:$|[,;.!?\n])", tail[new.end():]))
+    return new is not None and bool(re.match(CLAUSE_END, tail[new.end():]))
 
 
-def _parallel(x_words: list, y_words: list) -> bool:
+def _parallel(n: Neighbourhood) -> bool:
     """X and Y are the same kind of value: both numbers, both weekdays,
     both months, or they share a content word ("two engineers … three
     engineers")."""
-    from .validation import FUNCTION_WORDS, FILLERS, _TECH_TOKEN_RE
+    x_words, y_words = list(n.old_words), list(n.new_words)
     if not x_words or not y_words:
         return False
     # Repeated predicative frame: ``as suspect, actually, as fine``.
     # The old complement is one value, optionally with an article; an
     # extra clause such as ``as suspect and notify Mira`` is not a value.
-    if x_words[0] == y_words[0] == "as":
+    if n.frame == "as" and n.closed:
         old = x_words[1:]
         new = y_words[1:]
         if old[:1] and old[0] in {"a", "an", "the"}:
@@ -519,40 +516,46 @@ def _parallel(x_words: list, y_words: list) -> bool:
         return (len(old) == 1 and bool(new)
                 and old[0] not in FUNCTION_WORDS and old[0] not in FILLERS
                 and new[0] not in FUNCTION_WORDS and new[0] not in FILLERS)
-    if x_words[0] == y_words[0] and x_words[0] in _REPEATED_PREPOSITIONS:
+    # A repeated "every" stays a shared word: in "every month, no every
+    # quarter" it is the evidence that both values are frequencies.
+    if n.frame in FRAME_PREPOSITIONS:
         x_words, y_words = x_words[1:], y_words[1:]
         if not x_words or not y_words:
             return False
     x, y = x_words[-1], y_words[0]
-    if _TECH_TOKEN_RE.fullmatch(x) and _TECH_TOKEN_RE.fullmatch(y):
+    if TECH_TOKEN_RE.fullmatch(x) and TECH_TOKEN_RE.fullmatch(y) and n.closed:
         return all(w in FUNCTION_WORDS or w in FILLERS for w in x_words[:-1])
+    # "on the 12th, no, the 14th": the replacement may repeat the article
+    # that stands before the old value, outside the deletion.
+    if y in _ARTICLES and len(y_words) > 1:
+        y = y_words[1]
     for cls in (_WEEKDAYS, _MONTHS):
         if x in cls and y in cls:
             return True
-    if _is_value_word(x) and _is_value_word(y):
+    # A digit inside an identifier (``worker_1``) is part of a name, not a
+    # quantity; identifiers qualify only through the closed branch above.
+    if (_is_value_word(x) and _is_value_word(y)
+            and not IDENTIFIER_TOKEN_RE.fullmatch(x)
+            and not IDENTIFIER_TOKEN_RE.fullmatch(y)):
         return True
     return bool({w for w in x_words if w not in FUNCTION_WORDS}
                 & set(y_words))
 
 
-def _evidence_reason(window_text: str, span: tuple) -> str | None:
+def _evidence_reason(n: Neighbourhood) -> str | None:
     """Original-source evidence that the deletion is a self-correction:
     it stays inside one sentence, removes an outdated value X with
     content, and a replacement Y with content follows the marker in the
     same sentence. None when the evidence holds, else the reason."""
-    s, e = span
+    window_text, s, ms, e = n.text, n.start, n.marker, n.end
     if re.search(r"[.!?](\s|$)", window_text[s:e].rstrip(".!? ")):
         return "crosses_sentence"
-    ms = correction_marker_start(window_text, span)
     if not _has_content(window_text[s:ms]):
         return "no_outdated_value"
-    tail = window_text[e:]
-    m = re.search(r"[.!?](?:\s|$)|\n", tail)
-    tokens = lambda t: [w for token in t.split() if (w := token.lower().strip(",;:"))]
-    after = tokens(tail[:m.start()] if m else tail)[:4]
+    after = n.new_words
     marker = window_text[ms:e].lower()
     if marker == "i mean actually":
-        restart, reason = repeated_restart(window_text, span, ms)
+        restart, reason = repeated_restart(window_text, (s, e), ms)
         if reason or restart is not None:
             return reason
     if marker in {"i mean", "i mean actually"} and after and \
@@ -560,10 +563,8 @@ def _evidence_reason(window_text: str, span: tuple) -> str | None:
         return "emphasis_not_correction"
     if not _has_content(" ".join(after)):
         return "no_replacement"
-    from .validation import FUNCTION_WORDS, FILLERS
-    before_words = tokens(window_text[s:ms])
-    after_words = after
-    replacement = next((w for w in after_words
+    before_words = n.old_words
+    replacement = next((w for w in after
                         if w not in FUNCTION_WORDS and w not in FILLERS), "")
     for values in (_WEEKDAYS, _MONTHS):
         if before_words[-1] in values and replacement in values and any(
@@ -571,10 +572,30 @@ def _evidence_reason(window_text: str, span: tuple) -> str | None:
                 for w in before_words[:-1]):
             return "overbroad_calendar_value"
     if marker in _SINGLE_WORD_MARKERS:
-        if not (_parallel(before_words, after_words)
-                or _parallel_metric_lengths(window_text, span, ms)):
+        if (not (_parallel(n) or _parallel_metric_lengths(n))
+                or _replacement_opens_predicate(n)):
             return "not_parallel"
     return None
+
+
+# "am" is left out: it follows only "I", and "9 am" is a time.
+_PREDICATE_AUXILIARIES = FINITE_AUXILIARIES - {"am"}
+
+
+def _replacement_opens_predicate(n: Neighbourhood) -> bool:
+    """``Monday, no Tuesday is a holiday`` begins a new clause.
+
+    An auxiliary right after the replacement value (or after a number and
+    its noun) makes that value a new subject, so deleting the old value
+    would attach the clause to the old frame and drop a bare "no".
+    """
+    clause = re.split(r"[,;.!?\n]", n.text[n.end:].lstrip(" \t,;:"), maxsplit=1)[0]
+    words = [w.lower() for w in clause.split()]
+    words = words[1:4] if words[:1] and words[0] in _ARTICLES else words[:3]
+    if words[1:2] and words[1] in _PREDICATE_AUXILIARIES:
+        return True
+    return (len(words) == 3 and _is_value_word(words[0])
+            and words[1] not in FUNCTION_WORDS and words[2] in _PREDICATE_AUXILIARIES)
 
 
 def _include_repeated_frame(text: str, span: tuple, cursor: int) -> tuple:
@@ -585,7 +606,9 @@ def _include_repeated_frame(text: str, span: tuple, cursor: int) -> tuple:
     unrelated function words and clauses remain required source content.
     """
     start, end = span
-    prefix = re.search(r"\b(as|at|by|for|from|in|of|on|to|with|every)[ \t]+$",
+    # \Z, not $: a frame word at the end of the previous line is not this
+    # value's frame.
+    prefix = re.search(rf"\b({alternation(FRAME_WORDS)})[ \t]+\Z",
                        text[:start], re.IGNORECASE)
     if prefix is None or prefix.start() < cursor:
         return span
@@ -595,10 +618,10 @@ def _include_repeated_frame(text: str, span: tuple, cursor: int) -> tuple:
         # heads repeat it. Do not treat "every" as a general stutter or
         # accept a changed unit, qualifier, or nonnumeric complement.
         quantity = re.fullmatch(
-            r"(?P<count>[1-9]\d*(?:\.\d+)?)[ \t]+(?P<unit>[^\W\d_]+)",
+            rf"(?P<count>{POSITIVE_NUMBER})[ \t]+(?P<unit>[^\W\d_]+)",
             text[start:marker].strip(" \t,;:"), re.UNICODE)
         if quantity is not None and re.match(
-                r"[ \t,;:]*every[ \t]+[1-9]\d*(?:\.\d+)?[ \t]+"
+                rf"[ \t,;:]*every[ \t]+{POSITIVE_NUMBER}[ \t]+"
                 + re.escape(quantity.group("unit")) + r"(?![\w-])",
                 text[end:], re.IGNORECASE):
             return prefix.start(), end
@@ -607,18 +630,20 @@ def _include_repeated_frame(text: str, span: tuple, cursor: int) -> tuple:
     if not (len(old) == 1 or (len(old) == 2 and
             (old[0] in {"a", "an", "the"} or _is_value_word(old[0])))):
         return span
-    frame = prefix.group(1).lower()
-    tail = re.match(r"[ \t,;:]*" + frame + r"[ \t]+([^.!?\n]+)",
-                    text[end:], re.IGNORECASE)
-    if tail is None:
+    n = neighbourhood(text, (prefix.start(), end), marker)
+    if n.frame != prefix.group(1).lower():
         return span
-    new = [w.lower().strip(",;:") for w in tail.group(1).split()][:3]
-    if (_parallel([frame, *old], [frame, *new]) or
+    new = n.new_words[1:]
+    if (_parallel(n) or
             (text[marker:end].lower() not in _SINGLE_WORD_MARKERS
              and len(old) == 1 and _has_content(old[0])
              and new and _has_content(new[0]))):
         return prefix.start(), end
     return span
+
+
+def _failures(report: ValidationReport) -> set:
+    return {c.name for c in report.critical_failures}
 
 
 def _restore_source_word_boundary(source: str, output: str,
@@ -668,23 +693,30 @@ def _recover_fused_proposal(source: str, delete: str) -> str | None:
     return _split_unique_source_word(source, delete, missing[0])
 
 
+def _fraction_shaped(delete: str) -> bool:
+    """The proposal is a complete fraction head followed by its marker."""
+    marker = SPAN_ENDS_WITH_MARKER_RE.search(delete)
+    return bool(marker and FRACTION_HEAD.fullmatch(delete[:marker.start()].rstrip(" \t,;:")))
+
+
 def parse_correction_output(output: str, window_text: str,
                             protected_spans: list,
                             limit_hit: bool = False) -> tuple[list, list]:
-    """Parse V1-format correction lines into accepted (span, text) and
-    rejected proposals with reasons. Guards: a batch cut off by the
+    """Parse V1-format correction lines into AdmittedCorrection records
+    and rejected proposals with reasons. Guards: a batch cut off by the
     output limit is never applied (``batch_truncated``); each line is
     marker-terminated, short and never bare; a deletion whose text occurs
     more often in the window than it was proposed is ambiguous and
     rejected rather than resolved to the first match; and the deletion
     must carry original-source evidence (``_evidence_reason``).
     Resolution is sequential in-order, so duplicate proposals delete in
-    spoken order."""
-    accepted: list[tuple[tuple[int, int], str]] = []
+    spoken order. Each record carries the marker, restart and qualifier
+    move proved here, so no later step re-derives admission."""
+    accepted: list[AdmittedCorrection] = []
     rejected: list[CorrectionProposal] = []
     lines = [ln.strip().strip('"').strip() for ln in output.splitlines()]
     lines = [d for d in lines
-             if d and d.upper() != "NONE" and len(d) <= 80]
+             if d and d.upper() != "NONE" and len(d) <= SPAN_MAX_CHARS]
     if limit_hit:
         return [], [CorrectionProposal(None, False, "batch_truncated")
                     for _ in lines]
@@ -710,7 +742,9 @@ def parse_correction_output(output: str, window_text: str,
         if delete.lower() in BARE_MARKERS:
             rejected.append(CorrectionProposal(None, False, "bare_marker"))
             continue
-        if len(delete.split()) > SPAN_MAX_WORDS:
+        over_cap = len(delete.split()) > SPAN_MAX_WORDS
+        if over_cap and not (len(delete.split()) <= FRACTION_SPAN_MAX_WORDS
+                             and _fraction_shaped(delete)):
             rejected.append(CorrectionProposal(None, False, "span_too_long"))
             continue
         occ = occurrences(delete)
@@ -736,7 +770,7 @@ def parse_correction_output(output: str, window_text: str,
             continue
         if recovered is not None:
             delete = window_text[cand.start():cand.end()]
-            if len(delete) > 80 or len(delete.split()) > SPAN_MAX_WORDS:
+            if len(delete) > SPAN_MAX_CHARS or len(delete.split()) > SPAN_MAX_WORDS:
                 rejected.append(CorrectionProposal(
                     (cand.start(), cand.end()), False, "span_too_long"))
                 continue
@@ -750,18 +784,21 @@ def parse_correction_output(output: str, window_text: str,
             rejected.append(CorrectionProposal(span, False,
                                                "protected_span"))
             continue
-        reason = _evidence_reason(window_text, span)
+        marker = correction_marker_start(window_text, span)
+        shape = neighbourhood(window_text, span, marker)
+        if over_cap and not fraction_binds(shape):
+            rejected.append(CorrectionProposal(span, False, "span_too_long"))
+            continue
+        reason = _evidence_reason(shape)
         if reason:
             rejected.append(CorrectionProposal(span, False, reason))
             continue
-        restart, _reason = repeated_restart(
-            window_text, span, correction_marker_start(window_text, span))
+        restart, _reason = repeated_restart(window_text, span, marker)
         if restart is not None and any(
                 a < restart[1] and b > restart[0] for a, b, *_ in protected_spans):
             rejected.append(CorrectionProposal(span, False, "protected_restart"))
             continue
-        move, reason = qualifier_retention(
-            window_text, span, correction_marker_start(window_text, span))
+        move, reason = qualifier_retention(shape)
         if move is not None and any(a < move[2] < b
                                     for a, b, *_ in protected_spans):
             reason = "protected_retention_anchor"
@@ -769,23 +806,21 @@ def parse_correction_output(output: str, window_text: str,
             rejected.append(CorrectionProposal(span, False, reason))
             continue
         taken.append((span[0], restart[1] if restart else span[1]))
-        accepted.append((span, delete))
+        accepted.append(AdmittedCorrection(span, delete, marker, restart, move))
         cursor = taken[-1][1]
         if len(accepted) >= 6:        # V1's applied cap
             break
     # A replacement that is itself corrected needs a different edit plan;
     # never move its retained qualifier inside another admitted deletion.
     retained = []
-    for span, delete in accepted:
-        move, _ = qualifier_retention(
-            window_text, span, correction_marker_start(window_text, span))
-        if move is not None and any(
-                a < move[2] and b > span[1]
-                for (a, b), _d in accepted if (a, b) != span):
+    for correction in accepted:
+        if correction.move is not None and any(
+                other.span[0] < correction.move[2] and other.span[1] > correction.span[1]
+                for other in accepted if other is not correction):
             rejected.append(CorrectionProposal(
-                span, False, "overlapping_retention_replacement"))
+                correction.span, False, "overlapping_retention_replacement"))
         else:
-            retained.append((span, delete))
+            retained.append(correction)
     return retained, rejected
 
 
@@ -798,16 +833,15 @@ def _has_correction_marker(text: str) -> bool:
     for marker in re.finditer(r"\b(?:sorry|no)\b", text, re.IGNORECASE):
         preceding = list(re.finditer(r"\S+", text[:marker.start()]))
         for word in reversed(preceding[-(SPAN_MAX_WORDS - 1):]):
-            if _evidence_reason(text, (word.start(), marker.end())) is None:
+            span = (word.start(), marker.end())
+            if _evidence_reason(neighbourhood(
+                    text, span, correction_marker_start(text, span))) is None:
                 return True
     return False
 
 
-def apply_corrections(window_text: str,
-                      accepted: list[tuple[tuple[int, int], str]]) -> str:
-    spans = [(s, e, correction_marker_start(window_text, (s, e)))
-             for (s, e), _delete in accepted]
-    out, spans, _protected = correction_view(window_text, spans)
+def apply_corrections(window_text: str, accepted: list[AdmittedCorrection]) -> str:
+    out, spans, _protected = correction_view(window_text, accepted)
     for s, e, _marker in sorted(spans, reverse=True):
         out = out[:s] + out[e:]
     return re.sub(r"[ \t]{2,}", " ", out).strip()
@@ -825,7 +859,7 @@ class WindowResult:
     text: str
     validation: ValidationReport | None = None
     continues_list: bool = False
-    # Accepted correction deletions [(s, e, marker_start)], window-local.
+    # Accepted correction deletions (AdmittedCorrection), window-local.
     corrections: list = field(default_factory=list)
     children: list = field(default_factory=list)   # split-retry halves
     pass_id: str | None = None
@@ -1022,7 +1056,7 @@ class CleanupEngine:
                           payload_base: dict, observations: list,
                           depth: int, parent_pass_id: str | None):
         """Provisional correction deletions: returns (corrected text,
-        accepted spans [(s, e, marker_start)], record). Nothing here is
+        AdmittedCorrection records, record). Nothing here is
         final — the window's validation against the ORIGINAL text
         settles each proposal as selected or rolled back."""
         text = window.text
@@ -1038,8 +1072,6 @@ class CleanupEngine:
         accepted, rejected = parse_correction_output(
             res.get("text", ""), text, protected, limit_hit=truncated)
         corrected = apply_corrections(text, accepted)
-        spans = [(s, e, correction_marker_start(text, (s, e)))
-                 for (s, e), _d in accepted]
         record = {
             "kind": "corrections_applied",
             "pass_id": rec["pass_id"],
@@ -1050,26 +1082,23 @@ class CleanupEngine:
             "rejected_count": len(rejected),
             "rejected_reasons": sorted({r.reason for r in rejected}),
             "proposals": [
-                {"span": [s, e], "marker_start": m, "delete": d,
+                {"span": list(c.span), "marker_start": c.marker, "delete": c.delete,
                  "status": "provisional"}
-                for (s, e, m), (_sp, d) in zip(spans, accepted)] + [
+                for c in accepted] + [
                 {"span": list(r.span) if r.span else None,
                  "status": "rejected", "reason": r.reason}
                 for r in rejected],
         }
-        moves = retention_moves(text, spans)
-        if moves:
+        if any(c.move for c in accepted):
             record["retained_qualifiers"] = [
-                {"span": [s, e], "after": destination}
-                for s, e, destination in moves]
-        restarts = [(repeated_restart(text, (s, e), m)[0], (s, e))
-                    for s, e, m in spans]
-        if any(restart for restart, _span in restarts):
+                {"span": [c.move[0], c.move[1]], "after": c.move[2]}
+                for c in accepted if c.move]
+        if any(c.restart for c in accepted):
             record["repeated_restarts"] = [
-                {"span": list(restart), "correction_span": list(span)}
-                for restart, span in restarts if restart]
+                {"span": list(c.restart), "correction_span": list(c.span)}
+                for c in accepted if c.restart]
         observations.append(record)
-        return corrected, spans, record
+        return corrected, accepted, record
 
     # ---- one window ------------------------------------------------------
 
@@ -1155,8 +1184,11 @@ class CleanupEngine:
                         sep.join(c.text.strip() for c in kids
                                  if c.text.strip()),
                         continue_from=list_continue)
-                    corr = [(s + a, e + a, m + a) for a, c in children
-                            for s, e, m in c.corrections]
+                    # Each half admitted its corrections against its own
+                    # text; rebase those records rather than re-deriving
+                    # admission against the parent text.
+                    corr = [c.shifted(a) for a, child in children
+                            for c in child.corrections]
                     assembly_text, assembly_corr, assembly_positions = correction_view(
                         window.text, corr, protected_positions)
                     # The assembly is itself a candidate for the whole
@@ -1221,76 +1253,73 @@ class CleanupEngine:
         # validated as it will render: numbering is applied first, so no
         # digit the validator bound to a source value changes afterwards.
         out = dn.renumber_text(out, continue_from=list_continue)
-        report = validate(
-            validation_text, out,
-            protected=protected_texts,
-            vocabulary_pairs=vocabulary_pairs,
-            continued_list_start=list_continue,
-            correction_spans=validation_corr,
-            protected_positions=validation_positions)
-        salvaged = 0
-        scope_repaired = False
-        boundary_repaired = False
-        fixed = _restore_source_word_boundary(validation_text, out, report)
-        if fixed is not None:
-            again = validate(
-                validation_text, fixed, protected=protected_texts,
-                vocabulary_pairs=vocabulary_pairs,
-                continued_list_start=list_continue, correction_spans=validation_corr,
-                protected_positions=validation_positions)
-            if again.accepted:
-                out, report, boundary_repaired = fixed, again, True
-        if [c.name for c in report.critical_failures] == ["clause_scope"]:
-            fixed = restore_restriction_punctuation(
-                validation_text, out, vocabulary_pairs=vocabulary_pairs,
-                continued_list_start=list_continue, correction_spans=validation_corr,
-                protected_positions=validation_positions)
-            if fixed is not None:
-                again = validate(
-                    validation_text, fixed, protected=protected_texts,
-                    vocabulary_pairs=vocabulary_pairs,
-                    continued_list_start=list_continue, correction_spans=validation_corr,
-                    protected_positions=validation_positions)
-                if again.accepted:
-                    out, report, scope_repaired = fixed, again, True
-        if [c.name for c in report.critical_failures] == ["coverage"]:
-            # Deletions are the only problem: put exactly those source
-            # words back and validate the repaired text in full. Added
-            # words, changed numbers or lost negations never reach here.
-            fixed = restore_missing_words(
-                validation_text, out, vocabulary_pairs=vocabulary_pairs,
-                continued_list_start=list_continue,
-                correction_spans=validation_corr,
-                protected_positions=validation_positions)
-            if fixed is not None and fixed[1] <= min(
-                    SALVAGE_MAX_WORDS,
-                    SALVAGE_MAX_SHARE * len(window.text.split())):
-                again = validate(
-                    validation_text, fixed[0],
-                    protected=protected_texts,
+        reports = {}
+
+        def check(candidate):
+            if candidate not in reports:
+                reports[candidate] = validate(
+                    validation_text, candidate, protected=protected_texts,
                     vocabulary_pairs=vocabulary_pairs,
                     continued_list_start=list_continue,
                     correction_spans=validation_corr,
                     protected_positions=validation_positions)
-                repaired = fixed[0]
-                restored_scope = False
-                if [c.name for c in again.critical_failures] == ["clause_scope"]:
-                    attached = restore_restriction_punctuation(
-                        validation_text, repaired, vocabulary_pairs=vocabulary_pairs,
-                        continued_list_start=list_continue,
-                        correction_spans=validation_corr,
-                        protected_positions=validation_positions)
-                    if attached is not None:
-                        again = validate(
-                            validation_text, attached, protected=protected_texts,
-                            vocabulary_pairs=vocabulary_pairs,
-                            continued_list_start=list_continue,
-                            correction_spans=validation_corr,
-                            protected_positions=validation_positions)
-                        repaired, restored_scope = attached, again.accepted
-                if again.accepted:
-                    out, report, salvaged = repaired, again, fixed[1]
-                    scope_repaired = restored_scope
+            return reports[candidate]
+
+        context = dict(vocabulary_pairs=vocabulary_pairs,
+                       continued_list_start=list_continue,
+                       correction_spans=validation_corr,
+                       protected_positions=validation_positions)
+
+        def word_boundary(candidate, found):
+            fixed = _restore_source_word_boundary(validation_text, candidate, found)
+            return None if fixed is None else (fixed, {"source_word_boundary_restored": True})
+
+        def restriction_scope(candidate, found):
+            if _failures(found) != {"clause_scope"}:
+                return None
+            fixed = restore_restriction_punctuation(validation_text, candidate, **context)
+            return None if fixed is None else (fixed, {"restriction_punctuation_restored": True})
+
+        def missing_words(candidate, found):
+            # Deletions are the only problem: put exactly those source
+            # words back. Added words, changed numbers or lost negations
+            # never reach here.
+            if _failures(found) != {"coverage"}:
+                return None
+            fixed = restore_missing_words(validation_text, candidate, **context)
+            if fixed is None or fixed[1] > min(
+                    SALVAGE_MAX_WORDS, SALVAGE_MAX_SHARE * len(window.text.split())):
+                return None
+            repaired, note = fixed[0], {"salvaged_words": fixed[1]}
+            # A restored word can sit beside a new break that now detaches
+            # a restriction; reattaching it belongs to the same repair.
+            if _failures(check(repaired)) == {"clause_scope"}:
+                attached = restore_restriction_punctuation(validation_text, repaired, **context)
+                if attached is not None:
+                    repaired = attached
+                    note["restriction_punctuation_restored"] = True
+            return repaired, note
+
+        # Each step must remove failures without adding any, and every
+        # step's result is validated in full. A candidate the repairs
+        # cannot make valid is judged as the model wrote it.
+        report = check(out)
+        candidate, found, notes = out, report, {}
+        for _step in range(SALVAGE_MAX_STEPS):
+            if found.accepted:
+                break
+            for repair in (word_boundary, restriction_scope, missing_words):
+                step = repair(candidate, found)
+                if step is not None and _failures(check(step[0])) < _failures(found):
+                    candidate, found = step[0], check(step[0])
+                    notes.update(step[1])
+                    break
+            else:
+                break
+        if found.accepted:
+            out, report = candidate, found
+        else:
+            notes = {}
         status = "selected" if report.accepted else "rejected"
         rec["accepted"], rec["status"] = report.accepted, status
         _settle(corr_record, "selected" if report.accepted
@@ -1309,12 +1338,7 @@ class CleanupEngine:
         }
         if validation_text != window.text:
             decision["validation_source"] = validation_text
-        if salvaged:
-            decision["salvaged_words"] = salvaged
-        if scope_repaired:
-            decision["restriction_punctuation_restored"] = True
-        if boundary_repaired:
-            decision["source_word_boundary_restored"] = True
+        decision.update(notes)
         observations.append(decision)
         records = [rec, decision] + ([corr_record] if corr_record else [])
         if report.accepted:
