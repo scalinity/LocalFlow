@@ -53,10 +53,12 @@ class BuildTests(unittest.TestCase):
             self.assertEqual([c['pair_id'] for c in read_jsonl(root / 'default' / 'train_captures.jsonl')], ['exact'])
             self.assertEqual(freeze['stats']['train']['captured'], 1)
             self.assertEqual(freeze['stats']['train']['engine_vetoed_by_focus'], {'restatement': 1})
+            self.assertEqual(freeze['mode'], 'exact')
             self.assertNotIn('supervision', freeze)
             self.assertNotIn('partially_supervised_by_focus', freeze['stats']['train'])
 
             freeze, _ = self.build(root, root / 'consistent', consistent=True)
+            self.assertEqual(freeze['mode'], 'consistent')
             captures = read_jsonl(root / 'consistent' / 'train_captures.jsonl')
             self.assertEqual([(c['pair_id'], [k['role'] for k in c['calls']]) for c in captures],
                              [('exact', ['corrections', 'main']), ('vetoed', ['corrections'])])

@@ -170,9 +170,11 @@ def build(dataset=DATASET, consistent=False):
     from .refinement import SOURCE_FILES
     from .training import checked_dataset
     dataset = Path(dataset)
+    mode = "consistent" if consistent else "exact"
     if (dataset / "freeze.json").exists():
         freeze = read_json(dataset / "freeze.json")
-        if consistent != ("supervision" in freeze):
+        # A freeze written before the mode was recorded is an exact build.
+        if freeze.get("mode", "exact") != mode:
             raise RuntimeError(f"{dataset} is frozen with the other supervision mode")
         return freeze
     if (dataset / "train.jsonl").exists():
@@ -224,7 +226,7 @@ def build(dataset=DATASET, consistent=False):
                    "oracle_exact": dict(oracle), "engine_vetoed_by_focus": dict(vetoed)}
     if consistent:
         train_stats.update(partially_supervised_by_focus=dict(partial), vetoed_row_calls=dict(vetoed_calls))
-    freeze = {"created": utc_now(),
+    freeze = {"created": utc_now(), "mode": mode,
               "files": {p.name: file_sha256(p) for p in sorted(dataset.glob("*.jsonl"))},
               "capture_source_hashes": source_hashes, "validation_capture_source_hashes": source_hashes,
               "stats": {"collect": summary,
