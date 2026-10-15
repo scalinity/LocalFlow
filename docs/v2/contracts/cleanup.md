@@ -156,7 +156,7 @@ admission. Shared word classes and the number and unit grammar live in
 | a proposal batch cut off by the output limit applies nothing | `batch_truncated` |
 | the span ends with a marker (on a word boundary) | `no_marker_ending` |
 | not a bare marker | `bare_marker` |
-| ≤ 6 words (`SPAN_MAX_WORDS`); one quantity with its detail (a fraction head is one) may reach 10 words (`BOUND_SPAN_MAX_WORDS`) when retention binds it against a replacement that repeats its unit, and any old value may run longer when the replacement restates it (**Restatements**). A line over 80 characters (`SPAN_MAX_CHARS`) needs the same restatement, and a line over 160 (`RESTATED_SPAN_MAX_CHARS`) is rejected without being read | `span_too_long` |
+| ≤ 6 words (`SPAN_MAX_WORDS`); one quantity with its detail (a fraction head is one) may reach 10 words (`BOUND_SPAN_MAX_WORDS`) when retention binds it against a replacement that repeats its unit, and any old value may run longer when the replacement restates it (**Restatements**). A line over 80 characters (`SPAN_MAX_CHARS`) needs the same restatement, a line over 160 (`RESTATED_SPAN_MAX_CHARS`) is rejected without being read, and no deletion, a repeated word taken in with it included, exceeds 160 | `span_too_long` |
 | the text occurs in the window no more often than it was proposed — never resolved to a first match | `ambiguous_occurrence` |
 | resolvable at/after the cursor | `offsets_unresolved` |
 | no overlap with a protected span | `protected_span` |

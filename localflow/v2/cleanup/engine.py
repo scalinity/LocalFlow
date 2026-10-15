@@ -60,8 +60,8 @@ SALVAGE_MAX_STEPS = 4
 SPAN_MAX_WORDS = 6
 BOUND_SPAN_MAX_WORDS = 10
 # A proposal line longer than this needs a restatement to prove it, and
-# no line may run past the second limit (restated sentences in the TRAIN
-# labels reach 149 characters).
+# no deletion may run past the second limit (restated sentences in the
+# TRAIN labels reach 149 characters).
 SPAN_MAX_CHARS = 80
 RESTATED_SPAN_MAX_CHARS = 160
 # At most this many corrections apply per window (V1's applied cap).
@@ -1003,6 +1003,10 @@ def parse_correction_output(output: str, window_text: str,
         if span[0] != cand.start():
             delete = window_text[span[0]:span[1]]
             proof = _span_proof(delete)
+            # The bound holds for what is deleted, not only for the line.
+            if len(delete) > RESTATED_SPAN_MAX_CHARS:
+                rejected.append(CorrectionProposal(span, False, "span_too_long", delete=delete))
+                continue
         marker = correction_marker_start(window_text, span)
         shape = neighbourhood(window_text, span, marker)
         # A longer span needs proof of its extent: the replacement restates

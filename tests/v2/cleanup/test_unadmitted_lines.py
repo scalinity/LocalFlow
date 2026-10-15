@@ -54,6 +54,24 @@ class UnadmittedLineTests(unittest.TestCase):
         self.assertEqual([r.reason for r in parse_correction_output(long_line, long_source, [])[1]],
                          ["span_too_long"])
 
+    def test_the_character_bound_holds_for_the_deletion(self):
+        # The repeated "after" goes with the old value, so the deletion is
+        # six characters longer than the line.
+        detail = ("minutes of quiet rest on the padded bench in the north room with the lights "
+                  "dimmed and the window shut and the fan on low for the whole")
+        for extra, admitted in ((" session", True), (" long session", False)):
+            with self.subTest(extra=extra):
+                line = f"10 {detail}{extra}, no"
+                source = f"Measure it after {line} after 15 {detail}{extra}, then log it."
+                accepted, rejected = parse_correction_output(line, source, [])
+                if admitted:
+                    self.assertEqual([len(c.delete) for c in accepted], [len(line) + 6])
+                    self.assertLessEqual(len(line) + 6, 160)
+                else:
+                    self.assertLessEqual(len(line), 160)
+                    self.assertEqual([(r.reason, len(r.delete)) for r in rejected],
+                                     [("span_too_long", len(line) + 6)])
+
     def test_a_line_over_the_character_limit_is_rejected_not_dropped(self):
         source = ("Bring the long blue outdoor extension cord from the storage room on the second "
                   "floor, sorry, the short one.")
