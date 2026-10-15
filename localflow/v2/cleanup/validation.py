@@ -25,8 +25,8 @@ from collections import Counter
 from dataclasses import dataclass, field, replace
 from decimal import Decimal, InvalidOperation
 
-from .lexicon import (FILLERS, FINITE_AUXILIARIES, FUNCTION_WORDS, NEGATION_WORDS,
-                      SUBORDINATORS,
+from .lexicon import (CLAUSE_END, CORRECTION_MARKERS, FILLERS, FINITE_AUXILIARIES,
+                      FUNCTION_WORDS, NEGATION_WORDS, NUMBER, SUBORDINATORS, alternation,
                       IDENTIFIER_TOKEN_RE as _IDENTIFIER_TOKEN_RE,
                       NUMBER_WORDS as _NUMBERS, QUOTED_RE as _QUOTED_RE,
                       SCALE_WORDS as _SCALES, TECH_TOKEN_RE as _TECH_TOKEN_RE,
@@ -1298,6 +1298,76 @@ def _incomplete_restart_spans(source: str, output: str, ctx) -> list:
     return spans
 
 
+_MARKER_RE = re.compile(rf"(?<!\w)(?:{alternation(CORRECTION_MARKERS)})(?!\w)", re.IGNORECASE)
+_RESTATED_MAX_WORDS = 12
+
+
+def _restated_value_spans(source: str, output: str, ctx) -> list:
+    """Corrections the output resolved by keeping an exact restatement.
+
+    In "assign 4 rooms with extra linen to Marta. Sorry, 6 rooms with extra
+    linen to Marta." every word around the number repeats after the marker,
+    so the first copy differs only by its outdated value. Up to three
+    repeated words may lead the number and at least two must follow it,
+    both copies stay inside one sentence, the restated copy ends its
+    clause, and the output must have dropped the first copy and the
+    marker. Returns correction triples ``(start, end, marker_start)``; the
+    restated words and the new number remain required.
+    """
+    tokens = [(m.start(), m.end(), m.group().strip(".,;:!?").lower())
+              for m in re.finditer(r"\S+", source)]
+    starts = {t[0]: i for i, t in enumerate(tokens)}
+    words = [t[2] for t in tokens]
+    number = re.compile(NUMBER)
+    quoted = quoted_regions(source)
+    candidates = []
+    for marker in _MARKER_RE.finditer(source):
+        first = starts.get(marker.start())
+        if first is None:
+            continue
+        last = next(i for i in range(first, len(tokens)) if tokens[i][1] >= marker.end())
+        after = words[last + 1:last + 1 + _RESTATED_MAX_WORDS]
+        lead = next((j for j, w in enumerate(after[:4]) if number.fullmatch(w)), None)
+        if lead is None:
+            continue
+        for tail in range(len(after) - lead - 1, 1, -1):
+            old = first - lead - 1 - tail
+            value = first - tail - 1
+            if (old < 0 or not number.fullmatch(words[value])
+                    or words[value] == after[lead]
+                    or words[old:value] != after[:lead]
+                    or words[value + 1:first] != after[lead + 1:lead + 1 + tail]):
+                continue
+            start = tokens[old][0]
+            restated = tokens[last + 1 + lead + tail]
+            core_end = restated[0] + len(source[restated[0]:restated[1]].rstrip(".,;:!?"))
+            if (not re.search(r"[.!?](?:\s|$)|\n", source[start:tokens[first - 1][0]])
+                    and not re.search(r"[.!?](?:\s|$)|\n", source[marker.end():core_end])
+                    and re.match(CLAUSE_END, source[core_end:])
+                    and not _touches(quoted, start, core_end)
+                    and not _overlaps(ctx.protected_positions + ctx.correction_spans,
+                                      start, core_end)):
+                candidates.append((start, marker.end(), marker.start(), core_end))
+            break
+    if not candidates:
+        return []
+    # Both copies hold the same words, so the alignment may bind the
+    # output's single copy to either one: one copy and the marker missing.
+    atoms = [a[0] for a in _word_atoms(source)]
+    missing = {m[0] for m in _align(source, output, ctx)[0]}
+    spans = []
+    for start, end, marker_start, core_end in candidates:
+        first_copy = [a for a in atoms if start <= a < end]
+        both = [a for a in atoms if start <= a < core_end]
+        if not first_copy or len(missing.intersection(both)) != len(first_copy):
+            continue
+        trial = replace(ctx, correction_spans=ctx.correction_spans + [(start, end, marker_start)])
+        if {m[0] for m in _align(source, output, trial)[0]}.intersection(both):
+            continue
+        spans.append((start, end, marker_start))
+    return spans
+
+
 def _auth_context(source, output, vocabulary_pairs, continued_list_start,
                   correction_spans, protected_positions) -> "_AuthCtx":
     pairs = tuple(vocabulary_pairs or ())
@@ -1318,6 +1388,7 @@ def _auth_context(source, output, vocabulary_pairs, continued_list_start,
                     enum_spans=enum_spans,
                     vocab_spans=vocab_spans, vocab_allowance=allowance,
                     continued_list_start=continued_list_start)
+    ctx.correction_spans += _restated_value_spans(source, output, ctx)
     ctx.restart_spans = _incomplete_restart_spans(source, output, ctx)
     return ctx
 
