@@ -160,7 +160,7 @@ admission. Shared word classes and the number and unit grammar live in
 | the outdated value X (before the marker) has a content word | `no_outdated_value` |
 | a replacement Y with a content word follows the marker in the same sentence | `no_replacement` |
 | `i mean it/that/this` is emphasis | `emphasis_not_correction` |
-| through a single-word marker (`actually`, `sorry`, `no` — also ordinary words), X and Y are visibly parallel: both numbers, both weekdays, both months, sharing a content word, closed numeric metric-length values, a repeated `as` frame with one closed complement, or two closed identifiers; the replacement does not open a new predicate | `not_parallel` |
+| through a marker that is also ordinary speech (`actually`, `sorry`, `no`, `make that`), X and Y are visibly parallel: both numbers, both weekdays, both months, sharing a content word, closed numeric metric-length values, a repeated `as` frame with one closed complement, or two closed identifiers; the replacement does not open a new predicate | `not_parallel` |
 | replacing a weekday/month with another cannot also delete preceding content words (for example, `check Monday no wait Tuesday` may delete `Monday no wait`, but not `check`) | `overbroad_calendar_value` |
 
 **Markers.** The markers are `lexicon.CORRECTION_MARKERS`; a comma may
@@ -181,7 +181,10 @@ noun, makes the value a new subject (`Monday, no Tuesday is a holiday`):
 not parallel. The replacement may repeat the article that stands before
 the old value (`on the 12th, no, the 14th`). A repeated `every` is itself
 the evidence for a frequency correction (`every month, no every
-quarter`).
+quarter`). Through `make that`, the replacement must also end its clause
+within one word more than the old value (`50 microliters, um, make that
+60 microliters.`); `make that change`, `make that bigger` and `make that
+the default` stay prose and do not call the corrections model.
 
 A metric-length pair may change its numeric value and metric prefix when
 both values name meters/metres and the replacement closes its clause.

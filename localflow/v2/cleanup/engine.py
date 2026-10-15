@@ -61,7 +61,7 @@ SPAN_MAX_CHARS = 80
 # Existing direct triggers, including standalone "actually". Ambiguous
 # "no"/"sorry" admission additionally reuses the evidence guards below.
 CORRECTION_MARKER_RE = re.compile(
-    rf"\b({marker_pattern(CORRECTION_MARKERS - {'sorry', 'no', 'i mean actually'})})\b",
+    rf"\b({marker_pattern(CORRECTION_MARKERS - {'sorry', 'no', 'make that', 'i mean actually'})})\b",
     re.IGNORECASE)
 SPAN_ENDS_WITH_MARKER_RE = re.compile(rf"\b({marker_pattern(CORRECTION_MARKERS)})$",
                                       re.IGNORECASE)
@@ -464,10 +464,10 @@ def _has_content(text: str) -> bool:
                for w in re.findall(r"[^\W_]+(?:['’][^\W_]+)*", text))
 
 
-# Single-word markers are also ordinary words ("we actually shipped",
-# "no matter what", "sorry to ask"); a correction through one needs a
-# visibly parallel replacement.
-_SINGLE_WORD_MARKERS = frozenset({"actually", "sorry", "no"})
+# These markers are also ordinary words ("we actually shipped", "no
+# matter what", "sorry to ask", "make that change"); a correction through
+# one needs a visibly parallel replacement.
+_ORDINARY_WORD_MARKERS = frozenset({"actually", "sorry", "no", "make that"})
 _ARTICLES = frozenset({"a", "an", "the"})
 _WEEKDAYS = frozenset({"monday", "tuesday", "wednesday", "thursday",
                        "friday", "saturday", "sunday"})
@@ -572,11 +572,21 @@ def _evidence_reason(n: Neighbourhood) -> str | None:
                 w not in FUNCTION_WORDS and w not in FILLERS
                 for w in before_words[:-1]):
             return "overbroad_calendar_value"
-    if marker in _SINGLE_WORD_MARKERS:
+    if marker in _ORDINARY_WORD_MARKERS:
         if (not (_parallel(n) or _parallel_metric_lengths(n))
-                or _replacement_opens_predicate(n)):
+                or _replacement_opens_predicate(n)
+                or (marker == "make that" and not _replacement_closes_within(
+                    n, len(n.old_words) + 1))):
             return "not_parallel"
     return None
+
+
+def _replacement_closes_within(n: Neighbourhood, words: int) -> bool:
+    """The replacement ends its clause within ``words`` words: "make that
+    60 microliters." replaces a value, "make that 6 trays for the oven
+    and 2 for the fridge" goes on into new content."""
+    return re.match(rf"[ \t,;:]*(?:\S+[ \t]+){{0,{words - 1}}}\S+?{CLAUSE_END}",
+                    n.text[n.end:]) is not None
 
 
 # "am" is left out: it follows only "I", and "9 am" is a time.
@@ -636,7 +646,7 @@ def _include_repeated_frame(text: str, span: tuple, cursor: int) -> tuple:
         return span
     new = n.new_words[1:]
     if (_parallel(n) or
-            (marker_key(text[marker:end]) not in _SINGLE_WORD_MARKERS
+            (marker_key(text[marker:end]) not in _ORDINARY_WORD_MARKERS
              and len(old) == 1 and _has_content(old[0])
              and new and _has_content(new[0]))):
         return prefix.start(), end
@@ -849,7 +859,7 @@ def _has_correction_marker(text: str) -> bool:
     # Admit only shapes an existing single-word evidence guard could
     # accept. This proposes no deletion; model spans still pass every
     # parser/protection guard and the complete candidate validator.
-    for marker in re.finditer(r"\b(?:sorry|no)\b", text, re.IGNORECASE):
+    for marker in re.finditer(r"\b(?:sorry|no|make[ \t]+that)\b", text, re.IGNORECASE):
         preceding = list(re.finditer(r"\S+", text[:marker.start()]))
         for word in reversed(preceding[-(SPAN_MAX_WORDS - 1):]):
             span = (word.start(), marker.end())

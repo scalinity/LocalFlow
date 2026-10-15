@@ -63,7 +63,7 @@ SUBJECT_PRONOUNS = frozenset({"i", "you", "he", "she", "it", "we", "they"})
 CORRECTION_MARKERS = frozenset({
     "no wait", "no sorry", "no actually", "actually no", "wait no", "i mean",
     "i mean actually", "no espera", "espera no", "digo", "scratch", "scratch that",
-    "actually", "sorry", "no"})
+    "make that", "actually", "sorry", "no"})
 
 # Words that open a dependent clause, and the wider set that ends a
 # retained detail or a restated value before the next clause.
