@@ -197,7 +197,6 @@ def plan(wave: str = NAME) -> list[dict]:
 
 # ---------------------------------------------------------------- twin check
 
-FILLERS = {"um", "uh", "erm", "ehm", "hmm", "mhm"}
 ORDINALS = {"first", "second", "third", "fourth", "fifth", "next", "then", "finally"}
 NUMBER_WORDS = {"one", "two", "three", "four", "five", "six", "seven", "eight", "nine", "ten"}
 CONNECTIVES = {"and", "also"}

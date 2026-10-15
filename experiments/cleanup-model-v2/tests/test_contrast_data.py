@@ -130,6 +130,18 @@ class PlanTests(unittest.TestCase):
 
 
 class TwinCheckTests(unittest.TestCase):
+    def test_matching_twins_use_the_shared_filler_policy(self):
+        for filler in ("um", "uh", "erm", "ehm", "hmm", "mhm"):
+            for focus, mention in (("steps", True), ("question", False)):
+                with self.subTest(filler=filler, focus=focus):
+                    pair = twins(focus, mention)
+                    for item in pair:
+                        item["model_input"] = filler + " " + item["model_input"]
+                        target, changes, exclusion = contrast_data.minimal_target(
+                            item["model_input"], item["target"], [])
+                        self.assertEqual((target, changes, exclusion), (item["target"], [], None))
+                    self.assertIsNone(twin_check(focus, mention, *pair))
+
     def test_matching_twins_pass(self):
         for focus, mention in [("steps", True), ("steps", False), ("items", True), ("items", False), ("question", False)]:
             with self.subTest(focus=focus, mention=mention):
