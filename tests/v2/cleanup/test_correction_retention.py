@@ -410,15 +410,16 @@ class CorrectionRetentionTests(unittest.TestCase):
                 self.assertEqual(result.path, "llm")
 
     def test_as_frame_does_not_authorize_an_unrelated_clause_or_emphasis(self):
-        for source, deletion in (
-            ("We actually shipped it.", "We actually"),
+        for source, deletion, reason in (
+            ("We actually shipped it.", "We actually", "no_outdated_value"),
             ("Treat it as suspect and notify Mira, actually, as fine.",
-             "as suspect and notify Mira, actually"),
-            ("Act as guide. Actually, as host.", "as guide. Actually"),
+             "as suspect and notify Mira, actually", "not_parallel"),
+            ("Act as guide. Actually, as host.", "as guide. Actually", "crosses_sentence"),
         ):
             with self.subTest(source=source):
-                accepted, _ = parse_correction_output(deletion, source, [])
-                self.assertFalse(accepted)
+                accepted, rejected = parse_correction_output(deletion, source, [])
+                self.assertEqual(accepted, [])
+                self.assertEqual([r.reason for r in rejected], [reason])
 
     def test_as_frame_replacement_must_close_its_clause(self):
         # Comparative and conditional frames continue past the first word,
@@ -491,11 +492,13 @@ class SourceRepairTests(unittest.TestCase):
                          ("not 7 centimeters", "2 meters")):
             with self.subTest(old=old, new=new):
                 source = f"Use {old}, no {new}."
-                accepted, _ = parse_correction_output(f"{old}, no", source, [])
-                self.assertFalse(accepted)
+                accepted, rejected = parse_correction_output(f"{old}, no", source, [])
+                self.assertEqual(accepted, [])
+                self.assertEqual([r.reason for r in rejected], ["not_parallel"])
         source = "Use 7 centimeters. No 2 meters remain available."
-        accepted, _ = parse_correction_output("7 centimeters. No", source, [])
-        self.assertFalse(accepted)
+        accepted, rejected = parse_correction_output("7 centimeters. No", source, [])
+        self.assertEqual(accepted, [])
+        self.assertEqual([r.reason for r in rejected], ["crosses_sentence"])
 
     def test_untyped_nominal_replacements_remain_ambiguous(self):
         for verb in ("picked", "selected", "use"):
@@ -526,8 +529,9 @@ class SourceRepairTests(unittest.TestCase):
              "the blue notebook, sorry"),
         ):
             with self.subTest(source=source):
-                accepted, _ = parse_correction_output(deletion, source, [])
-                self.assertFalse(accepted)
+                accepted, rejected = parse_correction_output(deletion, source, [])
+                self.assertEqual(accepted, [])
+                self.assertEqual([r.reason for r in rejected], ["not_parallel"])
 
     def test_a_new_finite_clause_cannot_replace_an_unrelated_object(self):
         source = "We picked the blue notebook, sorry, the clerk left."
@@ -555,8 +559,9 @@ class SourceRepairTests(unittest.TestCase):
                          ("by motor", "by pulley handle if ready")):
             with self.subTest(old=old, new=new):
                 source = f"Power the winch {old}, sorry {new}."
-                accepted, _ = parse_correction_output(f"{old}, sorry", source, [])
-                self.assertFalse(accepted)
+                accepted, rejected = parse_correction_output(f"{old}, sorry", source, [])
+                self.assertEqual(accepted, [])
+                self.assertEqual([r.reason for r in rejected], ["not_parallel"])
 
     def test_omitted_as_frame_remains_ambiguous(self):
         source = "Mark the seal as blue, no amber, and record the shade."
@@ -564,8 +569,9 @@ class SourceRepairTests(unittest.TestCase):
         result, _ = clean(source, target, "blue, no")
         self.assertEqual(result.text, source)
         self.assertEqual(result.corrections["applied"], 0)
-        accepted, _ = parse_correction_output("as blue, no", source, [])
-        self.assertFalse(accepted)
+        accepted, rejected = parse_correction_output("as blue, no", source, [])
+        self.assertEqual(accepted, [])
+        self.assertEqual([r.reason for r in rejected], ["not_parallel"])
 
     def test_ordinary_apologies_and_no_phrases_are_not_value_corrections(self):
         for source, deletion, wrong in (
@@ -579,24 +585,27 @@ class SourceRepairTests(unittest.TestCase):
              "The tool worked as doubt."),
         ):
             with self.subTest(source=source):
-                accepted, _ = parse_correction_output(deletion, source, [])
-                self.assertFalse(accepted)
+                accepted, rejected = parse_correction_output(deletion, source, [])
+                self.assertEqual(accepted, [])
+                self.assertEqual([r.reason for r in rejected], ["not_parallel"])
                 result, _ = clean(source, wrong, deletion)
                 self.assertEqual(result.text, source)
                 self.assertEqual(result.corrections["applied"], 0)
 
     def test_predicative_as_rejects_unbounded_or_ambiguous_replacements(self):
-        for source, deletion in (
-            ("Mark the seal blue, no amber.", "blue, no"),
-            ("Mark the seal as blue, no amber remains.", "blue, no"),
-            ("Mark the seal as blue, no dark amber.", "blue, no"),
-            ("Mark the seal as blue, no never.", "blue, no"),
-            ("Mark the seal as blue. No amber.", "blue. No"),
-            ("Mark it as blue, no amber, and mark it as blue, no red.", "blue, no"),
+        for source, deletion, reason in (
+            ("Mark the seal blue, no amber.", "blue, no", "not_parallel"),
+            ("Mark the seal as blue, no amber remains.", "blue, no", "not_parallel"),
+            ("Mark the seal as blue, no dark amber.", "blue, no", "not_parallel"),
+            ("Mark the seal as blue, no never.", "blue, no", "not_parallel"),
+            ("Mark the seal as blue. No amber.", "blue. No", "crosses_sentence"),
+            ("Mark it as blue, no amber, and mark it as blue, no red.", "blue, no",
+             "ambiguous_occurrence"),
         ):
             with self.subTest(source=source):
-                accepted, _ = parse_correction_output(deletion, source, [])
-                self.assertFalse(accepted)
+                accepted, rejected = parse_correction_output(deletion, source, [])
+                self.assertEqual(accepted, [])
+                self.assertEqual([r.reason for r in rejected], [reason])
 
     def test_new_correction_shapes_keep_source_protection(self):
         for source, deletion, literal in (
@@ -609,8 +618,8 @@ class SourceRepairTests(unittest.TestCase):
                 start = source.index(literal)
                 accepted, rejected = parse_correction_output(
                     deletion, source, [(start, start + len(literal), "literal")])
-                self.assertFalse(accepted)
-                self.assertEqual(rejected[0].reason, "protected_span")
+                self.assertEqual(accepted, [])
+                self.assertEqual([r.reason for r in rejected], ["protected_span"])
 
     def test_new_shapes_do_not_waive_identifier_time_or_negation_failures(self):
         for source, target, deletion in (
@@ -654,16 +663,16 @@ class SourceRepairTests(unittest.TestCase):
         ):
             with self.subTest(source=source, deletion=deletion):
                 accepted, rejected = parse_correction_output(deletion, source, [])
-                self.assertFalse(accepted)
-                self.assertEqual(rejected[0].reason, "offsets_unresolved")
+                self.assertEqual(accepted, [])
+                self.assertEqual([r.reason for r in rejected], ["offsets_unresolved"])
 
     def test_recovered_proposal_still_checks_protection_evidence_and_word_limit(self):
         source = "Replace the air vent, no wait, the roof panel."
         start = source.index("air vent")
         accepted, rejected = parse_correction_output(
             "the airvent, no wait", source, [(start, start + 8, "literal")])
-        self.assertFalse(accepted)
-        self.assertEqual(rejected[0].reason, "protected_span")
+        self.assertEqual(accepted, [])
+        self.assertEqual([r.reason for r in rejected], ["protected_span"])
         for source, deletion, reason in (
             ("The air vent, sorry, we cannot replace it.",
              "The airvent, sorry", "not_parallel"),
@@ -672,8 +681,8 @@ class SourceRepairTests(unittest.TestCase):
         ):
             with self.subTest(source=source):
                 accepted, rejected = parse_correction_output(deletion, source, [])
-                self.assertFalse(accepted)
-                self.assertEqual(rejected[0].reason, reason)
+                self.assertEqual(accepted, [])
+                self.assertEqual([r.reason for r in rejected], [reason])
 
     def test_compound_correction_removes_only_the_exact_repeated_predicate(self):
         for predicate, unit in (("should be", "C"), ("must be", "psi"),
@@ -726,8 +735,10 @@ class SourceRepairTests(unittest.TestCase):
                 source = f"{before} I mean actually {after}"
                 deletion = source[source.index("12"):source.index("actually") + 8]
                 accepted, rejected = parse_correction_output(deletion, source, [])
-                self.assertFalse(accepted)
-                self.assertTrue(rejected)
+                self.assertEqual(accepted, [])
+                self.assertEqual([r.reason for r in rejected],
+                                 ["crosses_sentence" if before.endswith(".")
+                                  else "unresolved_repeated_restart"])
                 result, _ = clean(source, "The reading should be 14 psi.", deletion)
                 self.assertEqual(result.text, source)
 
@@ -819,12 +830,13 @@ class SourceRepairTests(unittest.TestCase):
         start = source.index("to Mira")
         accepted, rejected = parse_correction_output(
             "Mira, no wait", source, [(start, start + 2, "literal")])
-        self.assertFalse(accepted)
-        self.assertEqual(rejected[0].reason, "protected_span")
+        self.assertEqual(accepted, [])
+        self.assertEqual([r.reason for r in rejected], ["protected_span"])
         source = "Send it to Mira and notify Sam, actually to Lin."
-        accepted, _ = parse_correction_output(
+        accepted, rejected = parse_correction_output(
             "Mira and notify Sam, actually", source, [])
-        self.assertFalse(accepted)
+        self.assertEqual(accepted, [])
+        self.assertEqual([r.reason for r in rejected], ["not_parallel"])
 
     def test_unique_fused_pair_restores_exact_source_words(self):
         source = "Inspect the pallet fork and record the result."

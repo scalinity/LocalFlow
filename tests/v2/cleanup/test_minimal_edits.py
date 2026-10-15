@@ -37,23 +37,24 @@ class AddedWordTests(unittest.TestCase):
 
     def test_existing_article_substitution_has_no_extra_occurrence(self):
         self.assertTrue(validate("Write a RFC.", "Write an RFC.").accepted)
-        self.assertFalse(validate("Write a RFC.", "Write an RFC and an RFC.").accepted)
+        report = validate("Write a RFC.", "Write an RFC and an RFC.")
+        self.assertEqual([c.name for c in report.critical_failures], ["novelty"])
 
     def test_explicit_vocabulary_can_supply_function_words(self):
         self.assertTrue(validate(
             "Inspect mini hub.", "Inspect the hub.",
             vocabulary_pairs=(("mini hub", "the hub"),)).accepted)
-        self.assertFalse(validate(
-            "Inspect mini hub.", "Inspect the hub for her.",
-            vocabulary_pairs=(("mini hub", "the hub"),)).accepted)
+        report = validate("Inspect mini hub.", "Inspect the hub for her.",
+                          vocabulary_pairs=(("mini hub", "the hub"),))
+        self.assertEqual([c.name for c in report.critical_failures], ["novelty"])
 
     def test_obsolete_value_cannot_return_as_an_added_recipient(self):
         source = "Send it to Mark no wait to Lisa."
         span = (source.index("Mark"), source.index(" to Lisa"), source.index("no wait"))
         self.assertTrue(validate(source, "Send it to Lisa.",
                                  correction_spans=[span]).accepted)
-        self.assertFalse(validate(source, "Send it to Lisa and Mark.",
-                                  correction_spans=[span]).accepted)
+        report = validate(source, "Send it to Lisa and Mark.", correction_spans=[span])
+        self.assertEqual([c.name for c in report.critical_failures], ["novelty"])
 
 
 class TechnicalPunctuationTests(unittest.TestCase):
@@ -155,7 +156,8 @@ class RestrictionAndPreservationTests(unittest.TestCase):
              "Use copies. Only since the originals are missing."),
         ):
             with self.subTest(output=output):
-                self.assertFalse(validate(source, output).accepted)
+                self.assertEqual([c.name for c in validate(source, output).critical_failures],
+                                 ["clause_scope"])
 
     def test_valid_punctuation_and_readable_prose_stay_verbatim(self):
         for source in (

@@ -5,7 +5,8 @@ import unittest
 
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[3]))
 
-from localflow.v2.cleanup.engine import CleanupEngine, parse_correction_output
+from localflow.v2.cleanup.engine import (CleanupEngine, _include_repeated_frame,
+                                        parse_correction_output)
 
 
 def clean(source, target, proposal, protected=()):
@@ -56,29 +57,40 @@ class RepeatedQuantityFrameTests(unittest.TestCase):
                     self.assertEqual(result.corrections["applied"], 0)
 
     def test_changed_or_incomplete_replacement_does_not_expand(self):
-        for replacement in ("every 27 minutes", "each 27 cycles",
-                            "every cycle", "every -27 cycles",
-                            "every 27 cycles-long"):
+        # The frame stays outside the span; the proposal is then judged as
+        # given (None: admitted without the frame).
+        for replacement, reason in (("every 27 minutes", "not_parallel"),
+                                    ("each 27 cycles", None),
+                                    ("every cycle", "not_parallel"),
+                                    ("every -27 cycles", None),
+                                    ("every 27 cycles-long", "not_parallel")):
             with self.subTest(replacement=replacement):
                 source = f"Inspect every 18 cycles, sorry, {replacement}."
-                accepted, _ = parse_correction_output("18 cycles, sorry", source, [])
-                self.assertTrue(all(not delete.startswith("every ")
-                                    for delete in (c.delete for c in accepted)))
+                span = (source.index("18"), source.index("sorry") + len("sorry"))
+                self.assertEqual(_include_repeated_frame(source, span, 0), span)
+                accepted, rejected = parse_correction_output("18 cycles, sorry", source, [])
+                self.assertEqual([c.delete for c in accepted],
+                                 [] if reason else ["18 cycles, sorry"])
+                self.assertEqual([r.reason for r in rejected], [reason] if reason else [])
 
     def test_old_qualifier_and_clause_are_not_swallowed(self):
-        for old in ("18 cycles on the spare rig", "18 cycles and restart"):
-            source = f"Inspect every {old}, sorry, every 27 cycles."
-            accepted, _ = parse_correction_output(f"{old}, sorry", source, [])
-            self.assertTrue(all(not delete.startswith("every ")
-                                for delete in (c.delete for c in accepted)))
+        for old, reason in (("18 cycles on the spare rig", "span_too_long"),
+                            ("18 cycles and restart", None)):
+            with self.subTest(old=old):
+                source = f"Inspect every {old}, sorry, every 27 cycles."
+                span = (source.index("18"), source.index("sorry") + len("sorry"))
+                self.assertEqual(_include_repeated_frame(source, span, 0), span)
+                accepted, rejected = parse_correction_output(f"{old}, sorry", source, [])
+                self.assertEqual([c.delete for c in accepted], [] if reason else [f"{old}, sorry"])
+                self.assertEqual([r.reason for r in rejected], [reason] if reason else [])
 
     def test_protected_frame_cannot_be_added_to_deletion(self):
         source = "Inspect every 18 cycles, sorry, every 27 cycles."
         start = source.index("every")
         accepted, rejected = parse_correction_output(
             "18 cycles, sorry", source, [(start, start + 5, "literal")])
-        self.assertFalse(accepted)
-        self.assertEqual(rejected[0].reason, "protected_span")
+        self.assertEqual(accepted, [])
+        self.assertEqual([r.reason for r in rejected], ["protected_span"])
 
     def test_repetition_without_a_correction_is_not_a_stutter(self):
         source = "Keep the label every every on the fixture."

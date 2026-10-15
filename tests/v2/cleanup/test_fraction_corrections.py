@@ -73,35 +73,41 @@ class FractionCorrectionTests(unittest.TestCase):
                 deletion = f"{numerator} {denominator} of a turn, sorry"
                 source = f"The adjustment is {deletion} 1 half turn."
                 accepted, rejected = parse_correction_output(deletion, source, [])
-                self.assertFalse(accepted)
-                self.assertTrue(rejected)
+                self.assertEqual(accepted, [])
+                self.assertEqual([r.reason for r in rejected], ["unresolved_quantity_qualifier"])
 
     def test_arbitrary_nouns_and_different_units_remain_unsupported(self):
-        for old, new in (
-            ("2 quarters of a turn", "1 half meter"),
-            ("2 quarters of a liter", "1 half milliliter"),
-            ("2 quarters of a turn", "1 half revolution"),
-            ("2 quarters of a Meter", "1 half meter"),
-            ("2 quarters of a brother", "1 half brother"),
-            ("2 quarters of a horse", "1 quarter horse"),
-            ("2 bottles of a resin", "1 half resin"),
-            ("2 cases of an issue", "1 half issue"),
-            ("2 quarters of a turn", "1 half turn signal"),
-            ("2 quarters of a turn", "1 half turn-like"),
-            ("2 quarters of a turn", "1 half turn from zero"),
-            ("2 quarters of a turn", "1 half"),
-            ("2 quarters of the turn", "1 half turn"),
-            ("2 quarters of each turn", "1 half turn"),
-            ("2 quarters of a turn", "2 half turns"),
-            ("2 quarters of a turn", "1 half of a turn"),
-            ("2 quarters of a turn", "to request 1 half turn"),
+        # A replacement sharing no word with the old value already fails the
+        # evidence check; the fraction rule alone rejects every case.
+        unresolved, unrelated = "unresolved_quantity_qualifier", "not_parallel"
+        for old, new, reason in (
+            ("2 quarters of a turn", "1 half meter", unrelated),
+            ("2 quarters of a liter", "1 half milliliter", unrelated),
+            ("2 quarters of a turn", "1 half revolution", unrelated),
+            ("2 quarters of a Meter", "1 half meter", unresolved),
+            ("2 quarters of a brother", "1 half brother", unresolved),
+            ("2 quarters of a horse", "1 quarter horse", unresolved),
+            ("2 bottles of a resin", "1 half resin", unresolved),
+            ("2 cases of an issue", "1 half issue", unresolved),
+            ("2 quarters of a turn", "1 half turn signal", unresolved),
+            ("2 quarters of a turn", "1 half turn-like", unrelated),
+            ("2 quarters of a turn", "1 half turn from zero", unresolved),
+            ("2 quarters of a turn", "1 half", unrelated),
+            ("2 quarters of the turn", "1 half turn", unresolved),
+            ("2 quarters of each turn", "1 half turn", unresolved),
+            ("2 quarters of a turn", "2 half turns", unresolved),
+            ("2 quarters of a turn", "1 half of a turn", unrelated),
+            ("2 quarters of a turn", "to request 1 half turn", unrelated),
         ):
             with self.subTest(old=old, new=new):
                 deletion = f"{old}, sorry"
                 source = f"The adjustment is {deletion} {new}."
+                span = (len("The adjustment is "), len("The adjustment is ") + len(deletion))
+                shape = neighbourhood(source, span, correction_marker_start(source, span))
+                self.assertEqual(qualifier_retention(shape), (None, unresolved))
                 accepted, rejected = parse_correction_output(deletion, source, [])
-                self.assertFalse(accepted)
-                self.assertTrue(rejected)
+                self.assertEqual(accepted, [])
+                self.assertEqual([r.reason for r in rejected], [reason])
 
     def test_numerator_must_start_a_complete_source_token(self):
         deletion = "9 quarters of a turn, sorry"
@@ -112,10 +118,14 @@ class FractionCorrectionTests(unittest.TestCase):
                 start = source.index(deletion)
                 span = (start, start + len(deletion))
                 ms = correction_marker_start(source, span)
-                self.assertIsNotNone(qualifier_retention(neighbourhood(source, span, ms))[1])
+                self.assertEqual(qualifier_retention(neighbourhood(source, span, ms)),
+                                 (None, "unresolved_quantity_qualifier"))
                 accepted, rejected = parse_correction_output(deletion, source, [])
-                self.assertFalse(accepted)
-                self.assertTrue(rejected)
+                self.assertEqual(accepted, [])
+                # Word characters before the digit leave no word-boundary match.
+                self.assertEqual([r.reason for r in rejected],
+                                 ["offsets_unresolved" if attached[-1:].isalnum()
+                                  or attached.endswith("_") else "unresolved_quantity_qualifier"])
                 result = clean(source, "Advance 1 half turn.", deletion)
                 self.assertEqual(result.text, source)
         for prefix in ("", "Advance ", "Advance:\n", "Advance\t"):
@@ -141,8 +151,8 @@ class FractionCorrectionTests(unittest.TestCase):
                 deletion = "2 quarters of a rotation, no"
                 source = f"Allow {deletion} {replacement}"
                 accepted, rejected = parse_correction_output(deletion, source, [])
-                self.assertFalse(accepted)
-                self.assertTrue(rejected)
+                self.assertEqual(accepted, [])
+                self.assertEqual([r.reason for r in rejected], ["unresolved_quantity_qualifier"])
                 self.assertEqual(clean(source, f"Allow {replacement}", deletion).text, source)
 
     def test_direct_word_tails_and_separate_predicates_remain_unsupported(self):
@@ -154,8 +164,9 @@ class FractionCorrectionTests(unittest.TestCase):
                     source = f"We used {deletion} 1 half liter {tail}"
                     candidate = f"We used 1 half liter {tail}"
                     accepted, rejected = parse_correction_output(deletion, source, [])
-                    self.assertFalse(accepted)
-                    self.assertTrue(rejected)
+                    self.assertEqual(accepted, [])
+                    self.assertEqual([r.reason for r in rejected],
+                                     ["unresolved_quantity_qualifier"])
                     self.assertEqual(clean(source, candidate, deletion).text, source)
 
     def test_a_fully_bound_fraction_may_take_a_longer_marker(self):
@@ -193,8 +204,8 @@ class FractionCorrectionTests(unittest.TestCase):
                 deletion = f"{old}, sorry"
                 source = f"Use {deletion} 1 half liter."
                 accepted, rejected = parse_correction_output(deletion, source, [])
-                self.assertFalse(accepted)
-                self.assertEqual(rejected[0].reason, "span_too_long")
+                self.assertEqual(accepted, [])
+                self.assertEqual([r.reason for r in rejected], ["span_too_long"])
 
     def test_quotes_and_code_touching_the_correction_disable_the_exception(self):
         deletion = "2 quarters of a turn, sorry"
@@ -228,8 +239,8 @@ class FractionCorrectionTests(unittest.TestCase):
     def test_fraction_shape_does_not_propose_its_own_correction(self):
         source = "Advance 2 quarters of a turn and 1 half turn."
         accepted, rejected = parse_correction_output("2 quarters of a turn", source, [])
-        self.assertFalse(accepted)
-        self.assertEqual(rejected[0].reason, "no_marker_ending")
+        self.assertEqual(accepted, [])
+        self.assertEqual([r.reason for r in rejected], ["no_marker_ending"])
 
     def test_tilde_fences_disable_the_exception_but_single_tildes_do_not(self):
         deletion = "2 quarters of a rotation, sorry"
@@ -242,8 +253,8 @@ class FractionCorrectionTests(unittest.TestCase):
                 source = f"{preface}{opening}Move {deletion} 1 half rotation.{closing}"
                 candidate = f"{preface}{opening}Move 1 half rotation.{closing}"
                 accepted, rejected = parse_correction_output(deletion, source, [])
-                self.assertFalse(accepted)
-                self.assertTrue(rejected)
+                self.assertEqual(accepted, [])
+                self.assertEqual([r.reason for r in rejected], ["unresolved_quantity_qualifier"])
                 self.assertEqual(clean(source, candidate, deletion).text, source)
         for prefix in ("~ ", "~\n", "~~ ", "~~\n"):
             with self.subTest(prefix=prefix):
@@ -267,8 +278,8 @@ class FractionCorrectionTests(unittest.TestCase):
                 source = f"{opening}Move {deletion} 1 half rotation.{closing}"
                 candidate = f"{opening}Move 1 half rotation.{closing}"
                 accepted, rejected = parse_correction_output(deletion, source, [])
-                self.assertFalse(accepted)
-                self.assertTrue(rejected)
+                self.assertEqual(accepted, [])
+                self.assertEqual([r.reason for r in rejected], ["unresolved_quantity_qualifier"])
                 result = clean(source, candidate, deletion)
                 self.assertEqual(result.corrections["applied"], 0)
                 self.assertIn(deletion, result.text)
@@ -280,8 +291,8 @@ class FractionCorrectionTests(unittest.TestCase):
         start = source.index(deletion)
         protected = [(start, start + len(deletion), "literal")]
         accepted, rejected = parse_correction_output(deletion, source, protected)
-        self.assertFalse(accepted)
-        self.assertEqual(rejected[0].reason, "protected_span")
+        self.assertEqual(accepted, [])
+        self.assertEqual([r.reason for r in rejected], ["protected_span"])
         self.assertEqual(clean(source, "Advance 1 half turn.", deletion, protected).text, source)
 
     def test_protected_replacement_still_requires_its_exact_text(self):
@@ -299,13 +310,13 @@ class FractionCorrectionTests(unittest.TestCase):
         self.assertNotEqual(result.text, "Advance 1 turn.")
 
     def test_replacement_and_surrounding_words_remain_required(self):
-        for prefix, suffix, damaged in (
-            ("Give the technician ", ".", "Give 1 half liter."),
-            ("Mix ", ", with resin.", "Mix 1 half liter."),
-            ("Do not use ", ".", "Do use 1 half liter."),
-            ("Use ", ".", "Use 1 half meter."),
-            ("Use ", ".", "Use 1 liter."),
-            ("Use ", ".", "Use 1 half liter and 2 quarters."),
+        for prefix, suffix, damaged, failures in (
+            ("Give the technician ", ".", "Give 1 half liter.", {"coverage"}),
+            ("Mix ", ", with resin.", "Mix 1 half liter.", {"coverage"}),
+            ("Do not use ", ".", "Do use 1 half liter.", {"coverage", "negation_coverage"}),
+            ("Use ", ".", "Use 1 half meter.", {"coverage", "novelty"}),
+            ("Use ", ".", "Use 1 liter.", {"coverage"}),
+            ("Use ", ".", "Use 1 half liter and 2 quarters.", {"numeric_values", "novelty"}),
         ):
             with self.subTest(prefix=prefix, suffix=suffix, damaged=damaged):
                 deletion = "2 quarters of a liter, sorry"
@@ -316,7 +327,8 @@ class FractionCorrectionTests(unittest.TestCase):
                 self.assertFalse(rejected)
                 view, spans, _ = correction_view(source, accepted)
                 self.assertTrue(validate(view, target, correction_spans=spans).accepted)
-                self.assertFalse(validate(view, damaged, correction_spans=spans).accepted)
+                report = validate(view, damaged, correction_spans=spans)
+                self.assertEqual({c.name for c in report.critical_failures}, failures)
                 self.assertNotEqual(clean(source, damaged, deletion).text, damaged)
 
     def test_original_offsets_survive_unicode_and_an_independent_move(self):

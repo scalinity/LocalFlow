@@ -125,7 +125,8 @@ class PipePreservationTests(unittest.TestCase):
                                ("Read ‘red | blue’ aloud.", "Read ‘red|blue’ aloud."),
                                ('Read “red|blue” aloud.', 'Read “red blue|” aloud.')):
             with self.subTest(output=output):
-                self.assertFalse(validate(source, output).accepted)
+                self.assertEqual([c.name for c in validate(source, output).critical_failures],
+                                 ["literal_spans"])
                 self.assertEqual(clean(source, output).text, source)
         source, output = "Read red | blue aloud.", "Read red|blue aloud."
         span = (source.index("red"), source.index(" blue") + len(" blue"), "literal")
