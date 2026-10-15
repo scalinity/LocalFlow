@@ -6,8 +6,9 @@ cleanup writes "longer than 4 hours". Words right after the deletion that
 repeat the words right before it are the restated frame, so one copy may
 go. A single repeated word qualifies only as a function word or
 preposition, or before a number that replaces a number. Repeats away from
-a correction, a content word repeated before a non-number, and an output
-that drops both copies still fail.
+a correction, a content word repeated before a non-number, a frame copy
+inside protected text, a dropped hedge frame, and an output that drops
+both copies still fail.
 
 Run: .venv/bin/python -m unittest tests/v2/cleanup/test_doubled_frames.py
 """
@@ -80,6 +81,20 @@ class DoubledFrameTests(unittest.TestCase):
         source = "Copy the table and then and then build the new index on that copy."
         output = "Copy the table and then build the new index on that copy."
         self.assertIn("coverage", failures(source, output))
+
+    def test_a_dropped_hedge_frame_still_fails(self):
+        source = "Set the sample interval to about 15 minutes, sorry, about 20 minutes, today."
+        output = "Set the sample interval to 20 minutes, today."
+        self.assertIn("uncertainty_coverage",
+                      failures(source, output, [span(source, "15 minutes, sorry", "sorry")]))
+
+    def test_a_protected_copy_is_no_frame(self):
+        source = "Flag gaps longer than 6 hours, no wait, longer than 4 hours today."
+        start = source.index("longer than")
+        report = validate(source, "Flag gaps longer than 4 hours today.",
+                          correction_spans=[span(source, "6 hours, no wait", "no wait")],
+                          protected_positions=[(start, start + len("longer than"))])
+        self.assertIn("coverage", {c.name for c in report.critical_failures})
 
     def test_a_restated_negation_frame_survives_once(self):
         source = "Ship it without the 2 manuals, sorry, without the 3 manuals tomorrow."
