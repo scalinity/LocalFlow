@@ -135,8 +135,21 @@ def freeze_final():
         raise RuntimeError("Development selection is not complete")
     dataset_freeze = checked_dataset(DATASET, require_current_capture_source=False)
     selected = selection.get("candidate", {})
-    if not selected.get("key") or selected["key"] in ("C", "F") or not selected.get("path") or not selected.get("content_digest"):
-        raise RuntimeError("Selection must identify candidate key, model path and content digest")
+    if (not selected.get("key") or selected["key"] in ("C", "F") or not selected.get("path")
+            or not selected.get("content_digest") or not selected.get("training_run")):
+        raise RuntimeError("Selection must identify candidate key, model path, content digest and training run")
+    # The candidate may have been trained on another dataset than the final labels'.
+    request_path = ART / "train" / selected["training_run"] / "request.json"
+    request = read_json(request_path)
+    if not request or not request.get("dataset_freeze_sha256"):
+        raise RuntimeError("The selected training run has no recorded dataset freeze")
+    training_freeze = Path(request["dataset_dir"]) / "freeze.json"
+    if not training_freeze.exists() or file_sha256(training_freeze) != request["dataset_freeze_sha256"]:
+        raise RuntimeError("The selected candidate's training dataset changed after training")
+    candidate_training = {"run": selected["training_run"], "request_sha256": file_sha256(request_path),
+                          "dataset_dir": request["dataset_dir"],
+                          "dataset_freeze_sha256": request["dataset_freeze_sha256"],
+                          "capture_source_hashes": read_json(training_freeze).get("capture_source_hashes", {})}
     fixed_f = read_json(ART / "export/diverse-6000-ckpt-00761.identity.json")
     fixed_c = c_identity()
     models = {"C": {"path":fixed_c["snapshot_path"], "engine":"production"},
@@ -167,6 +180,7 @@ def freeze_final():
               "cases_sha256": file_sha256(path), "selection_sha256": file_sha256(RUN / "candidate-selection.json"),
               "source_hashes": {p: file_sha256(ROOT / p) for p in SOURCE_FILES},
               "capture_source_hashes": dataset_freeze.get("capture_source_hashes", {}),
+              "candidate_training": candidate_training,
               "models":models,
               "data_freeze_sha256": file_sha256(DATASET / "freeze.json"),
               "candidate_outputs_existed": False}

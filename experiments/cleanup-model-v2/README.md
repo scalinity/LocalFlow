@@ -48,7 +48,9 @@ The modules have these responsibilities:
   reference limitations in the comparison.
 - `refinement`: capture current prompts for independently accepted training
   labels, continue the preserved adapter, and bind the final comparison to
-  a candidate selected on development data.
+  a candidate selected on development data. The selection names the
+  candidate's training run (`candidate.training_run`), whose own dataset
+  freeze the final freeze also binds.
 - `score`: compute exact repairs, punctuation, preservation, real-audio WER/CER,
   latency, memory, and fallback rates.
 - `strict_score`: count source-anchored word and identifier changes separately
