@@ -1058,6 +1058,37 @@ def _spoken_label_run(source: str, values: list) -> list:
     return run if len(run) >= 2 else []
 
 
+_FUSED_RE = re.compile(r"([A-Za-z]+)[-.]?(\d+(?:\.\d+)?)")
+
+
+def _fused_identifier_keys(source: str, values: list):
+    """Map an output identifier made of a source word and the plain number
+    right after it (the word's letters, an optional "-" or ".", the number's
+    digits) to that number's key; any other key maps to itself. The letters
+    keep the source's case unless the source word is all lowercase. A
+    function word fuses with nothing ("a 1 liter sample"), and an
+    identifier the source already holds ("station A1") stays itself."""
+    pairs = []
+    for start, _end, key, _marker, _line in values:
+        before = re.search(r"([A-Za-z]+)[ \t]+$", source[:start])
+        if (before and before.group(1).lower() not in FUNCTION_WORDS
+                and key[0] == "num" and not key[1] and not key[3]):
+            pairs.append((before.group(1), key))
+    held = {key[1].lower() for _s, _e, key, *_ in _typed_numbers(source) if key[0] == "id"}
+
+    def keyed(key):
+        parts = _FUSED_RE.fullmatch(key[1]) if key[0] == "id" and key[1].lower() not in held else None
+        if parts is None:
+            return key
+        letters, digits = parts.groups()
+        for word, value in pairs:
+            same = letters.lower() == word if word.islower() else letters == word
+            if same and Decimal(digits) == value[2]:
+                return value
+        return key
+    return keyed
+
+
 def _numeric_values(source, output, ctx) -> Component:
     """Every typed numeric occurrence in the source survives IN ORDER
     with the same sign, unit and identity; none is invented. Order binds
@@ -1082,6 +1113,11 @@ def _numeric_values(source, output, ctx) -> Component:
               for label in node.labels]
     label_starts = {start for start, _end, _value in labels}
     out = [it for it in _typed_numbers(output) if it[0] not in label_starts]
+    # A number dictated right after a word may be written fused to it as one
+    # identifier ("WGS eighty four" → "WGS84", "PROJ four" → "PROJ.4"): that
+    # identifier carries the source number.
+    fused = _fused_identifier_keys(source, src)
+    out = [(it[0], it[1], fused(it[2]), it[3], it[4]) for it in out]
     # A spoken enumeration rendered as those labels stands behind them.
     spoken = _spoken_label_run(source, src)
     if [value for _s, _e, value in labels][:len(spoken)] == list(range(1, len(spoken) + 1)):
