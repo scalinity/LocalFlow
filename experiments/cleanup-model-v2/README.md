@@ -175,3 +175,45 @@ per request, refuses an estimated maximum of $0.25 or more, and prints JSON
 containing `usage`, usage-derived `actual_usd`, `estimate_max_usd` and three
 statuses. Expected cost is below $0.25. The same name resumes without buying
 the toys again. A successful synthetic test is not a live connectivity check.
+
+### Offline statistics
+
+`v2.stats` uses standard-library computations. The paired percentile bootstrap
+resamples whole matched cases 10,000 times by default (seed 20261015), reports
+mean(A minus B), and uses linear percentile interpolation for its 95% CI.
+McNemar uses the two-sided exact binomial tail on discordant binary failures.
+Cohen's kappa is unweighted/nominal; Krippendorff's alpha is nominal and weights
+each pairable unit's ordered coincidences by `1/(number_of_ratings - 1)`.
+Null ratings are missing; kappa reports omitted pairs and alpha omits units
+with fewer than two observed ratings. Constant-category agreement is undefined
+(`null`), rather than presented as perfect reliability. Seed SD is sample SD
+(`ddof=1`), undefined for a single seed. Holm retains the entire supplied
+pre-declared family, applies monotone step-down adjustment and returns results
+in declared order. Empty/mismatched populations, duplicate IDs, nonfinite
+numbers and invalid binary failures are rejected.
+
+Input shapes for the CLI:
+
+- `export CASES --system SYSTEM --stage delivered --output FILE` reads only
+  development cases and their `eval/development-SYSTEM.jsonl`, then writes
+  JSONL with `case_id`, `system`, `stage` and the existing per-case score fields.
+  Aggregate `scores/development-*.json` cannot supply a paired bootstrap.
+- `paired A.jsonl B.jsonl --score FIELD --failure BINARY_FIELD` returns a
+  `bootstrap` object and optional `mcnemar` table/p-value. Choose score/failure
+  fields in the pre-registration; all values must exist for the same cases.
+- `ratings J1.jsonl J2.jsonl ... --field choice --id pair_id` expects one
+  `{"pair_id":"...","choice":"..."}` per unit/judge, explicit nulls for
+  missing ratings, and returns all pairwise kappas and multi-judge nominal alpha.
+- `position forward.jsonl swapped.jsonl --id pair_id` expects records with
+  `pair_id`, `a_system`, `b_system`, `choice`; every second-run row must reverse
+  the same two systems. It reports the average first-minus-second preference
+  across both orders (`a=+1`, `b=-1`, ties/both_wrong=0), in [-1,1]. A stable
+  system preference cancels; always choosing the first position gives +1.
+  This descriptive contrast does not establish a causal effect.
+- `seeds NUMBER NUMBER ...` returns `n`, `mean`, `sd`, `sd_ddof`.
+- `holm contrasts.json --alpha 0.05` expects a JSON array of
+  `{"name":"pre-declared contrast","p":0.01}` and returns `p_holm`/`reject`
+  alongside each original row. Never omit a contrast after seeing its p-value.
+
+All analysis subcommands accept `--output FILE` (otherwise JSON on stdout).
+They make no API calls and cost $0.
