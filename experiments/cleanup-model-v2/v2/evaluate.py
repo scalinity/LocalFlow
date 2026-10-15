@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import argparse
 import gc
+import hashlib
 import inspect
 import json
 import os
@@ -35,6 +36,27 @@ def postprocess(out: str, source: str) -> str:
         if not source_is_double_quoted:
             out = inner
     return out
+
+
+def drop_torn_tail(path):
+    """Settle a final row a hard kill left without its newline.
+
+    A complete row regains its newline; a partial one is removed and
+    described for the run record. Earlier rows are never touched.
+    """
+    if not path.exists():
+        return None
+    data = path.read_bytes()
+    head, _, tail = data.rpartition(b"\n")
+    if not tail:
+        return None
+    try:
+        json.loads(tail)
+    except ValueError:
+        path.write_bytes(head + b"\n" if head else b"")
+        return {"bytes": len(tail), "sha256": hashlib.sha256(tail).hexdigest()}
+    path.write_bytes(data + b"\n")
+    return None
 
 
 class Runner(BaseRunner):
@@ -199,6 +221,7 @@ def evaluate(key, cases_path, name, path=None, variant=False, limit=None, update
                     if Path(runner.module.__file__).with_name(n).exists()}}
     if prior and prior["identity"] != identity:
         raise RuntimeError("Evaluation name already belongs to another artifact or dataset")
+    torn = drop_torn_tail(out)
     done = {r["case_id"] for r in read_jsonl(out)}
     todo = [c for c in cases if c["case_id"] not in done]
     if not todo:
@@ -210,7 +233,8 @@ def evaluate(key, cases_path, name, path=None, variant=False, limit=None, update
                          "engine_sources":{name:file_sha256(Path(runner.module.__file__).with_name(name))
                                            for name in ("engine.py","validation.py","prompts.py","document_nodes.py","correction_retention.py")
                                            if Path(runner.module.__file__).with_name(name).exists()},
-                         "packages":{p:importlib.metadata.version(p) for p in ("mlx","mlx-lm","transformers")}})
+                         "packages":{p:importlib.metadata.version(p) for p in ("mlx","mlx-lm","transformers")},
+                         **({"dropped_partial_row":torn} if torn else {})})
     write_json(meta_path,meta)
     with out.open("a") as fh:
         for i,c in enumerate(todo):
