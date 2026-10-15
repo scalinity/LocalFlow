@@ -216,6 +216,11 @@ class MinimalTargetTests(unittest.TestCase):
         # Asked or told: the name is addressed.
         self.check("marta is the report ready", "Marta, is the report ready?", "Marta, is the report ready?", [])
         self.check("marta will you check it", "Marta, will you check it.", "Marta, will you check it.", [])
+        # Names of one list that the sentence is about, unless it asks or says "you".
+        self.check("marta sam and I will go", "Marta, Sam and I will go.", "Marta Sam and I will go.",
+                   ["optional_gap_comma"])
+        self.check("marta sam and I will check it okay", "Marta, Sam and I will check it, okay?",
+                   "Marta, Sam and I will check it okay?", ["optional_gap_comma"])
 
     def test_keep_holds_the_source_gaps_whose_added_comma_stays(self):
         source, target = "run the batch then inspect it and log the result", "Run the batch, then inspect it, and log the result."
