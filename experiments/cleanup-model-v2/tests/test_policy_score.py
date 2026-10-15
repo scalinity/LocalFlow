@@ -200,6 +200,7 @@ class MinimalTargetTests(unittest.TestCase):
                 ("send it to marta and then call her", "Send it to Marta, and then call her.",
                  "Send it to Marta and then call her."),
                 ("after lunch we test the pump", "After lunch, we test the pump.", "After lunch we test the pump."),
+                ("in berlin we test the kiln", "In Berlin, we test the kiln.", "In Berlin we test the kiln."),
                 ("first open the lid", "First, open the lid.", "First open the lid."),
                 ("next tuesday we start", "Next Tuesday, we start.", "Next Tuesday we start."),
                 ("above all keep it dry", "Above all, keep it dry.", "Above all keep it dry."),

@@ -108,6 +108,12 @@ GROUP_ADDRESSEES = {"everyone", "everybody", "all", "team", "guys", "folks", "si
 NOT_PERSONS = {"monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday", "january",
                "february", "march", "july", "september", "october", "november", "december"}
 I_FORMS = {"i", "i'm", "i'll", "i've", "i'd"}
+# Capitalised only because they open a sentence, these are never part of a name ("In June, we ship").
+FUNCTION_WORDS = {"in", "on", "at", "by", "for", "from", "to", "with", "into", "onto", "over", "under", "after",
+                  "before", "since", "until", "during", "about", "between", "the", "a", "an", "this", "that",
+                  "these", "those", "my", "our", "your", "their", "his", "her", "its", "if", "when", "while",
+                  "because", "and", "but", "or", "as", "of", "we", "you", "they", "he", "she", "it", "there",
+                  "here", "what", "which", "who", "where", "why", "how"}
 # A period after these ends no sentence: "Dr. Patel", "St. Louis".
 ABBREVIATIONS = {"dr", "mr", "mrs", "ms", "st", "prof", "jr", "sr", "vs", "mt", "ft"}
 TITLES = {"dr", "mr", "mrs", "ms", "prof"}
@@ -132,7 +138,7 @@ def _addressee(word):
     key = word.casefold().replace("’", "'")
     letters = word.replace("'", "").replace("’", "")
     return key in GROUP_ADDRESSEES or (word[:1].isupper() and letters.isalpha() and not letters.isupper()
-                                       and key not in NOT_PERSONS and key not in I_FORMS)
+                                       and key not in NOT_PERSONS | I_FORMS | FUNCTION_WORDS)
 
 
 def _opens(words, gaps, i):
