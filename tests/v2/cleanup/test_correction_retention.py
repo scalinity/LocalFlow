@@ -350,6 +350,33 @@ class CorrectionRetentionTests(unittest.TestCase):
                 result, _ = clean(source, wrong, deletion)
                 self.assertEqual(result.text, source)
 
+    def test_single_word_replacement_that_opens_a_predicate_is_not_parallel(self):
+        # The replacement is the subject of a new clause; a bare "no" there
+        # is a negation, not a correction marker.
+        for source, deletion, wrong in (
+            ("Book it for Monday, no Tuesday is a holiday.", "Monday, no",
+             "Book it for Tuesday is a holiday."),
+            ("Set it to 5, no 6 is too many.", "5, no", "Set it to 6 is too many."),
+            ("Order 4 trays, sorry, 6 trays are on the shelf.", "4 trays, sorry",
+             "Order 6 trays are on the shelf."),
+        ):
+            with self.subTest(source=source):
+                accepted, rejected = parse_correction_output(deletion, source, [])
+                self.assertEqual(accepted, [])
+                self.assertEqual([r.reason for r in rejected], ["not_parallel"])
+                result, _ = clean(source, wrong, deletion)
+                self.assertEqual(result.text, source)
+        for source, deletion in (
+            ("Use 6 towels, no 5 towels for the corner suites.", "6 towels, no"),
+            ("Do 5 exercises, actually 4 exercises that they can do at home.",
+             "5 exercises, actually"),
+            ("Meet on Tuesday, sorry, Thursday, at 10 AM.", "Tuesday, sorry"),
+            ("Start at 8 am, no, 9 am, and take rooms 301 to 312.", "8 am, no"),
+        ):
+            with self.subTest(source=source):
+                accepted, rejected = parse_correction_output(deletion, source, [])
+                self.assertTrue(accepted, rejected)
+
 
 class SourceRepairTests(unittest.TestCase):
     def test_metric_length_corrections_compare_typed_quantity_heads(self):

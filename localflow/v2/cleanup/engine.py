@@ -593,10 +593,34 @@ def _evidence_reason(window_text: str, span: tuple) -> str | None:
                 for w in before_words[:-1]):
             return "overbroad_calendar_value"
     if marker in _SINGLE_WORD_MARKERS:
-        if not (_parallel(before_words, after_words, window_text, e)
-                or _parallel_metric_lengths(window_text, span, ms)):
+        if (not (_parallel(before_words, after_words, window_text, e)
+                 or _parallel_metric_lengths(window_text, span, ms))
+                or _replacement_opens_predicate(window_text, e)):
             return "not_parallel"
     return None
+
+
+# "am" is left out: it follows only "I", and "9 am" is a time.
+_PREDICATE_AUXILIARIES = frozenset({
+    "is", "are", "was", "were", "be", "has", "have", "had", "do", "does",
+    "did", "can", "could", "will", "would", "shall", "should", "may", "might",
+    "must"})
+
+
+def _replacement_opens_predicate(text: str, end: int) -> bool:
+    """``Monday, no Tuesday is a holiday`` begins a new clause.
+
+    An auxiliary right after the replacement value (or after a number and
+    its noun) makes that value a new subject, so deleting the old value
+    would attach the clause to the old frame and drop a bare "no".
+    """
+    from .validation import FUNCTION_WORDS
+    clause = re.split(r"[,;.!?\n]", text[end:].lstrip(" \t,;:"), maxsplit=1)[0]
+    words = [w.lower() for w in clause.split()][:3]
+    if words[1:2] and words[1] in _PREDICATE_AUXILIARIES:
+        return True
+    return (len(words) == 3 and _is_value_word(words[0])
+            and words[1] not in FUNCTION_WORDS and words[2] in _PREDICATE_AUXILIARIES)
 
 
 def _include_repeated_frame(text: str, span: tuple, cursor: int) -> tuple:
