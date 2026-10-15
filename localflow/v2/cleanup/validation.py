@@ -256,8 +256,9 @@ def _typed_numbers(text: str) -> list:
         tok = m.group(0)
         if not any(ch.isdigit() for ch in tok):
             continue
-        core = tok.lstrip("([{\"'“‘").rstrip(")]}\"'”’,;!?")
-        core = core.rstrip(".:,;")
+        # Closing brackets, quotes and prose punctuation in any order:
+        # "estimate_cost(plan, 12)." holds the same 12 as "12)".
+        core = tok.lstrip("([{\"'“‘").rstrip(")]}\"'”’,;!?.:")
         nxt = toks[idx + 1].group(0).lower().strip(".,;:!?)\"'") \
             if idx + 1 < len(toks) else ""
         key = _number_key(core, nxt)
