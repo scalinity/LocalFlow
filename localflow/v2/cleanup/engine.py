@@ -29,7 +29,7 @@ from . import document_nodes as dn
 from . import prompts
 from .lexicon import (CLAUSE_END, CORRECTION_MARKERS, FILLERS, FINITE_AUXILIARIES, FRAME_PREPOSITIONS, FRAME_WORDS,
                       FUNCTION_WORDS, IDENTIFIER_TOKEN_RE, METER, NUMBER, NUMBER_WORDS,
-                      POSITIVE_NUMBER, SCALE_WORDS, TECH_TOKEN_RE, Neighbourhood,
+                      POSITIVE_NUMBER, SCALE_WORDS, SENTENCE_END, TECH_TOKEN_RE, Neighbourhood,
                       alternation, marker_key, marker_pattern, neighbourhood, plain_words,
                       restatement)
 from .correction_retention import (AdmittedCorrection, correction_view, qualifier_retention,
@@ -551,7 +551,7 @@ def _evidence_reason(n: Neighbourhood) -> str | None:
     content, and a replacement Y with content follows the marker in the
     same sentence. None when the evidence holds, else the reason."""
     window_text, s, ms, e = n.text, n.start, n.marker, n.end
-    if re.search(r"[.!?](\s|$)", window_text[s:e].rstrip(".!? ")):
+    if re.search(SENTENCE_END, window_text[s:e].rstrip(".!? ")):
         return "crosses_sentence"
     if not _has_content(window_text[s:ms]):
         return "no_outdated_value"

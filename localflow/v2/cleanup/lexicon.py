@@ -91,6 +91,12 @@ def alternation(words) -> str:
 # semicolon or line break, or sentence punctuation before a space.
 CLAUSE_END = r"[ \t]*(?:$|[,;\n]|[.!?](?=\s|$))"
 
+# Sentence punctuation before a space or the end of the text. The period
+# of a title ("Dr. Okafor") or of a time followed by a lowercase word or a
+# digit ("8 a.m. slot") abbreviates and ends nothing.
+SENTENCE_END = (r"(?:(?<!\bDr)(?<!\bMrs)(?<!\bMr)(?<!\bMs)(?<!\bProf)"
+                r"(?!(?<=\b[aApP]\.[mM])\.[ \t]+[a-z0-9])\.|[!?])(?:\s|$)")
+
 IDENTIFIER_TOKEN_RE = re.compile(
     r"(?<!\w)[A-Za-z_]\w*_\w+(?!\w)"
     r"|\b[A-Za-z][A-Za-z0-9_]*:[A-Za-z0-9_]+\b")
@@ -206,7 +212,7 @@ def _words(text: str) -> tuple:
 def neighbourhood(text: str, span: tuple, marker: int) -> Neighbourhood:
     start, end = span
     tail = text[end:]
-    stop = re.search(r"[.!?](?:\s|$)|\n", tail)
+    stop = re.search(SENTENCE_END + r"|\n", tail)
     old_words = _words(text[start:marker])
     new_words = _words(tail[:stop.start()] if stop else tail)[:4]
     frame = (old_words[0] if old_words and new_words[:1] == old_words[:1]
@@ -254,7 +260,7 @@ def restatement(n: Neighbourhood) -> tuple | None:
     ``(p, a, b, s)``, or None.
     """
     tail = n.text[n.end:]
-    stop = re.search(r"[.!?](?:\s|$)|\n", tail)
+    stop = re.search(SENTENCE_END + r"|\n", tail)
     sentence_end = n.end + (stop.start() if stop else len(tail))
     # A quoted repeat may be a literal, not the speaker restating.
     if touches(quoted_regions(n.text), n.start, sentence_end):
