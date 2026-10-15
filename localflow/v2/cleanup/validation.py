@@ -1077,7 +1077,11 @@ def _numeric_values(source, output, ctx, aligned) -> Component:
     # A number dictated right after a word may be written fused to it as one
     # identifier ("WGS eighty four" → "WGS84", "PROJ four" → "PROJ.4"): that
     # identifier carries the source number.
-    fused = _fused_identifier_keys(source, src, aligned)
+    # Vocabulary aliases authorize their words away for coverage. Restore
+    # those words only while binding a fusion to its original occurrence.
+    fusion_alignment = (_align(source, output, replace(ctx, vocab_spans=[]))
+                        if ctx.vocab_spans else aligned)
+    fused = _fused_identifier_keys(source, src, fusion_alignment)
     out = [(it[0], it[1], fused(it), it[3], it[4]) for it in out]
     # A spoken enumeration rendered as those labels stands behind them.
     spoken = _spoken_label_run(source, src)

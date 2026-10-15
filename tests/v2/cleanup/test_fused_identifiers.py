@@ -19,11 +19,32 @@ from localflow.v2.cleanup.engine import CleanupEngine  # noqa: E402
 from localflow.v2.cleanup.validation import validate  # noqa: E402
 
 
-def failures(source, output):
-    return {c.name for c in validate(source, output).critical_failures}
+def failures(source, output, **kwargs):
+    return {c.name for c in validate(source, output, **kwargs).critical_failures}
 
 
 class FusedIdentifierTests(unittest.TestCase):
+    def test_vocabulary_fusions_bind_to_their_original_occurrences(self):
+        for source, output, vocabulary in (
+            ("Use WGS eighty four.", "Use WGS84.", (("WGS eighty four", "WGS84"),)),
+            ("Check cox one and cox 1.", "Check COX1 and COX1.", (("cox one", "COX1"),)),
+            ("Use kern pair v 2.1.", "Use kerning v2.1.", (("kern pair v 2.1", "kerning v2.1"),)),
+            ("Use proj four.", "Use PROJ.4.", (("proj four", "PROJ.4"),)),
+        ):
+            with self.subTest(source=source):
+                self.assertEqual(failures(source, output, vocabulary_pairs=vocabulary), set())
+                result = CleanupEngine(
+                    lambda prompt, max_tokens: {"text": output, "output_tokens": 20,
+                                               "limit_hit": False},
+                    model_id="fixture").clean(source, vocabulary_pairs=vocabulary)
+                self.assertEqual((result.path, result.text), ("llm", output))
+        source = "Copy from channel to channel 3."
+        vocabulary = (("channel 3", "channel3"),)
+        self.assertIn("numeric_values", failures(
+            source, "Copy from channel3 to channel.", vocabulary_pairs=vocabulary))
+        self.assertEqual(failures(
+            source, "Copy from channel to channel3.", vocabulary_pairs=vocabulary), set())
+
     def test_case_exact_fusions_keep_their_source_case_word(self):
         for source, output in (
             ("Use WGS eighty four.", "Use WGS84."),
