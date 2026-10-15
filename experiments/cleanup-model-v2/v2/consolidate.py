@@ -163,7 +163,9 @@ def build():
     return freeze
 
 
-def train(name, lr=5e-5, checkpoints=4):
+def train(name, lr=3e-5, checkpoints=4):
+    # 3e-5 with cosine decay is the rate that trained D/F on the diverse corpus;
+    # validation loss was still falling at the end of that epoch.
     from .training import run
     freeze = read_json(DATASET / "freeze.json")
     if not freeze:
@@ -176,7 +178,7 @@ if __name__ == "__main__":
     p = argparse.ArgumentParser()
     p.add_argument("stage", choices=["collect", "build", "train"])
     p.add_argument("--name", default="consolidated-c")
-    p.add_argument("--lr", type=float, default=5e-5)
+    p.add_argument("--lr", type=float, default=3e-5)
     p.add_argument("--checkpoints", type=int, default=4)
     a = p.parse_args()
     if a.stage == "collect":
