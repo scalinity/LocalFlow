@@ -12,7 +12,7 @@ import collections
 import random
 import re
 from .common import *
-from .policy_score import LIST_LINE, minimal_target
+from .policy_score import LIST_LINE, WORD, minimal_target
 
 RUN = ART / "consolidated"
 DATASET = RUN / "dataset"
@@ -50,7 +50,7 @@ def _kept_commas(row, comma_kinds):
     """Source gap indices whose added label comma stays: every gap of a row reviewed to
     teach the final vocative comma, otherwise the gaps whose classified kind does a job."""
     if row.get("focus") == VOCATIVE_FOCUS:
-        return set(range(len(row["model_input"]) + 1))  # every gap of the source
+        return set(range(len(WORD.findall(row["model_input"])) + 1))  # every gap of the source
     kept = set(comma_kinds.get("kept_kinds", []))
     kinds = comma_kinds.get("rows", {}).get(row.get("pair_id", row["case_id"]), {})
     return {int(j) for j, kind in kinds.items() if kind in kept}
