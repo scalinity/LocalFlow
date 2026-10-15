@@ -178,6 +178,13 @@ def test_contractions_do_not_stop_list_placement_in_a_long_window():
     assert restore_missing_words(source, proposal) == (expected, 1)
 
 
+def test_connective_never_opens_a_fragment_item():
+    source = "We need 3 things from the shop: milk, eggs, and butter for the cake."
+    proposal = "We need 3 things from the shop:\n\n- Milk\n- Eggs\n- Butter for the cake"
+    assert restore_missing_words(source, proposal) is None
+    assert engine_for(proposal).clean(source).text == source
+
+
 def test_unresolved_cross_item_attachment_preserves_source():
     source = ("Do 2 actions: sit on the chair with both feet on the floor, "
               "slowly stand beside the table while keeping the doorway clear.")
@@ -251,6 +258,7 @@ if __name__ == "__main__":
              test_within_item_conjunction_stays_inside_that_item,
              test_list_placement_does_not_rewrite_quoted_or_protected_content,
              test_contractions_do_not_stop_list_placement_in_a_long_window,
+             test_connective_never_opens_a_fragment_item,
              test_unresolved_cross_item_attachment_preserves_source,
              test_unpunctuated_connective_or_temporal_tail_preserves_source,
              test_item_start_case_preserves_source_names_and_capital_i,

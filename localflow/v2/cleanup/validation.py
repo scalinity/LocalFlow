@@ -1481,7 +1481,12 @@ def restore_missing_words(source: str, output: str, *,
                 # temporal tail such as 'until then' remains ambiguous.
                 item_start, adjacent = boundary
                 next_start, next_end = out_span_of[following]
+                # A connective opens only an item that is itself a sentence
+                # ("2. Then stand by the table."), never a fragment such as
+                # "- Butter", where "- And butter" would be the result.
+                item = output[item_start:].split("\n", 1)[0]
                 if (not adjacent or source_gap.strip() or item_start != next_start
+                        or not re.search(r"[.!?][\"'”’)]*[ \t]*$", item)
                         or not re.fullmatch(r"[ \t]*,[ \t]*",
                                             source[source_end:run[0][0]])
                         or restored.lower().split() not in (
