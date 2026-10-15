@@ -172,7 +172,8 @@ separate the words of a compound marker (`no, sorry`, `I mean, actually`),
 and the whole compound is the marker, so its `no` is not a lost negation.
 Validation reads consecutive markers as one marker: markers directly
 before a deletion's recorded marker (`0.5 seconds no I mean`) belong to
-it when the old value before them holds its own number (in `There are
+it when the old value before them is complete, holding its own number or
+closed by a comma (`Dr. Okafor, no I mean Dr. Lindqvist`; in `There are
 no, sorry, there are two` the `no` is the old value), and markers left right after
 a deletion belong to it while a replacement follows (`ten, no, sorry,
 eleven` deleting `ten, no`; `6 am no make that 7 am`). A trailing run
