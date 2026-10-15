@@ -293,8 +293,9 @@ def minimal_target(source, target, vocabulary=(), keep=frozenset()):
                 if not (_sets_off_addressee(words, label_gaps, k) and "," not in label_gaps[end + 1]):
                     t = t.replace(",", "", 1)
                     changes.append("opening_discourse_comma")
-            # The label's own gap decides: a comma it gave a line break stays though the break reverted.
-            elif "\n" not in s + label_gaps[k] and j not in keep and not _sets_off_addressee(words, label_gaps, k):
+            # A comma at a line break the label keeps stays. Once an invented paragraph reverts, the
+            # gap is one line and its comma is judged like any other: "primed, the valve" splices.
+            elif "\n" not in s + t and j not in keep and not _sets_off_addressee(words, label_gaps, k):
                 # A comma between two touching words reverts to the source gap, keeping them two words.
                 t = t.replace(",", "", 1) or s
                 changes.append("optional_gap_comma")
