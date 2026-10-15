@@ -38,6 +38,20 @@ class DroppedWordTests(unittest.TestCase):
         self.assertEqual(fixed, 'The samples are in the cold room. And before you move them, label them.')
         self.assertIsNone(defects.drops_dictated_word(source, fixed, []))
 
+    def test_restoration_keeps_words_capitalised_for_themselves(self):
+        for source, target, expected in (
+                ('the samples are cold and i will move them', 'The samples are cold. I will move them.',
+                 'The samples are cold. And I will move them.'),
+                ('the deploy failed and github is down', 'The deploy failed. GitHub is down.',
+                 'The deploy failed. And GitHub is down.'),
+                ('we finish the kiln so monday we ship it', 'We finish the kiln. Monday we ship it.',
+                 'We finish the kiln. So Monday we ship it.'),
+                ('we told marta and marta agreed', 'We told Marta. Marta agreed.', 'We told Marta. And Marta agreed.'),
+                ('keep the van here and a driver will come', 'Keep the van here. A driver will come.',
+                 'Keep the van here. And a driver will come.')):
+            with self.subTest(target=target):
+                self.assertEqual(defects.restore_split_conjunctions(source, target, []), expected)
+
     def test_restoration_is_refused_when_another_dropped_word_would_remain(self):
         source = 'the samples are cold and before you move them really label them'
         target = 'The samples are cold. Before you move them, label them.'

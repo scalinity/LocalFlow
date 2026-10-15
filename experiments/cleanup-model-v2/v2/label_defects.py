@@ -217,11 +217,31 @@ def unexplained_rewrites(before, after, vocabulary_pairs=()):
     return out
 
 
+# Words that keep their capital wherever they stand.
+ALWAYS_CAPITALISED = {"i", "i'm", "i'll", "i've", "i'd", "monday", "tuesday", "wednesday", "thursday", "friday",
+                      "saturday", "sunday", "january", "february", "march", "april", "may", "june", "july",
+                      "august", "september", "october", "november", "december"}
+
+
+def _keeps_capital(word, text):
+    """Whether a word text capitalises at a sentence start is capitalised for itself: "I", a
+    day or month, a word with an inner capital ("GitHub"), or one text also capitalises
+    mid-sentence (a name)."""
+    if word.casefold().replace("’", "'") in ALWAYS_CAPITALISED or (len(word) > 1 and not word[1:].islower()):
+        return True
+    for m in re.finditer(r"(?<!\w)" + re.escape(word) + r"(?!\w)", text):
+        before = text[:m.start()].rstrip(" \t")
+        if before and before[-1] not in ".!?:\n\"'”’":
+            return True
+    return False
+
+
 def restore_split_conjunctions(source, target, offsets, vocabulary_pairs=()):
     """Where the target starts a new sentence exactly where the pre-cleanup text
     had a run of conjunctions it dropped ('cold room and before' -> 'cold room.
     Before'), put the dictated run back after the boundary, capitalised, and
-    give the next word its pre-cleanup case. Returns the restored target, or
+    give the next word its pre-cleanup case unless it is capitalised for itself
+    ("I", a name, a day). Returns the restored target, or
     None when there is no such drop or another dropped word would remain. A
     list target is never restored: its dropped 'and' is a list conversion."""
     if LIST_LINE.search(target):
@@ -243,7 +263,8 @@ def restore_split_conjunctions(source, target, offsets, vocabulary_pairs=()):
     out = target
     for position, run, following in sorted(inserts, reverse=True):
         rest = out[position:]
-        if following[:1].islower() and rest[:1].isupper():
+        word = WORD.match(rest)
+        if following[:1].islower() and word and not _keeps_capital(word.group(), target):
             rest = rest[:1].lower() + rest[1:]
         out = out[:position] + run + " " + rest
     return None if drops_dictated_word(source, out, offsets, vocabulary_pairs) else out
