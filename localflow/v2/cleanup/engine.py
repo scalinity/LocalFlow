@@ -666,10 +666,9 @@ def _restated_across_sentences(n: Neighbourhood) -> bool:
     # folder is only for returns" starts a new statement about it. A shared
     # noun is no proof either ("the door test. I mean the cable test can
     # wait").
-    if shape is not None and shape[3] > 0:
+    if shape is not None and shape.tail > 0:
         # The restated copy itself closes the clause it joins.
-        repeated_head, _changed, kept, repeated_tail = shape
-        return _replacement_closes_within(n, repeated_head + kept + repeated_tail + 1)
+        return _replacement_closes_within(n, shape.head + shape.replacing + shape.tail + 1)
     old_words = [w.rstrip(".") for w in n.old_words]
     new_words = list(n.new_words[1:] if n.new_words[:1] and n.new_words[0] in _ARTICLES
                      else n.new_words)
@@ -735,10 +734,10 @@ def _evidence_reason(n: Neighbourhood) -> str | None:
         # A restated old value is the evidence itself, and its repeated
         # words may include the predicate ("Maria will own the grid
         # conversion, no, Jonas will own the grid conversion").
-        restated = across or restatement(n) is not None
-        if (not (restated or _parallel(n) or _parallel_metric_lengths(n))
+        proved = across or restatement(n) is not None
+        if (not (proved or _parallel(n) or _parallel_metric_lengths(n))
                 or _yes_no_contrast(n) or _apology(n)
-                or (not restated and _replacement_opens_predicate(n))
+                or (not proved and _replacement_opens_predicate(n))
                 or (marker == "make that" and not _replacement_closes_within(
                     n, len(n.old_words) + 1))):
             return "not_parallel"
@@ -793,7 +792,7 @@ def _include_repeated_frame(text: str, span: tuple, cursor: int) -> tuple:
     if before is not None and base + before.start() >= cursor:
         shape = restatement(neighbourhood(text, span, marker))
         following = after_marker(text, end)[2][:1]
-        if (shape is not None and shape[0] == 0 and shape[2] >= 2
+        if (shape is not None and shape.head == 0 and shape.replacing >= 2
                 and list(following) == [before.group(1).lower()]):
             return base + before.start(), end
     # \Z, not $: a frame word at the end of the previous line is not this

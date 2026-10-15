@@ -78,9 +78,9 @@ def restates_detail(n: Neighbourhood) -> bool:
     shape = restatement(n)
     if shape is None:
         return False
-    p, a, _b, _s = shape
+    old = plain_words(n.text[n.start:n.marker])
     return not any(w in DETAIL_PREPOSITIONS
-                   for w in plain_words(n.text[n.start:n.marker])[p:p + a])
+                   for w in old[shape.head:shape.head + shape.changed])
 
 
 def quantity_shaped(old: str) -> bool:

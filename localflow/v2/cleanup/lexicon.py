@@ -293,26 +293,64 @@ def without_trailing_markers(words: list) -> list:
     return words
 
 
-def restatement(n: Neighbourhood) -> tuple | None:
+@dataclass(frozen=True)
+class Restatement:
+    """How a replacement restates its old value, in words: the old value is
+    ``head`` repeated words, ``changed`` old words and ``tail`` repeated
+    words, and the replacement opens with the same ``head``, ``replacing``
+    words in place of the changed ones, and the same ``tail``."""
+    head: int
+    changed: int
+    replacing: int
+    tail: int
+
+
+def restatement(n: Neighbourhood) -> Restatement | None:
     """How the words after the marker restate the old value, if they do.
 
     ``in the first half hour, no wait, in the last half hour`` repeats every
-    old word but ``first``. The old value is P + A + S and the replacement,
-    in the same sentence, opens with P + B + S: A and B are the changed
-    words, one to three each. Same-length A and B may still share words at
-    the same place (``at the lab``, ``in the clinic``). The repeated words
+    old word but ``first``: head ``in the``, changed ``first``, replacing
+    ``last``, tail ``half hour``. The changed and replacing words are one to
+    three each, in the same sentence; same-length ones may still share a
+    word in place (``at the lab``, ``in the clinic``). The repeated words
     hold a content word and are at least two, and, unless they enclose the
-    change on both sides, no fewer than the changed old words. ``12 meters,
-    no, send the rest to Marta`` restates nothing, and neither does an
-    unchanged repeat, a change that drops a negation, nor a repeat that a
-    quotation, code span or fence touches. Fillers are not words here.
-    Returns the word counts
-    ``(p, a, b, s)``, or None.
+    change on both sides, no fewer than the changed words. ``12 meters, no,
+    send the rest to Marta`` restates nothing; neither does an unchanged
+    repeat, a change that drops a negation (negation_coverage would reject
+    the result), a change that keeps every changed word and inserts others
+    (``review`` -> ``Jonas will review``), or a repeat that a quotation,
+    code span or fence touches. Fillers and a marker chained before the
+    proposal's own are not words here.
     """
     sentence_end, _words_after, new, _clause = after_marker(n.text, n.end)
     # A quoted repeat may be a literal, not the speaker restating.
     if touches(_quoted_regions(n.text), n.start, sentence_end):
         return None
+    old = without_trailing_markers(plain_words(n.text[n.start:n.marker]))
+    new = list(new)
+    head = 0
+    while head < min(len(old), len(new)) and old[head] == new[head]:
+        head += 1
+    for changed in range(1, RESTATED_CHANGE_MAX_WORDS + 1):
+        tail = len(old) - head - changed
+        if tail < 0:
+            break
+        for replacing in range(1, RESTATED_CHANGE_MAX_WORDS + 1):
+            after = head + replacing
+            if len(new) < after + tail or new[after:after + tail] != old[head + changed:]:
+                continue
+            old_part, new_part = old[head:head + changed], new[head:after]
+            remaining = iter(new_part)
+            if (any(w in NEGATION_WORDS and w not in new_part for w in old_part)
+                    or all(w in remaining for w in old_part)):
+                continue
+            same = ([w for w, v in zip(old_part, new_part) if w == v]
+                    if changed == replacing else [])
+            repeated = old[:head] + old[head + changed:] + same
+            if (len(repeated) >= 2 and any(w not in FUNCTION_WORDS for w in repeated)
+                    and ((head and tail) or len(repeated) >= changed - len(same))):
+                return Restatement(head, changed, replacing, tail)
+    return None
     old = without_trailing_markers(plain_words(n.text[n.start:n.marker]))
     new = list(new)
     p = 0
