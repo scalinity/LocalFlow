@@ -94,6 +94,14 @@ def main():
             if any(c != "-" for c in cells):
                 parts.append(f"| {key} | " + " | ".join(cells) + " |")
         parts.append("")
+    checkpoints = load(out / "checkpoints.json")
+    if checkpoints:
+        parts += ["## Selected versus final checkpoint (programmatic, delivered text)", "",
+                  "| Run | Damage selected / final | No-op preserved selected / final | Repair success selected / final | Corrections selected / final |", "|---|---|---|---|---|"]
+        for run, rec in checkpoints.items():
+            cells = [f"{pct(rec['selected'][m])} / {pct(rec['final'][m])}" for m in ("engine_damage", "engine_noop_preserved", "engine_repair_success", "engine_correction_success")]
+            parts.append(f"| {run} ({rec['selected']['label']}, {rec['final']['label']}) | " + " | ".join(cells) + " |")
+        parts.append("")
     if latency:
         parts += ["## Latency (sequential clean pass on an idle Mac, 4-bit)", "",
                   "| System | median total (s) | p95 total (s) | median first token (s) | peak MLX (GB) | fallback | same text as earlier run |", "|---|---|---|---|---|---|---|"]
