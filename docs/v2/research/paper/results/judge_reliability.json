@@ -1,0 +1,63 @@
+{
+ "krippendorff_alpha_judged_pass": {
+  "alpha": 0.7730461396605384,
+  "expected_disagreement": 0.2278304216769595,
+  "observed_disagreement": 0.05170699370235333,
+  "omitted_units": 0,
+  "ratings": 12068,
+  "reason": null,
+  "units": 6034
+ },
+ "order_stability": {
+  "anthropic": {
+   "judged_pass_changed": 125,
+   "outputs": 6034,
+   "pass_rate_forward": 0.8660921445144183,
+   "pass_rate_reversed": 0.8695724229366921,
+   "share_changed": 0.020715942989724893
+  }
+ },
+ "pairwise": {
+  "anthropic vs openai": {
+   "critical_fact_changed": {
+    "kappa": 0.24790600279198888,
+    "n": 6034,
+    "observed_agreement": 0.995028173682466
+   },
+   "hallucination": {
+    "kappa": -0.00024865312891500166,
+    "n": 6034,
+    "observed_agreement": 0.9993370898243288
+   },
+   "judged_clean": {
+    "kappa": 0.40313425875769693,
+    "n": 6034,
+    "observed_agreement": 0.9860788863109049
+   },
+   "judged_pass": {
+    "kappa": 0.7730431474174094,
+    "n": 6034,
+    "observed_agreement": 0.9482930062976467
+   },
+   "semantic_damage": {
+    "kappa": 0.4895900981777904,
+    "n": 6034,
+    "observed_agreement": 0.9948624461385482
+   },
+   "unwanted_edit": {
+    "kappa": 0.39859877466068494,
+    "n": 6034,
+    "observed_agreement": 0.9887305270135897
+   }
+  }
+ },
+ "pass_rate": {
+  "anthropic": 0.8660921445144183,
+  "openai": 0.8717268810076235
+ },
+ "unjudged_outputs": {
+  "anthropic": 0,
+  "anthropic:swapped": 0,
+  "openai": 0
+ }
+}
