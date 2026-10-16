@@ -62,15 +62,38 @@ def quantize(fused: Path, out: Path) -> Path:
     return out
 
 
-def candidate(adapter_dir: Path, name: str, keep_fused: bool = False, base: str | None = None) -> Path:
+def require_same_template(bf16_base: Path) -> None:
+    """A bf16 base other than B's 4B must carry B's chat template: the tokenizer files are copied from B."""
+    b = b_snapshot()
+    template = "chat_template.jinja"
+    if (bf16_base / template).exists() and file_sha256(bf16_base / template) != file_sha256(b / template):
+        raise RuntimeError(f"chat template differs: {bf16_base / template} is not {b / template}")
+
+
+def candidate(adapter_dir: Path, name: str, keep_fused: bool = False, base: str | None = None,
+              bf16_base: str | None = None) -> Path:
     """Fuse + quantize one checkpoint into artifacts/export/candidates/NAME.
 
     A ``base`` that is already 4-bit (QLoRA) is fused in place: mlx_lm
     dequantizes each adapted layer, adds the LoRA delta and requantizes it
-    with the base's own bits and group size."""
+    with the base's own bits and group size.
+
+    ``bf16_base`` is for adapters trained on a bf16 base on a GPU pod: "4b" is
+    this machine's bf16 4B base, anything else a local bf16 model directory.
+    The adapter is fused into it and the result quantized exactly as C's was;
+    a ``base`` recorded on the pod is ignored."""
     fused = EXPORT / f"fused-{name}"
     q = EXPORT / "candidates" / name
     if (q / "config.json").exists():
+        return q
+    if bf16_base is not None:
+        source = None if bf16_base == "4b" else str(bf16_base)
+        if source is not None:
+            require_same_template(Path(source))
+        fuse(adapter_dir, fused, source)
+        quantize(fused, q)
+        if not keep_fused:
+            shutil.rmtree(fused)
         return q
     if base:
         fuse(adapter_dir, q, base)
