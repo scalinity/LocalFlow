@@ -303,6 +303,15 @@ no candidate passed the gates
 - M2: failed judged_damage_not_above_C
 - M3: failed median_latency_within_1.5x_C, quantized_size_within_1.5x_C
 
+## Costs
+
+| Item | USD |
+|---|---|
+| RunPod GPU pods, all runs and probes (billing report, lags running pods) | 42.89 |
+| Claude Opus 5.5 judge, five passes (main, swapped, final checkpoints, two normalized-reference passes) | 14.25 |
+| OpenAI gpt-6.1-sol judge (reversed-order pass and first chunks; final-checkpoint and forward-order batches unfinished) | 1.86 |
+| Meta Muse Spark via OpenRouter judge (main pass and recoveries; swapped pass unfinished) | 0.82 |
+
 ## Judge reliability
 
 ```json

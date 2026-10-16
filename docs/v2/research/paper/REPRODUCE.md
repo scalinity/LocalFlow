@@ -34,6 +34,19 @@ $PY experiments/cleanup-model-v2/tools/research_select.py docs/v2/research/paper
 $PY experiments/cleanup-model-v2/tools/research_report.py docs/v2/research/paper/results
 ```
 
+Supplementary analyses (post hoc; see DEVIATIONS):
+
+```sh
+$PY experiments/cleanup-model-v2/tools/research_normalize_dev.py $A/research/dev-normalized/validation.jsonl
+$PY experiments/cleanup-model-v2/tools/research_analysis.py docs/v2/research/paper/data/arms_final.json --out-dir OUT --judge anthropic=$A/judge/dev-final-anthropic/verdicts.jsonl
+$PY experiments/cleanup-model-v2/tools/research_analysis.py docs/v2/research/paper/data/arms.json --out-dir OUT --cases $A/research/dev-normalized/validation.jsonl --judge anthropic=$A/judge/dev-norm-sel-anthropic/verdicts.jsonl
+$PY experiments/cleanup-model-v2/tools/research_categories.py docs/v2/research/paper/data/arms_final.json $A/judge/dev-final-anthropic/verdicts.jsonl OUT.json
+$PY experiments/cleanup-model-v2/tools/research_checkpoints.py docs/v2/research/paper/results/checkpoints.json
+```
+
+Judge runs used (names under `$A/judge`): `dev-main-*`, `dev-swap-*`, `dev-final-*`, `dev-norm-sel-anthropic`, `dev-norm-final-anthropic`; commands are `python -m v2.judge CASES SYSTEMS --prefix development --role development --backend B --name NAME [--swap-order]`; a rerun of the same command resumes.
+The pending runs (OpenAI forward-order and final-checkpoint batches, the OpenRouter swapped pass) can be added to the analysis by pointing `--judge` at their `verdicts.jsonl` once it exists.
+
 The analysis uses `random.Random(20261015)` and 10,000 resamples; both are fixed by the pre-registration.
 
 ## Costs recorded
