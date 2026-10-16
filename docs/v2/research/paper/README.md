@@ -6,6 +6,8 @@ it does not run experiments and does not invent numbers.
 | File | What it is |
 |---|---|
 | [PAPER_BRIEF.md](PAPER_BRIEF.md) | The question, the contribution as the evidence allows it, venues and dates |
+| [FINDINGS.md](FINDINGS.md) | Dated findings, each tied to a generated file |
+| [SELECTION.md](SELECTION.md) | The model-selection rule, its outcome and a labeled post-hoc recommendation |
 | [EVIDENCE_MAP.md](EVIDENCE_MAP.md) | Each claim, the file that supports it and its status |
 | [results/RESULTS.md](results/RESULTS.md) | Generated tables (arm values, seed spread, contrasts, latency, cost). Never edited by hand |
 | [LIMITATIONS.md](LIMITATIONS.md) | Validity threats found while running the study |
