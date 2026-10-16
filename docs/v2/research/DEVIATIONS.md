@@ -1,0 +1,15 @@
+# Deviations from the pre-registered protocol
+
+Append-only. The study is not yet sealed, so these are recorded as they happen rather than after a freeze; each entry says
+whether outcomes had been seen when the decision was made. Times are UTC.
+
+| Date (UTC) | Deviation | Reason | Outcome exposure when decided |
+|---|---|---|---|
+| 2026-10-16 | Programmatic metrics on the selected checkpoint of every run (and the final checkpoint of M2 seed 0 only), not on all eight checkpoints of every run | Mac evaluation takes about 18 minutes per checkpoint; 112 evaluations would take about 37 hours | None seen; decided before any programmatic result |
+| 2026-10-16 | Evaluations ran up to six at a time; latency is taken only from a later sequential pass on an idle machine | Throughput; the concurrent fields are discarded | After programmatic results for several runs |
+| 2026-10-16 | A3's training run was relaunched once on the same pod after its base-model download stalled in setup; training itself started once | A stalled download hung setup for about an hour | None (before training began) |
+| 2026-10-16 | A2 and A2prime trained at commit f77b43a on the earlier dataset, whose capture sources match that commit; the other arms trained at ba2895c | The earlier dataset's capture sources differ from the merged branch's, and the launch checks require an exact match | None |
+| 2026-10-16 | The five few-shot examples for the Claude baselines are drawn from the earlier consolidated TRAIN pool, not the merged pool | The baseline harness accepts only rows whose origin is "synthetic"; the merged pool also holds contrast and unlabeled-origin rows | None (no baseline output exists) |
+| 2026-10-16 | The Claude few-shot systems (Sonnet 5.5, Opus 5.5) were not run | The combined cost gate ($6 cap against a worst-case reservation of $23.56; point estimate $3.90) refused submission, and the cap was not relaxed without the author | None |
+| 2026-10-16 | The development-set H2 test is treated as exploratory, and the human-annotation packet may use `--differing-only` sampling | 35 no-change and 27 repair list/question cases; a random system pair gives identical text about 83 percent of the time | After programmatic results for H2 (a one-case difference) |
+| 2026-10-16 | Judged score, adjusted interval, reference seed SD, human-judge rule and model-selection rule were fixed in ANALYSIS_PLAN.md, committed before any judge verdict existed | The pre-registration left these open | After programmatic results; before any judged result |

@@ -20,7 +20,7 @@ ART = HERE / "artifacts"
 
 # arm -> (clean-pass label, earlier concurrent label or None)
 CLEAN = {
-    "C": ("C-merged", None),
+    "C": ("latency-C", "C-merged"),
     "base-4b-prod-prompt": ("base-4b-prod-prompt", None),
     "base-9b-prod-prompt": ("base-9b-prod-prompt", None),
     "M2": ("latency-M2s0", "M2s0-ck426"),
