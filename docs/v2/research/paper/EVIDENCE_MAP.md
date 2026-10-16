@@ -15,8 +15,8 @@ Statuses reflect `results/` as of the last update; re-derive them from `results/
 | H5: M2 within 3 points of each few-shot frontier model at a fraction of cost and latency | contrasts vs `sonnet-5-5-fewshot`, `opus-5-5-fewshot` | **not tested** | Claude few-shot systems did not run (OPEN_DECISIONS 1) |
 | Every retrained arm beats C on the judged pass rate | `RESULTS.md` exploratory contrasts "M1/M2/M3 vs C" | observed (+3.5 to +3.9 points, intervals exclude zero); outside the pre-declared family | At the final checkpoint with normalized references C is 88.6 against about 94.4 |
 | Seed spread of M1 and M2 | `arm_values.csv` (seed_sd) | measured | Judged pass SD 1.1 (M1), 0.7 (M2) at the selected checkpoint |
-| Judges agree across vendors | `judge_reliability.json` | measured: Opus and gpt-6.1-sol kappa 0.77, alpha 0.77 | The OpenAI column is its reversed-order run; Muse pending |
-| Judges are position-stable | `judge_reliability.json` `order_stability` | Opus: yes (2.1 percent of outputs changed) | OpenAI and Muse not available |
+| Judges agree across vendors | `judge_reliability.json` | measured: pairwise kappa 0.77 to 0.80, Krippendorff alpha 0.78 over three vendors | The OpenAI column is its reversed-order run |
+| Judges are position-stable | `judge_reliability.json` `order_stability` | Opus: yes (2.1 percent of outputs changed); Muse and OpenAI swapped runs not yet reported | OpenAI's forward-order run did not finish |
 | Judges agree with humans | `agreement.json` | **not available** until annotation exists | Packet of 165 pairs is ready (OPEN_DECISIONS 3) |
 | Latency and memory on device | `latency.json` | measured (clean sequential pass) | 4B 1.76 to 1.79 s median; 9B 2.88 s |
 | Which model to ship | `selection.json`, [SELECTION.md](SELECTION.md) | rule: **keep C**; recommendation (post hoc): M2 | Gate failed by a third of a case |

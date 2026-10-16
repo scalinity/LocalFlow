@@ -1,10 +1,10 @@
 {
  "krippendorff_alpha_judged_pass": {
-  "alpha": 0.7730461396605384,
-  "expected_disagreement": 0.2278304216769595,
-  "observed_disagreement": 0.05170699370235333,
+  "alpha": 0.779235095761226,
+  "expected_disagreement": 0.24372628178458086,
+  "observed_disagreement": 0.05380620925864545,
   "omitted_units": 0,
-  "ratings": 12068,
+  "ratings": 18102,
   "reason": null,
   "units": 6034
  },
@@ -49,15 +49,81 @@
     "n": 6034,
     "observed_agreement": 0.9887305270135897
    }
+  },
+  "anthropic vs openrouter": {
+   "critical_fact_changed": {
+    "kappa": 0.16026648230784266,
+    "n": 6034,
+    "observed_agreement": 0.9948624461385482
+   },
+   "hallucination": {
+    "kappa": 0.0,
+    "n": 6034,
+    "observed_agreement": 0.9995028173682466
+   },
+   "judged_clean": {
+    "kappa": 0.47820931972236136,
+    "n": 6034,
+    "observed_agreement": 0.9862446138548226
+   },
+   "judged_pass": {
+    "kappa": 0.7957092762973295,
+    "n": 6034,
+    "observed_agreement": 0.9481272787537288
+   },
+   "semantic_damage": {
+    "kappa": 0.3798957700546748,
+    "n": 6034,
+    "observed_agreement": 0.9925422605236991
+   },
+   "unwanted_edit": {
+    "kappa": 0.49079655692732993,
+    "n": 6034,
+    "observed_agreement": 0.9888962545575074
+   }
+  },
+  "openai vs openrouter": {
+   "critical_fact_changed": {
+    "kappa": 0.7614982055052345,
+    "n": 6034,
+    "observed_agreement": 0.999171362280411
+   },
+   "hallucination": {
+    "kappa": 0.0,
+    "n": 6034,
+    "observed_agreement": 0.9998342724560823
+   },
+   "judged_clean": {
+    "kappa": 0.6790036945044724,
+    "n": 6034,
+    "observed_agreement": 0.9951939012263838
+   },
+   "judged_pass": {
+    "kappa": 0.7687632659380672,
+    "n": 6034,
+    "observed_agreement": 0.9421610871726881
+   },
+   "semantic_damage": {
+    "kappa": 0.7189024430823749,
+    "n": 6034,
+    "observed_agreement": 0.9976798143851509
+   },
+   "unwanted_edit": {
+    "kappa": 0.6790036945044724,
+    "n": 6034,
+    "observed_agreement": 0.9951939012263838
+   }
   }
  },
  "pass_rate": {
   "anthropic": 0.8660921445144183,
-  "openai": 0.8717268810076235
+  "openai": 0.8717268810076235,
+  "openrouter": 0.8360954590652967
  },
  "unjudged_outputs": {
   "anthropic": 0,
   "anthropic:swapped": 0,
-  "openai": 0
+  "openai": 0,
+  "openrouter": 0
  }
 }

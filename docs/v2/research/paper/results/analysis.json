@@ -216,6 +216,62 @@
     "seeds": [
      0.0
     ]
+   },
+   "openrouter:judged_clean": {
+    "mean": 1.0,
+    "n": 431,
+    "seed_sd": null,
+    "seeds": [
+     1.0
+    ]
+   },
+   "openrouter:judged_cleanup_complete": {
+    "mean": 0.27842227378190254,
+    "n": 431,
+    "seed_sd": null,
+    "seeds": [
+     0.27842227378190254
+    ]
+   },
+   "openrouter:judged_fact_changed": {
+    "mean": 0.0,
+    "n": 431,
+    "seed_sd": null,
+    "seeds": [
+     0.0
+    ]
+   },
+   "openrouter:judged_hallucination": {
+    "mean": 0.0,
+    "n": 431,
+    "seed_sd": null,
+    "seeds": [
+     0.0
+    ]
+   },
+   "openrouter:judged_pass": {
+    "mean": 0.8654292343387471,
+    "n": 431,
+    "seed_sd": null,
+    "seeds": [
+     0.8654292343387471
+    ]
+   },
+   "openrouter:judged_semantic_damage": {
+    "mean": 0.0,
+    "n": 431,
+    "seed_sd": null,
+    "seeds": [
+     0.0
+    ]
+   },
+   "openrouter:judged_unwanted_edit": {
+    "mean": 0.0,
+    "n": 431,
+    "seed_sd": null,
+    "seeds": [
+     0.0
+    ]
    }
   },
   "A2": {
@@ -433,6 +489,62 @@
     "seed_sd": null,
     "seeds": [
      0.002320185614849188
+    ]
+   },
+   "openrouter:judged_clean": {
+    "mean": 0.9953596287703016,
+    "n": 431,
+    "seed_sd": null,
+    "seeds": [
+     0.9953596287703016
+    ]
+   },
+   "openrouter:judged_cleanup_complete": {
+    "mean": 0.32018561484918795,
+    "n": 431,
+    "seed_sd": null,
+    "seeds": [
+     0.32018561484918795
+    ]
+   },
+   "openrouter:judged_fact_changed": {
+    "mean": 0.0,
+    "n": 431,
+    "seed_sd": null,
+    "seeds": [
+     0.0
+    ]
+   },
+   "openrouter:judged_hallucination": {
+    "mean": 0.0,
+    "n": 431,
+    "seed_sd": null,
+    "seeds": [
+     0.0
+    ]
+   },
+   "openrouter:judged_pass": {
+    "mean": 0.9048723897911833,
+    "n": 431,
+    "seed_sd": null,
+    "seeds": [
+     0.9048723897911833
+    ]
+   },
+   "openrouter:judged_semantic_damage": {
+    "mean": 0.002320185614849188,
+    "n": 431,
+    "seed_sd": null,
+    "seeds": [
+     0.002320185614849188
+    ]
+   },
+   "openrouter:judged_unwanted_edit": {
+    "mean": 0.004640371229698376,
+    "n": 431,
+    "seed_sd": null,
+    "seeds": [
+     0.004640371229698376
     ]
    }
   },
@@ -652,6 +764,62 @@
     "seeds": [
      0.004640371229698376
     ]
+   },
+   "openrouter:judged_clean": {
+    "mean": 0.9837587006960556,
+    "n": 431,
+    "seed_sd": null,
+    "seeds": [
+     0.9837587006960556
+    ]
+   },
+   "openrouter:judged_cleanup_complete": {
+    "mean": 0.3062645011600928,
+    "n": 431,
+    "seed_sd": null,
+    "seeds": [
+     0.3062645011600928
+    ]
+   },
+   "openrouter:judged_fact_changed": {
+    "mean": 0.002320185614849188,
+    "n": 431,
+    "seed_sd": null,
+    "seeds": [
+     0.002320185614849188
+    ]
+   },
+   "openrouter:judged_hallucination": {
+    "mean": 0.0,
+    "n": 431,
+    "seed_sd": null,
+    "seeds": [
+     0.0
+    ]
+   },
+   "openrouter:judged_pass": {
+    "mean": 0.8839907192575406,
+    "n": 431,
+    "seed_sd": null,
+    "seeds": [
+     0.8839907192575406
+    ]
+   },
+   "openrouter:judged_semantic_damage": {
+    "mean": 0.01160092807424594,
+    "n": 431,
+    "seed_sd": null,
+    "seeds": [
+     0.01160092807424594
+    ]
+   },
+   "openrouter:judged_unwanted_edit": {
+    "mean": 0.016241299303944315,
+    "n": 431,
+    "seed_sd": null,
+    "seeds": [
+     0.016241299303944315
+    ]
    }
   },
   "A3": {
@@ -870,6 +1038,62 @@
     "seeds": [
      0.002320185614849188
     ]
+   },
+   "openrouter:judged_clean": {
+    "mean": 0.9976798143851509,
+    "n": 431,
+    "seed_sd": null,
+    "seeds": [
+     0.9976798143851509
+    ]
+   },
+   "openrouter:judged_cleanup_complete": {
+    "mean": 0.26218097447795824,
+    "n": 431,
+    "seed_sd": null,
+    "seeds": [
+     0.26218097447795824
+    ]
+   },
+   "openrouter:judged_fact_changed": {
+    "mean": 0.002320185614849188,
+    "n": 431,
+    "seed_sd": null,
+    "seeds": [
+     0.002320185614849188
+    ]
+   },
+   "openrouter:judged_hallucination": {
+    "mean": 0.0,
+    "n": 431,
+    "seed_sd": null,
+    "seeds": [
+     0.0
+    ]
+   },
+   "openrouter:judged_pass": {
+    "mean": 0.8491879350348028,
+    "n": 431,
+    "seed_sd": null,
+    "seeds": [
+     0.8491879350348028
+    ]
+   },
+   "openrouter:judged_semantic_damage": {
+    "mean": 0.002320185614849188,
+    "n": 431,
+    "seed_sd": null,
+    "seeds": [
+     0.002320185614849188
+    ]
+   },
+   "openrouter:judged_unwanted_edit": {
+    "mean": 0.002320185614849188,
+    "n": 431,
+    "seed_sd": null,
+    "seeds": [
+     0.002320185614849188
+    ]
    }
   },
   "C": {
@@ -1082,6 +1306,62 @@
     ]
    },
    "openai:judged_unwanted_edit": {
+    "mean": 0.0,
+    "n": 431,
+    "seed_sd": null,
+    "seeds": [
+     0.0
+    ]
+   },
+   "openrouter:judged_clean": {
+    "mean": 1.0,
+    "n": 431,
+    "seed_sd": null,
+    "seeds": [
+     1.0
+    ]
+   },
+   "openrouter:judged_cleanup_complete": {
+    "mean": 0.2296983758700696,
+    "n": 431,
+    "seed_sd": null,
+    "seeds": [
+     0.2296983758700696
+    ]
+   },
+   "openrouter:judged_fact_changed": {
+    "mean": 0.0,
+    "n": 431,
+    "seed_sd": null,
+    "seeds": [
+     0.0
+    ]
+   },
+   "openrouter:judged_hallucination": {
+    "mean": 0.0,
+    "n": 431,
+    "seed_sd": null,
+    "seeds": [
+     0.0
+    ]
+   },
+   "openrouter:judged_pass": {
+    "mean": 0.8167053364269141,
+    "n": 431,
+    "seed_sd": null,
+    "seeds": [
+     0.8167053364269141
+    ]
+   },
+   "openrouter:judged_semantic_damage": {
+    "mean": 0.0,
+    "n": 431,
+    "seed_sd": null,
+    "seeds": [
+     0.0
+    ]
+   },
+   "openrouter:judged_unwanted_edit": {
     "mean": 0.0,
     "n": 431,
     "seed_sd": null,
@@ -1360,6 +1640,76 @@
      0.0,
      0.009280742459396751
     ]
+   },
+   "openrouter:judged_clean": {
+    "mean": 0.9953596287703016,
+    "n": 431,
+    "seed_sd": 0.006138634132400457,
+    "seeds": [
+     0.9976798143851509,
+     1.0,
+     0.988399071925754
+    ]
+   },
+   "openrouter:judged_cleanup_complete": {
+    "mean": 0.26218097447795824,
+    "n": 431,
+    "seed_sd": 0.006138634132400426,
+    "seeds": [
+     0.2668213457076566,
+     0.26450116009280744,
+     0.2552204176334107
+    ]
+   },
+   "openrouter:judged_fact_changed": {
+    "mean": 0.002320185614849188,
+    "n": 431,
+    "seed_sd": 0.002320185614849188,
+    "seeds": [
+     0.002320185614849188,
+     0.0,
+     0.004640371229698376
+    ]
+   },
+   "openrouter:judged_hallucination": {
+    "mean": 0.0,
+    "n": 431,
+    "seed_sd": 0.0,
+    "seeds": [
+     0.0,
+     0.0,
+     0.0
+    ]
+   },
+   "openrouter:judged_pass": {
+    "mean": 0.8484145398298532,
+    "n": 431,
+    "seed_sd": 0.007458353256761752,
+    "seeds": [
+     0.8538283062645011,
+     0.851508120649652,
+     0.839907192575406
+    ]
+   },
+   "openrouter:judged_semantic_damage": {
+    "mean": 0.004640371229698376,
+    "n": 431,
+    "seed_sd": 0.006138634132400442,
+    "seeds": [
+     0.002320185614849188,
+     0.0,
+     0.01160092807424594
+    ]
+   },
+   "openrouter:judged_unwanted_edit": {
+    "mean": 0.004640371229698376,
+    "n": 431,
+    "seed_sd": 0.006138634132400442,
+    "seeds": [
+     0.002320185614849188,
+     0.0,
+     0.01160092807424594
+    ]
    }
   },
   "M2": {
@@ -1632,6 +1982,76 @@
      0.002320185614849188,
      0.002320185614849188
     ]
+   },
+   "openrouter:judged_clean": {
+    "mean": 0.9969064191802012,
+    "n": 431,
+    "seed_sd": 0.001339559789303116,
+    "seeds": [
+     0.9953596287703016,
+     0.9976798143851509,
+     0.9976798143851509
+    ]
+   },
+   "openrouter:judged_cleanup_complete": {
+    "mean": 0.25599381283836037,
+    "n": 431,
+    "seed_sd": 0.005358239157212304,
+    "seeds": [
+     0.26218097447795824,
+     0.2529002320185615,
+     0.2529002320185615
+    ]
+   },
+   "openrouter:judged_fact_changed": {
+    "mean": 0.003093580819798917,
+    "n": 431,
+    "seed_sd": 0.001339559789303076,
+    "seeds": [
+     0.004640371229698376,
+     0.002320185614849188,
+     0.002320185614849188
+    ]
+   },
+   "openrouter:judged_hallucination": {
+    "mean": 0.0,
+    "n": 431,
+    "seed_sd": 0.0,
+    "seeds": [
+     0.0,
+     0.0,
+     0.0
+    ]
+   },
+   "openrouter:judged_pass": {
+    "mean": 0.843000773395205,
+    "n": 431,
+    "seed_sd": 0.005358239157212336,
+    "seeds": [
+     0.8491879350348028,
+     0.839907192575406,
+     0.839907192575406
+    ]
+   },
+   "openrouter:judged_semantic_damage": {
+    "mean": 0.003093580819798917,
+    "n": 431,
+    "seed_sd": 0.001339559789303076,
+    "seeds": [
+     0.004640371229698376,
+     0.002320185614849188,
+     0.002320185614849188
+    ]
+   },
+   "openrouter:judged_unwanted_edit": {
+    "mean": 0.003093580819798917,
+    "n": 431,
+    "seed_sd": 0.001339559789303076,
+    "seeds": [
+     0.004640371229698376,
+     0.002320185614849188,
+     0.002320185614849188
+    ]
    }
   },
   "M3": {
@@ -1849,6 +2269,62 @@
     "seed_sd": null,
     "seeds": [
      0.0
+    ]
+   },
+   "openrouter:judged_clean": {
+    "mean": 0.9976798143851509,
+    "n": 431,
+    "seed_sd": null,
+    "seeds": [
+     0.9976798143851509
+    ]
+   },
+   "openrouter:judged_cleanup_complete": {
+    "mean": 0.26450116009280744,
+    "n": 431,
+    "seed_sd": null,
+    "seeds": [
+     0.26450116009280744
+    ]
+   },
+   "openrouter:judged_fact_changed": {
+    "mean": 0.0,
+    "n": 431,
+    "seed_sd": null,
+    "seeds": [
+     0.0
+    ]
+   },
+   "openrouter:judged_hallucination": {
+    "mean": 0.0,
+    "n": 431,
+    "seed_sd": null,
+    "seeds": [
+     0.0
+    ]
+   },
+   "openrouter:judged_pass": {
+    "mean": 0.851508120649652,
+    "n": 431,
+    "seed_sd": null,
+    "seeds": [
+     0.851508120649652
+    ]
+   },
+   "openrouter:judged_semantic_damage": {
+    "mean": 0.002320185614849188,
+    "n": 431,
+    "seed_sd": null,
+    "seeds": [
+     0.002320185614849188
+    ]
+   },
+   "openrouter:judged_unwanted_edit": {
+    "mean": 0.002320185614849188,
+    "n": 431,
+    "seed_sd": null,
+    "seeds": [
+     0.002320185614849188
     ]
    }
   },
@@ -2068,6 +2544,62 @@
     "seeds": [
      0.027842227378190254
     ]
+   },
+   "openrouter:judged_clean": {
+    "mean": 0.9675174013921114,
+    "n": 431,
+    "seed_sd": null,
+    "seeds": [
+     0.9675174013921114
+    ]
+   },
+   "openrouter:judged_cleanup_complete": {
+    "mean": 0.15081206496519722,
+    "n": 431,
+    "seed_sd": null,
+    "seeds": [
+     0.15081206496519722
+    ]
+   },
+   "openrouter:judged_fact_changed": {
+    "mean": 0.0,
+    "n": 431,
+    "seed_sd": null,
+    "seeds": [
+     0.0
+    ]
+   },
+   "openrouter:judged_hallucination": {
+    "mean": 0.0,
+    "n": 431,
+    "seed_sd": null,
+    "seeds": [
+     0.0
+    ]
+   },
+   "openrouter:judged_pass": {
+    "mean": 0.7215777262180975,
+    "n": 431,
+    "seed_sd": null,
+    "seeds": [
+     0.7215777262180975
+    ]
+   },
+   "openrouter:judged_semantic_damage": {
+    "mean": 0.01160092807424594,
+    "n": 431,
+    "seed_sd": null,
+    "seeds": [
+     0.01160092807424594
+    ]
+   },
+   "openrouter:judged_unwanted_edit": {
+    "mean": 0.03248259860788863,
+    "n": 431,
+    "seed_sd": null,
+    "seeds": [
+     0.03248259860788863
+    ]
    }
   },
   "base-9b-prod-prompt": {
@@ -2285,6 +2817,62 @@
     "seed_sd": null,
     "seeds": [
      0.025522041763341066
+    ]
+   },
+   "openrouter:judged_clean": {
+    "mean": 0.9535962877030162,
+    "n": 431,
+    "seed_sd": null,
+    "seeds": [
+     0.9535962877030162
+    ]
+   },
+   "openrouter:judged_cleanup_complete": {
+    "mean": 0.18097447795823665,
+    "n": 431,
+    "seed_sd": null,
+    "seeds": [
+     0.18097447795823665
+    ]
+   },
+   "openrouter:judged_fact_changed": {
+    "mean": 0.0,
+    "n": 431,
+    "seed_sd": null,
+    "seeds": [
+     0.0
+    ]
+   },
+   "openrouter:judged_hallucination": {
+    "mean": 0.0,
+    "n": 431,
+    "seed_sd": null,
+    "seeds": [
+     0.0
+    ]
+   },
+   "openrouter:judged_pass": {
+    "mean": 0.7378190255220418,
+    "n": 431,
+    "seed_sd": null,
+    "seeds": [
+     0.7378190255220418
+    ]
+   },
+   "openrouter:judged_semantic_damage": {
+    "mean": 0.018561484918793503,
+    "n": 431,
+    "seed_sd": null,
+    "seeds": [
+     0.018561484918793503
+    ]
+   },
+   "openrouter:judged_unwanted_edit": {
+    "mean": 0.04640371229698376,
+    "n": 431,
+    "seed_sd": null,
+    "seeds": [
+     0.04640371229698376
     ]
    }
   }
@@ -2950,6 +3538,128 @@
     "p_holm": 1.0,
     "polarity": 1,
     "reference_seed_sd": 0.00803735873581844,
+    "second": "M1",
+    "superiority_supported": false
+   }
+  ],
+  "openrouter:judged_pass": [
+   {
+    "ci95": [
+     -0.06885150812064948,
+     -0.013147718484145398
+    ],
+    "ci_adjusted_bonferroni": [
+     -0.07965970610982212,
+     -0.0038669760247486474
+    ],
+    "contrast": "M2 vs A2prime",
+    "difference": -0.040989945862335654,
+    "difference_first_better": -0.040989945862335654,
+    "direction": 1,
+    "first": "M2",
+    "metric": "openrouter:judged_pass",
+    "n_cases": 431,
+    "noninferiority_margin": null,
+    "p": 0.0033996600339966003,
+    "p_holm": 0.016998300169983,
+    "polarity": 1,
+    "reference_seed_sd": 0.005358239157212336,
+    "second": "A2prime",
+    "superiority_supported": false
+   },
+   {
+    "ci95": [
+     -0.08352668213457076,
+     -0.0317092034029389
+    ],
+    "ci_adjusted_bonferroni": [
+     -0.09435421500386697,
+     -0.020881670533642694
+    ],
+    "contrast": "M1 vs A2",
+    "difference": -0.05645784996133024,
+    "difference_first_better": -0.05645784996133024,
+    "direction": 1,
+    "first": "M1",
+    "metric": "openrouter:judged_pass",
+    "n_cases": 431,
+    "noninferiority_margin": null,
+    "p": 0.00019998000199980003,
+    "p_holm": 0.0013998600139986002,
+    "polarity": 1,
+    "reference_seed_sd": 0.007458353256761752,
+    "second": "A2",
+    "superiority_supported": false
+   },
+   {
+    "ci95": [
+     -0.028615622583139984,
+     -0.006187161639597835
+    ],
+    "ci_adjusted_bonferroni": [
+     -0.033255993812838364,
+     -0.0023201856148491896
+    ],
+    "contrast": "M1 vs A1",
+    "difference": -0.017014694508894045,
+    "difference_first_better": -0.017014694508894045,
+    "direction": 1,
+    "first": "M1",
+    "metric": "openrouter:judged_pass",
+    "n_cases": 431,
+    "noninferiority_margin": null,
+    "p": 0.0007999200079992001,
+    "p_holm": 0.0047995200479952005,
+    "polarity": 1,
+    "reference_seed_sd": 0.007458353256761752,
+    "second": "A1",
+    "superiority_supported": false
+   },
+   {
+    "ci95": [
+     -0.010827532869296214,
+     0.01005413766434648
+    ],
+    "ci_adjusted_bonferroni": [
+     -0.015467904098994586,
+     0.014694508894044854
+    ],
+    "contrast": "M1 vs A3",
+    "difference": -0.0007733952049497308,
+    "difference_first_better": -0.0007733952049497308,
+    "direction": 1,
+    "first": "M1",
+    "metric": "openrouter:judged_pass",
+    "n_cases": 431,
+    "noninferiority_margin": null,
+    "p": 0.8229177082291771,
+    "p_holm": 1.0,
+    "polarity": 1,
+    "reference_seed_sd": 0.007458353256761752,
+    "second": "A3",
+    "superiority_supported": false
+   },
+   {
+    "ci95": [
+     -0.014694508894044854,
+     0.019334880123743233
+    ],
+    "ci_adjusted_bonferroni": [
+     -0.02010827532869296,
+     0.025522041763341066
+    ],
+    "contrast": "M3 vs M1",
+    "difference": 0.003093580819798919,
+    "difference_first_better": 0.003093580819798919,
+    "direction": 1,
+    "first": "M3",
+    "metric": "openrouter:judged_pass",
+    "n_cases": 431,
+    "noninferiority_margin": null,
+    "p": 0.6871312868713129,
+    "p_holm": 1.0,
+    "polarity": 1,
+    "reference_seed_sd": 0.007458353256761752,
     "second": "M1",
     "superiority_supported": false
    }
@@ -3995,6 +4705,422 @@
     "polarity": -1,
     "second": "C"
    }
+  ],
+  "openrouter:judged_clean": [
+   {
+    "ci95_first_better": [
+     -0.008507347254447023,
+     -0.0015467904098994587
+    ],
+    "contrast": "M1 vs C",
+    "difference": -0.004640371229698376,
+    "difference_first_better": -0.004640371229698376,
+    "exploratory": true,
+    "first": "M1",
+    "metric": "openrouter:judged_clean",
+    "multiplicity_adjusted": false,
+    "n_cases": 431,
+    "p": 0.004399560043995601,
+    "polarity": 1,
+    "second": "C"
+   },
+   {
+    "ci95_first_better": [
+     -0.008507347254447023,
+     0.0
+    ],
+    "contrast": "M2 vs C",
+    "difference": -0.0030935808197989174,
+    "difference_first_better": -0.0030935808197989174,
+    "exploratory": true,
+    "first": "M2",
+    "metric": "openrouter:judged_clean",
+    "multiplicity_adjusted": false,
+    "n_cases": 431,
+    "p": 0.2723727627237276,
+    "polarity": 1,
+    "second": "C"
+   },
+   {
+    "ci95_first_better": [
+     -0.0069605568445475635,
+     0.0
+    ],
+    "contrast": "M3 vs C",
+    "difference": -0.002320185614849188,
+    "difference_first_better": -0.002320185614849188,
+    "exploratory": true,
+    "first": "M3",
+    "metric": "openrouter:judged_clean",
+    "multiplicity_adjusted": false,
+    "n_cases": 431,
+    "p": 0.7249275072492751,
+    "polarity": 1,
+    "second": "C"
+   },
+   {
+    "ci95_first_better": [
+     0.013147718484145398,
+     0.04795050270688322
+    ],
+    "contrast": "M2 vs base-4b-prod-prompt",
+    "difference": 0.02938901778808971,
+    "difference_first_better": 0.02938901778808971,
+    "exploratory": true,
+    "first": "M2",
+    "metric": "openrouter:judged_clean",
+    "multiplicity_adjusted": false,
+    "n_cases": 431,
+    "p": 0.00039996000399960006,
+    "polarity": 1,
+    "second": "base-4b-prod-prompt"
+   },
+   {
+    "ci95_first_better": [
+     -0.003093580819798917,
+     0.006187161639597835
+    ],
+    "contrast": "M2 vs M1",
+    "difference": 0.0015467904098994591,
+    "difference_first_better": 0.0015467904098994591,
+    "exploratory": true,
+    "first": "M2",
+    "metric": "openrouter:judged_clean",
+    "multiplicity_adjusted": false,
+    "n_cases": 431,
+    "p": 0.44695530446955306,
+    "polarity": 1,
+    "second": "M1"
+   },
+   {
+    "ci95_first_better": [
+     -0.027842227378190254,
+     -0.004640371229698376
+    ],
+    "contrast": "A2prime vs C",
+    "difference": -0.016241299303944315,
+    "difference_first_better": -0.016241299303944315,
+    "exploratory": true,
+    "first": "A2prime",
+    "metric": "openrouter:judged_clean",
+    "multiplicity_adjusted": false,
+    "n_cases": 431,
+    "p": 0.0011998800119988001,
+    "polarity": 1,
+    "second": "C"
+   }
+  ],
+  "openrouter:judged_cleanup_complete": [
+   {
+    "ci95_first_better": [
+     0.012374323279195666,
+     0.05336426914153132
+    ],
+    "contrast": "M1 vs C",
+    "difference": 0.03248259860788863,
+    "difference_first_better": 0.03248259860788863,
+    "exploratory": true,
+    "first": "M1",
+    "metric": "openrouter:judged_cleanup_complete",
+    "multiplicity_adjusted": false,
+    "n_cases": 431,
+    "p": 0.0007999200079992001,
+    "polarity": 1,
+    "second": "C"
+   },
+   {
+    "ci95_first_better": [
+     0.003866976024748644,
+     0.04949729311678267
+    ],
+    "contrast": "M2 vs C",
+    "difference": 0.026295436968290793,
+    "difference_first_better": 0.026295436968290793,
+    "exploratory": true,
+    "first": "M2",
+    "metric": "openrouter:judged_cleanup_complete",
+    "multiplicity_adjusted": false,
+    "n_cases": 431,
+    "p": 0.0231976802319768,
+    "polarity": 1,
+    "second": "C"
+   },
+   {
+    "ci95_first_better": [
+     0.0069605568445475635,
+     0.06264501160092807
+    ],
+    "contrast": "M3 vs C",
+    "difference": 0.03480278422273782,
+    "difference_first_better": 0.03480278422273782,
+    "exploratory": true,
+    "first": "M3",
+    "metric": "openrouter:judged_cleanup_complete",
+    "multiplicity_adjusted": false,
+    "n_cases": 431,
+    "p": 0.019598040195980403,
+    "polarity": 1,
+    "second": "C"
+   },
+   {
+    "ci95_first_better": [
+     0.0634184068058778,
+     0.1477184841453983
+    ],
+    "contrast": "M2 vs base-4b-prod-prompt",
+    "difference": 0.10518174787316319,
+    "difference_first_better": 0.10518174787316319,
+    "exploratory": true,
+    "first": "M2",
+    "metric": "openrouter:judged_cleanup_complete",
+    "multiplicity_adjusted": false,
+    "n_cases": 431,
+    "p": 0.00019998000199980003,
+    "polarity": 1,
+    "second": "base-4b-prod-prompt"
+   },
+   {
+    "ci95_first_better": [
+     -0.016241299303944315,
+     0.0030935808197989187
+    ],
+    "contrast": "M2 vs M1",
+    "difference": -0.006187161639597834,
+    "difference_first_better": -0.006187161639597834,
+    "exploratory": true,
+    "first": "M2",
+    "metric": "openrouter:judged_cleanup_complete",
+    "multiplicity_adjusted": false,
+    "n_cases": 431,
+    "p": 0.23817618238176183,
+    "polarity": 1,
+    "second": "M1"
+   },
+   {
+    "ci95_first_better": [
+     0.048723897911832945,
+     0.10672853828306264
+    ],
+    "contrast": "A2prime vs C",
+    "difference": 0.0765661252900232,
+    "difference_first_better": 0.0765661252900232,
+    "exploratory": true,
+    "first": "A2prime",
+    "metric": "openrouter:judged_cleanup_complete",
+    "multiplicity_adjusted": false,
+    "n_cases": 431,
+    "p": 0.00019998000199980003,
+    "polarity": 1,
+    "second": "C"
+   }
+  ],
+  "openrouter:judged_semantic_damage": [
+   {
+    "ci95_first_better": [
+     -0.008507347254447023,
+     -0.0015467904098994585
+    ],
+    "contrast": "M1 vs C",
+    "difference": 0.004640371229698376,
+    "difference_first_better": -0.004640371229698376,
+    "exploratory": true,
+    "first": "M1",
+    "metric": "openrouter:judged_semantic_damage",
+    "multiplicity_adjusted": false,
+    "n_cases": 431,
+    "p": 0.004399560043995601,
+    "polarity": -1,
+    "second": "C"
+   },
+   {
+    "ci95_first_better": [
+     -0.008507347254447023,
+     -0.0
+    ],
+    "contrast": "M2 vs C",
+    "difference": 0.003093580819798917,
+    "difference_first_better": -0.003093580819798917,
+    "exploratory": true,
+    "first": "M2",
+    "metric": "openrouter:judged_semantic_damage",
+    "multiplicity_adjusted": false,
+    "n_cases": 431,
+    "p": 0.2723727627237276,
+    "polarity": -1,
+    "second": "C"
+   },
+   {
+    "ci95_first_better": [
+     -0.0069605568445475635,
+     -0.0
+    ],
+    "contrast": "M3 vs C",
+    "difference": 0.002320185614849188,
+    "difference_first_better": -0.002320185614849188,
+    "exploratory": true,
+    "first": "M3",
+    "metric": "openrouter:judged_semantic_damage",
+    "multiplicity_adjusted": false,
+    "n_cases": 431,
+    "p": 0.7249275072492751,
+    "polarity": -1,
+    "second": "C"
+   },
+   {
+    "ci95_first_better": [
+     -0.002320185614849188,
+     0.02088167053364269
+    ],
+    "contrast": "M2 vs base-4b-prod-prompt",
+    "difference": -0.008507347254447023,
+    "difference_first_better": 0.008507347254447023,
+    "exploratory": true,
+    "first": "M2",
+    "metric": "openrouter:judged_semantic_damage",
+    "multiplicity_adjusted": false,
+    "n_cases": 431,
+    "p": 0.13018698130186981,
+    "polarity": -1,
+    "second": "base-4b-prod-prompt"
+   },
+   {
+    "ci95_first_better": [
+     -0.0030935808197989174,
+     0.006187161639597834
+    ],
+    "contrast": "M2 vs M1",
+    "difference": -0.0015467904098994583,
+    "difference_first_better": 0.0015467904098994583,
+    "exploratory": true,
+    "first": "M2",
+    "metric": "openrouter:judged_semantic_damage",
+    "multiplicity_adjusted": false,
+    "n_cases": 431,
+    "p": 0.6037396260373963,
+    "polarity": -1,
+    "second": "M1"
+   },
+   {
+    "ci95_first_better": [
+     -0.02320185614849188,
+     -0.002320185614849188
+    ],
+    "contrast": "A2prime vs C",
+    "difference": 0.01160092807424594,
+    "difference_first_better": -0.01160092807424594,
+    "exploratory": true,
+    "first": "A2prime",
+    "metric": "openrouter:judged_semantic_damage",
+    "multiplicity_adjusted": false,
+    "n_cases": 431,
+    "p": 0.012798720127987202,
+    "polarity": -1,
+    "second": "C"
+   }
+  ],
+  "openrouter:judged_unwanted_edit": [
+   {
+    "ci95_first_better": [
+     -0.008507347254447023,
+     -0.0015467904098994585
+    ],
+    "contrast": "M1 vs C",
+    "difference": 0.004640371229698376,
+    "difference_first_better": -0.004640371229698376,
+    "exploratory": true,
+    "first": "M1",
+    "metric": "openrouter:judged_unwanted_edit",
+    "multiplicity_adjusted": false,
+    "n_cases": 431,
+    "p": 0.004399560043995601,
+    "polarity": -1,
+    "second": "C"
+   },
+   {
+    "ci95_first_better": [
+     -0.008507347254447023,
+     -0.0
+    ],
+    "contrast": "M2 vs C",
+    "difference": 0.003093580819798917,
+    "difference_first_better": -0.003093580819798917,
+    "exploratory": true,
+    "first": "M2",
+    "metric": "openrouter:judged_unwanted_edit",
+    "multiplicity_adjusted": false,
+    "n_cases": 431,
+    "p": 0.2723727627237276,
+    "polarity": -1,
+    "second": "C"
+   },
+   {
+    "ci95_first_better": [
+     -0.0069605568445475635,
+     -0.0
+    ],
+    "contrast": "M3 vs C",
+    "difference": 0.002320185614849188,
+    "difference_first_better": -0.002320185614849188,
+    "exploratory": true,
+    "first": "M3",
+    "metric": "openrouter:judged_unwanted_edit",
+    "multiplicity_adjusted": false,
+    "n_cases": 431,
+    "p": 0.7249275072492751,
+    "polarity": -1,
+    "second": "C"
+   },
+   {
+    "ci95_first_better": [
+     0.013147718484145398,
+     0.04795050270688322
+    ],
+    "contrast": "M2 vs base-4b-prod-prompt",
+    "difference": -0.02938901778808971,
+    "difference_first_better": 0.02938901778808971,
+    "exploratory": true,
+    "first": "M2",
+    "metric": "openrouter:judged_unwanted_edit",
+    "multiplicity_adjusted": false,
+    "n_cases": 431,
+    "p": 0.00039996000399960006,
+    "polarity": -1,
+    "second": "base-4b-prod-prompt"
+   },
+   {
+    "ci95_first_better": [
+     -0.0030935808197989174,
+     0.006187161639597834
+    ],
+    "contrast": "M2 vs M1",
+    "difference": -0.0015467904098994583,
+    "difference_first_better": 0.0015467904098994583,
+    "exploratory": true,
+    "first": "M2",
+    "metric": "openrouter:judged_unwanted_edit",
+    "multiplicity_adjusted": false,
+    "n_cases": 431,
+    "p": 0.6037396260373963,
+    "polarity": -1,
+    "second": "M1"
+   },
+   {
+    "ci95_first_better": [
+     -0.027842227378190254,
+     -0.004640371229698376
+    ],
+    "contrast": "A2prime vs C",
+    "difference": 0.016241299303944315,
+    "difference_first_better": -0.016241299303944315,
+    "exploratory": true,
+    "first": "A2prime",
+    "metric": "openrouter:judged_unwanted_edit",
+    "multiplicity_adjusted": false,
+    "n_cases": 431,
+    "p": 0.0011998800119988001,
+    "polarity": -1,
+    "second": "C"
+   }
   ]
  },
  "h2_subset": {
@@ -4831,6 +5957,318 @@
      "mean": 0.037037037037037035,
      "n": 27
     }
+   },
+   "openrouter:judged_cleanup_complete@no_change": {
+    "A1": {
+     "events": 0.0,
+     "mean": 0.0,
+     "n": 35
+    },
+    "A2": {
+     "events": 0.0,
+     "mean": 0.0,
+     "n": 35
+    },
+    "A2prime": {
+     "events": 0.0,
+     "mean": 0.0,
+     "n": 35
+    },
+    "A3": {
+     "events": 0.0,
+     "mean": 0.0,
+     "n": 35
+    },
+    "C": {
+     "events": 0.0,
+     "mean": 0.0,
+     "n": 35
+    },
+    "M1": {
+     "events": 0.0,
+     "mean": 0.0,
+     "n": 35
+    },
+    "M2": {
+     "events": 0.0,
+     "mean": 0.0,
+     "n": 35
+    },
+    "M3": {
+     "events": 0.0,
+     "mean": 0.0,
+     "n": 35
+    },
+    "base-4b-prod-prompt": {
+     "events": 0.0,
+     "mean": 0.0,
+     "n": 35
+    },
+    "base-9b-prod-prompt": {
+     "events": 0.0,
+     "mean": 0.0,
+     "n": 35
+    }
+   },
+   "openrouter:judged_cleanup_complete@repair": {
+    "A1": {
+     "events": 15.0,
+     "mean": 0.5555555555555556,
+     "n": 27
+    },
+    "A2": {
+     "events": 21.0,
+     "mean": 0.7777777777777778,
+     "n": 27
+    },
+    "A2prime": {
+     "events": 21.0,
+     "mean": 0.7777777777777778,
+     "n": 27
+    },
+    "A3": {
+     "events": 13.0,
+     "mean": 0.48148148148148145,
+     "n": 27
+    },
+    "C": {
+     "events": 12.0,
+     "mean": 0.4444444444444444,
+     "n": 27
+    },
+    "M1": {
+     "events": 14.333333333333334,
+     "mean": 0.5308641975308642,
+     "n": 27
+    },
+    "M2": {
+     "events": 14.0,
+     "mean": 0.5185185185185185,
+     "n": 27
+    },
+    "M3": {
+     "events": 16.0,
+     "mean": 0.5925925925925926,
+     "n": 27
+    },
+    "base-4b-prod-prompt": {
+     "events": 13.0,
+     "mean": 0.48148148148148145,
+     "n": 27
+    },
+    "base-9b-prod-prompt": {
+     "events": 17.0,
+     "mean": 0.6296296296296297,
+     "n": 27
+    }
+   },
+   "openrouter:judged_semantic_damage@no_change": {
+    "A1": {
+     "events": 0.0,
+     "mean": 0.0,
+     "n": 35
+    },
+    "A2": {
+     "events": 0.0,
+     "mean": 0.0,
+     "n": 35
+    },
+    "A2prime": {
+     "events": 0.0,
+     "mean": 0.0,
+     "n": 35
+    },
+    "A3": {
+     "events": 0.0,
+     "mean": 0.0,
+     "n": 35
+    },
+    "C": {
+     "events": 0.0,
+     "mean": 0.0,
+     "n": 35
+    },
+    "M1": {
+     "events": 0.0,
+     "mean": 0.0,
+     "n": 35
+    },
+    "M2": {
+     "events": 0.0,
+     "mean": 0.0,
+     "n": 35
+    },
+    "M3": {
+     "events": 0.0,
+     "mean": 0.0,
+     "n": 35
+    },
+    "base-4b-prod-prompt": {
+     "events": 1.0,
+     "mean": 0.02857142857142857,
+     "n": 35
+    },
+    "base-9b-prod-prompt": {
+     "events": 0.0,
+     "mean": 0.0,
+     "n": 35
+    }
+   },
+   "openrouter:judged_semantic_damage@repair": {
+    "A1": {
+     "events": 0.0,
+     "mean": 0.0,
+     "n": 27
+    },
+    "A2": {
+     "events": 1.0,
+     "mean": 0.037037037037037035,
+     "n": 27
+    },
+    "A2prime": {
+     "events": 1.0,
+     "mean": 0.037037037037037035,
+     "n": 27
+    },
+    "A3": {
+     "events": 0.0,
+     "mean": 0.0,
+     "n": 27
+    },
+    "C": {
+     "events": 0.0,
+     "mean": 0.0,
+     "n": 27
+    },
+    "M1": {
+     "events": 0.0,
+     "mean": 0.0,
+     "n": 27
+    },
+    "M2": {
+     "events": 0.0,
+     "mean": 0.0,
+     "n": 27
+    },
+    "M3": {
+     "events": 1.0,
+     "mean": 0.037037037037037035,
+     "n": 27
+    },
+    "base-4b-prod-prompt": {
+     "events": 1.0,
+     "mean": 0.037037037037037035,
+     "n": 27
+    },
+    "base-9b-prod-prompt": {
+     "events": 2.0,
+     "mean": 0.07407407407407407,
+     "n": 27
+    }
+   },
+   "openrouter:judged_unwanted_edit@no_change": {
+    "A1": {
+     "events": 0.0,
+     "mean": 0.0,
+     "n": 35
+    },
+    "A2": {
+     "events": 1.0,
+     "mean": 0.02857142857142857,
+     "n": 35
+    },
+    "A2prime": {
+     "events": 1.0,
+     "mean": 0.02857142857142857,
+     "n": 35
+    },
+    "A3": {
+     "events": 0.0,
+     "mean": 0.0,
+     "n": 35
+    },
+    "C": {
+     "events": 0.0,
+     "mean": 0.0,
+     "n": 35
+    },
+    "M1": {
+     "events": 0.0,
+     "mean": 0.0,
+     "n": 35
+    },
+    "M2": {
+     "events": 0.0,
+     "mean": 0.0,
+     "n": 35
+    },
+    "M3": {
+     "events": 0.0,
+     "mean": 0.0,
+     "n": 35
+    },
+    "base-4b-prod-prompt": {
+     "events": 1.0,
+     "mean": 0.02857142857142857,
+     "n": 35
+    },
+    "base-9b-prod-prompt": {
+     "events": 3.0,
+     "mean": 0.08571428571428572,
+     "n": 35
+    }
+   },
+   "openrouter:judged_unwanted_edit@repair": {
+    "A1": {
+     "events": 0.0,
+     "mean": 0.0,
+     "n": 27
+    },
+    "A2": {
+     "events": 1.0,
+     "mean": 0.037037037037037035,
+     "n": 27
+    },
+    "A2prime": {
+     "events": 1.0,
+     "mean": 0.037037037037037035,
+     "n": 27
+    },
+    "A3": {
+     "events": 0.0,
+     "mean": 0.0,
+     "n": 27
+    },
+    "C": {
+     "events": 0.0,
+     "mean": 0.0,
+     "n": 27
+    },
+    "M1": {
+     "events": 0.0,
+     "mean": 0.0,
+     "n": 27
+    },
+    "M2": {
+     "events": 0.0,
+     "mean": 0.0,
+     "n": 27
+    },
+    "M3": {
+     "events": 1.0,
+     "mean": 0.037037037037037035,
+     "n": 27
+    },
+    "base-4b-prod-prompt": {
+     "events": 1.0,
+     "mean": 0.037037037037037035,
+     "n": 27
+    },
+    "base-9b-prod-prompt": {
+     "events": 2.0,
+     "mean": 0.07407407407407407,
+     "n": 27
+    }
    }
   },
   "no_change_cases": 35,
@@ -4838,11 +6276,13 @@
  },
  "judge_runs": {
   "anthropic": "dev-main-anthropic",
-  "openai": "dev-swap-openai"
+  "openai": "dev-swap-openai",
+  "openrouter": "dev-main-openrouter"
  },
  "judge_unjudged_rows": {
   "anthropic": 0,
-  "openai": 0
+  "openai": 0,
+  "openrouter": 0
  },
  "resamples": 10000,
  "seed": 20261015
