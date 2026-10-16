@@ -66,6 +66,17 @@ class ResearchPairsTests(unittest.TestCase):
         self.assertTrue(tied)
         self.assertFalse(default["differing_only"])
 
+    def test_command_line_flags_reach_the_builder_and_a_model_key_alias_is_honoured(self):
+        for row in self.outputs["Z"]:
+            row["model"] = "ZKEY"
+        write_jsonl(self.root / "eval/development-Z.jsonl", self.outputs["Z"])
+        with self.assertRaisesRegex(ValueError, "mismatched system identity"):
+            self.build()
+        out = self.root / "cli"
+        pairs.main([str(self.cases), "--systems", "X", "Y", "Z", "--n", "10", "--eval-dir", str(self.root / "eval"),
+                    "--output-dir", str(out), "--model-key", "Z=ZKEY", "--differing-only"])
+        self.assertEqual(len(read_jsonl(out / "pairs.jsonl")), 11)
+
     def test_seed_and_input_order_are_reproducible_and_same_packet_resumes(self):
         first=self.build()
         contents=(self.root/"annotation/pairs.jsonl").read_bytes()

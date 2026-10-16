@@ -39,7 +39,7 @@ def stratified(cases, n, rng):
 
 
 def build_pairs(cases_file, systems, *, n=150, seed=20261015, stage="delivered",
-                prefix="development", eval_dir=None, output_dir=None, differing_only=False):
+                prefix="development", eval_dir=None, output_dir=None, differing_only=False, model_keys=None):
     if len(systems) < 2 or len(set(systems)) != len(systems):
         raise ValueError("Provide at least two distinct systems")
     if any(not re.fullmatch(r"[A-Za-z0-9_-]+", s) for s in systems):
@@ -53,7 +53,7 @@ def build_pairs(cases_file, systems, *, n=150, seed=20261015, stage="delivered",
     for system, rows in outputs.items():
         aligned(case_map, rows)
         if any(not isinstance(r.get(stage), str) or not r[stage].strip() or
-               r.get("model", system) != system for r in rows.values()):
+               r.get("model", system) != (model_keys or {}).get(system, system) for r in rows.values()):
             raise ValueError("Missing/empty output or mismatched system identity")
     rng = random.Random(seed)
     if differing_only:
@@ -109,9 +109,13 @@ def main(argv=None):
     p.add_argument("--stage", choices=("delivered", "model_only"), default="delivered")
     p.add_argument("--prefix", default="development"); p.add_argument("--eval-dir"); p.add_argument("--output-dir")
     p.add_argument("--differing-only", action="store_true", help="sample only cases and system pairs whose texts differ")
+    p.add_argument("--model-key", action="append", default=[], metavar="SYSTEM=KEY",
+                   help="the model key recorded in a system's rows when it differs from the file suffix (for example C-merged=C)")
     args = p.parse_args(argv)
+    model_keys = dict(item.split("=", 1) for item in args.model_key)
     print(json.dumps(build_pairs(args.cases, args.systems, n=args.n, seed=args.seed, stage=args.stage,
-                               prefix=args.prefix, eval_dir=args.eval_dir, output_dir=args.output_dir)))
+                               prefix=args.prefix, eval_dir=args.eval_dir, output_dir=args.output_dir,
+                               differing_only=args.differing_only, model_keys=model_keys)))
 
 
 if __name__ == "__main__":
