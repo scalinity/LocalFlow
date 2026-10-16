@@ -296,9 +296,10 @@ def main():
             scored = engine_metrics(cases, art, label)
             if scored is not None:
                 per_system[label] = scored
-    judge_missing = {}
+    judge_missing, judge_sources = {}, {}
     for spec in args.judge:
         backend, path = spec.split("=", 1)
+        judge_sources[backend] = Path(path).parent.name
         table, missing = judge_table(path)
         judge_missing[backend] = missing
         for label in labels:
@@ -324,7 +325,7 @@ def main():
                                        "seed_sd": statistics.stdev(clean) if len(clean) > 1 else None}
     primary = "anthropic:judged_pass"
     results = {"seed": SEED, "resamples": RESAMPLES, "arms": arms, "available_arms": available,
-               "judge_unjudged_rows": judge_missing, "arm_values": arm_values, "contrasts": {}}
+               "judge_unjudged_rows": judge_missing, "judge_runs": judge_sources, "arm_values": arm_values, "contrasts": {}}
     for metric in ([primary] if primary in metrics else []) + [m for m in metrics if m != primary and (m.startswith(("openai:judged_pass", "openrouter:judged_pass", "engine_damage", "engine_repair_success", "engine_noop")))]:
         table = contrast_table(vectors, arms, per_system, metric, available)
         if table:

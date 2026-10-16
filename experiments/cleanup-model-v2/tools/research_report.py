@@ -72,7 +72,8 @@ def main():
     costs, reliability = load(out / "judge_costs.json"), load(out / "judge_reliability.json")
     parts = ["# Results (generated; do not edit)", "",
              "Development set, 431 cases, delivered text, selected checkpoint of each run. Percent values; seed spread is the sample SD over seeds (M1, M2 only).",
-             f"Bootstrap: {analysis['resamples']} resamples, seed {analysis['seed']}. Unjudged rows counted as failures: {analysis['judge_unjudged_rows']}.", ""]
+             f"Bootstrap: {analysis['resamples']} resamples, seed {analysis['seed']}. Unjudged rows counted as failures: {analysis['judge_unjudged_rows']}.",
+             f"Judge runs behind each column: {analysis.get('judge_runs', {})}.", ""]
     table, arms = arm_table(analysis)
     parts += ["## Arm values", "", table, ""]
     for metric, rows in analysis["contrasts"].items():
