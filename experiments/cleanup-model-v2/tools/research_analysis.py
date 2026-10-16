@@ -227,6 +227,35 @@ def contrast_table(vectors, arms, per_system, metric, available):
     return out
 
 
+EXPLORATORY = [("M1 vs C", "M1", "C"), ("M2 vs C", "M2", "C"), ("M3 vs C", "M3", "C"),
+               ("M2 vs base-4b-prod-prompt", "M2", "base-4b-prod-prompt"), ("M2 vs M1", "M2", "M1"),
+               ("A2prime vs C", "A2prime", "C")]
+
+
+def exploratory_table(vectors, available, metric):
+    """Contrasts outside the pre-declared family: percentile interval and p, no multiplicity adjustment."""
+    rows = [(n, a, b) for n, a, b in EXPLORATORY if a in available and b in available
+            and vectors[a].get(metric) and vectors[b].get(metric)]
+    if not rows:
+        return []
+    ids = None
+    diffs = {}
+    for name, a, b in rows:
+        common = sorted(set(vectors[a][metric]) & set(vectors[b][metric]))
+        ids = common if ids is None else sorted(set(ids) & set(common))
+        diffs[name] = {i: vectors[a][metric][i] - vectors[b][metric][i] for i in common}
+    samples = bootstrap(diffs, ids)
+    sign = polarity(metric)
+    out = []
+    for name, a, b in rows:
+        est = sum(diffs[name][i] for i in ids) / len(ids)
+        lo, hi = sorted(sign * x for x in interval(samples[name], 1 - ALPHA))
+        out.append({"contrast": name, "first": a, "second": b, "metric": metric, "n_cases": len(ids), "difference": est,
+                    "difference_first_better": sign * est, "ci95_first_better": [lo, hi], "p": p_two_sided(samples[name]),
+                    "polarity": sign, "exploratory": True, "multiplicity_adjusted": False})
+    return out
+
+
 def h2_subset(cases, vectors, available, metric_names):
     """H2 on list and question cases (A1 vs M1): wrongful-edit and repair-recall, with exact counts."""
     if not {"M1", "A1"} <= set(available):
@@ -300,6 +329,11 @@ def main():
         table = contrast_table(vectors, arms, per_system, metric, available)
         if table:
             results["contrasts"][metric] = table
+    results["exploratory_contrasts"] = {}
+    for metric in [primary] + [m for m in metrics if m.endswith(("judged_clean", "judged_unwanted_edit", "judged_cleanup_complete", "judged_semantic_damage"))] + ["engine_damage"]:
+        table = exploratory_table(vectors, available, metric) if metric in metrics else []
+        if table:
+            results["exploratory_contrasts"][metric] = table
     results["h2_subset"] = h2_subset(cases, vectors, available,
                                      [m for m in metrics if m in ("engine_unnecessary_edit", "engine_reference_repair") or m.endswith(("judged_unwanted_edit", "judged_semantic_damage", "judged_cleanup_complete"))])
     out = Path(args.out_dir)

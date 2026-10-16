@@ -77,6 +77,13 @@ def main():
     parts += ["## Arm values", "", table, ""]
     for metric, rows in analysis["contrasts"].items():
         parts += [f"## Contrasts on {metric}", "", contrast_table(rows), ""]
+    for metric, rows in analysis.get("exploratory_contrasts", {}).items():
+        parts += [f"## Exploratory contrasts on {metric} (outside the pre-declared family; no multiplicity adjustment)", "",
+                  "| Contrast | n | Difference (first better) | 95% interval | p |", "|---|---|---|---|---|"]
+        for r in rows:
+            lo, hi = r["ci95_first_better"]
+            parts.append(f"| {r['contrast']} | {r['n_cases']} | {100 * r['difference_first_better']:+.2f} pts | [{100 * lo:+.2f}, {100 * hi:+.2f}] | {r['p']:.4f} |")
+        parts.append("")
     if analysis.get("h2_subset"):
         h2 = analysis["h2_subset"]
         parts += ["## H2 subset (list and question cases)", "",
