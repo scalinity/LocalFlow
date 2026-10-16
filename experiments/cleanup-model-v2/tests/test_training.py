@@ -287,5 +287,30 @@ class ExportIdentityTests(unittest.TestCase):
         self.assertEqual(identity['base'], '/models/9b-4bit')
         self.assertIn('requantized', identity['quantization'])
 
+    def test_export_with_a_bf16_base_ignores_the_pod_path_and_records_the_recipe(self):
+        seen = {}
+
+        def candidate(adapter, name, base=None, bf16_base=None):
+            seen.update(base=base, bf16_base=bf16_base)
+            path = root / 'export/candidates' / name
+            path.mkdir(parents=True)
+            (path / 'config.json').write_text('quantized')
+            return path
+
+        with tempfile.TemporaryDirectory() as directory, patch('lfx.export.candidate', side_effect=candidate), \
+                contextlib.redirect_stdout(io.StringIO()):
+            root = Path(directory)
+            weights = root / 'train/run/final/adapters.safetensors'
+            weights.parent.mkdir(parents=True)
+            weights.write_text('gpu adapter')
+            write_json(root / 'train/run/request.json', {'base': '/workspace/gpu-trial/hf/pod-path'})
+            with patch.object(training, 'ART', root):
+                identity = training.export('run', bf16_base='4b')
+        self.assertEqual(seen['bf16_base'], '4b')
+        self.assertEqual(identity['bf16_base'], '4b')
+        self.assertEqual(identity['request_base'], '/workspace/gpu-trial/hf/pod-path')
+        self.assertNotIn('base', identity)
+        self.assertIn('bf16 base and quantized', identity['quantization'])
+
 if __name__ == '__main__':
     unittest.main()

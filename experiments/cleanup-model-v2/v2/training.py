@@ -170,7 +170,7 @@ def run(name, count, start=0, control=False, initial_adapter=None, lr=3e-5, data
     return result
 
 
-def export(name,checkpoint="final",*,compact_metadata=False):
+def export(name,checkpoint="final",*,compact_metadata=False,bf16_base=None):
     from lfx.export import candidate,content_digest
     adapter=ART/"train"/name/checkpoint
     if not (adapter/"adapters.safetensors").exists():
@@ -184,7 +184,8 @@ def export(name,checkpoint="final",*,compact_metadata=False):
     if not prior and (ART/"export"/"candidates"/export_name).exists():
         raise RuntimeError("Quantized candidate exists without an identity record")
     base=(read_json(ART/"train"/name/"request.json") or {}).get("base")
-    path=candidate(adapter,export_name,base=base)
+    # An adapter trained on a GPU pod recorded the pod's base path; bf16_base names the local bf16 base instead.
+    path=candidate(adapter,export_name,base=base,**({} if bf16_base is None else {"bf16_base":bf16_base}))
     metadata_receipt=None
     if compact_metadata:
         from .export_metadata import compact_json_metadata
@@ -194,7 +195,10 @@ def export(name,checkpoint="final",*,compact_metadata=False):
               "size_bytes":sum(p.stat().st_size for p in path.iterdir() if p.is_file()),
               "quantization":"4-bit affine, group 64; same verified recipe as C","created":utc_now(),
               "installed":False}
-    if base:
+    if bf16_base is not None:
+        identity.update(bf16_base=str(bf16_base),request_base=base,
+                        quantization="4-bit affine, group 64; LoRA fused into the bf16 base and quantized, same recipe as C")
+    elif base:
         identity.update(base=base,quantization="4-bit affine, group 64; LoRA fused into the 4-bit base and requantized")
     if metadata_receipt is not None:
         identity["metadata_compaction"]=metadata_receipt
@@ -207,6 +211,9 @@ if __name__=="__main__":
     p=argparse.ArgumentParser();p.add_argument("stage",choices=["train","export"]);p.add_argument("name")
     p.add_argument("--count",type=int);p.add_argument("--start",type=int,default=0)
     p.add_argument("--control",action="store_true");p.add_argument("--initial-adapter");p.add_argument("--lr",type=float,default=3e-5)
-    p.add_argument("--checkpoint",default="final");a=p.parse_args()
+    p.add_argument("--checkpoint",default="final")
+    p.add_argument("--bf16-base",help='local bf16 base for an adapter trained on a GPU pod: "4b" or a model directory')
+    p.add_argument("--compact",action="store_true",help="also compact the quantized candidate's JSON metadata")
+    a=p.parse_args()
     if a.stage=="train":print(json.dumps(run(a.name,a.count,a.start,a.control,a.initial_adapter,a.lr)))
-    else:export(a.name,a.checkpoint)
+    else:export(a.name,a.checkpoint,compact_metadata=a.compact,bf16_base=a.bf16_base)
