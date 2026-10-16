@@ -39,7 +39,7 @@ def stratified(cases, n, rng):
 
 
 def build_pairs(cases_file, systems, *, n=150, seed=20261015, stage="delivered",
-                prefix="development", eval_dir=None, output_dir=None):
+                prefix="development", eval_dir=None, output_dir=None, differing_only=False):
     if len(systems) < 2 or len(set(systems)) != len(systems):
         raise ValueError("Provide at least two distinct systems")
     if any(not re.fullmatch(r"[A-Za-z0-9_-]+", s) for s in systems):
@@ -56,7 +56,12 @@ def build_pairs(cases_file, systems, *, n=150, seed=20261015, stage="delivered",
                r.get("model", system) != system for r in rows.values()):
             raise ValueError("Missing/empty output or mismatched system identity")
     rng = random.Random(seed)
-    selected = stratified(cases, n, rng)
+    if differing_only:
+        # Opt-in: only cases where at least two systems differ, and only differing system pairs, so no pair is trivially tied.
+        eligible = [c for c in cases if len({outputs[s][c["case_id"]][stage] for s in systems}) > 1]
+        selected = stratified(eligible, n, rng)
+    else:
+        selected = stratified(cases, n, rng)
     pairs, key = [], {}
 
     def pair_id():
@@ -64,8 +69,14 @@ def build_pairs(cases_file, systems, *, n=150, seed=20261015, stage="delivered",
 
     for case in selected:
         # Uniform random ordered selection simultaneously chooses systems and A/B.
-        a, b = rng.sample(sorted(systems), 2)
-        pid = pair_id(); cid = case["case_id"]
+        cid = case["case_id"]
+        if differing_only:
+            options = [(x, y) for x in sorted(systems) for y in sorted(systems) if x != y
+                       and outputs[x][cid][stage] != outputs[y][cid][stage]]
+            a, b = rng.choice(options)
+        else:
+            a, b = rng.sample(sorted(systems), 2)
+        pid = pair_id()
         pairs.append({"pair_id": pid, "case_id": cid, "source": case["model_input"],
                       "a": {"text": outputs[a][cid][stage]}, "b": {"text": outputs[b][cid][stage]},
                       "vocabulary": case.get("vocabulary_pairs", [])})
@@ -87,7 +98,7 @@ def build_pairs(cases_file, systems, *, n=150, seed=20261015, stage="delivered",
         write_jsonl(pairs_path, pairs)
         write_json(key_path, key)
     return {"sampled_cases": n, "duplicate_pairs": duplicates, "total_pairs": len(pairs),
-            "seed": seed, "stage": stage, "category_counts": dict(sorted(collections.Counter(c["category"] for c in selected).items())),
+            "seed": seed, "stage": stage, "differing_only": differing_only, "category_counts": dict(sorted(collections.Counter(c["category"] for c in selected).items())),
             "pairs_file": str(pairs_path), "key_file": str(key_path)}
 
 
@@ -97,6 +108,7 @@ def main(argv=None):
     p.add_argument("--n", type=int, default=150); p.add_argument("--seed", type=int, default=20261015)
     p.add_argument("--stage", choices=("delivered", "model_only"), default="delivered")
     p.add_argument("--prefix", default="development"); p.add_argument("--eval-dir"); p.add_argument("--output-dir")
+    p.add_argument("--differing-only", action="store_true", help="sample only cases and system pairs whose texts differ")
     args = p.parse_args(argv)
     print(json.dumps(build_pairs(args.cases, args.systems, n=args.n, seed=args.seed, stage=args.stage,
                                prefix=args.prefix, eval_dir=args.eval_dir, output_dir=args.output_dir)))

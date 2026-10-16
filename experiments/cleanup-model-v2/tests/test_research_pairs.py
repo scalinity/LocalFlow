@@ -47,6 +47,25 @@ class ResearchPairsTests(unittest.TestCase):
                 self.assertEqual(k | {"duplicate_of":None}, key[k["duplicate_of"]])
         self.assertGreater(len({k["a_system"] for k in key.values()}),1)
 
+    def test_differing_only_never_samples_a_trivially_tied_pair(self):
+        # Make most cases identical across systems; only toy-000 to toy-014 differ.
+        for system, rows in self.outputs.items():
+            for i, row in enumerate(rows):
+                if i >= 15:
+                    row["delivered"] = f"Same output {i}."
+            write_jsonl(self.root / f"eval/development-{system}.jsonl", rows)
+        result = self.build(differing_only=True)
+        self.assertTrue(result["differing_only"])
+        packet = read_jsonl(self.root / "annotation/pairs.jsonl")
+        for p in packet:
+            self.assertNotEqual(p["a"]["text"], p["b"]["text"])
+            self.assertLess(int(p["case_id"].split("-")[1]), 15)
+        # The default mode keeps its behavior and does sample tied pairs here.
+        default = pairs.build_pairs(self.cases, ["X", "Y", "Z"], n=10, eval_dir=self.root / "eval", output_dir=self.root / "default")
+        tied = [p for p in read_jsonl(self.root / "default/pairs.jsonl") if p["a"]["text"] == p["b"]["text"]]
+        self.assertTrue(tied)
+        self.assertFalse(default["differing_only"])
+
     def test_seed_and_input_order_are_reproducible_and_same_packet_resumes(self):
         first=self.build()
         contents=(self.root/"annotation/pairs.jsonl").read_bytes()

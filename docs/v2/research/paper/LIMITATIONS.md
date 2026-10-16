@@ -26,3 +26,6 @@ Each item is a fact about this study, with where it came from. A paper states th
     so some corrections are rejected and the text is delivered unchanged (a missed correction in the safe direction).
 13. **Provenance.** Claude outputs are training targets. An Anthropic Help Center reply is informal guidance only and not authorization to release Claude-generated rows, targets or weights.
 14. **Provider terms and data flow.** OpenRouter's Meta Contributor tier may use prompts to improve Meta's products, so only synthetic development cases go to it.
+15. **Most development cases do not separate the systems.** On the seven-system check made before judging (M1, M2, A1, A2, A2prime, A3 at seed 0 and C), all systems returned the same text on 287 of 431 cases,
+    and a random pair of systems returned identical text 83 percent of the time. Differences between systems come from about a third of the cases, and a
+    uniform random human-annotation pair is trivially tied about four times in five. The pair builder has an opt-in `--differing-only` mode for this reason; using it departs from the uniform draw in the pre-registration and is recorded as a deviation.

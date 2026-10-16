@@ -8,6 +8,7 @@ Listed with what each costs and what happens if it is left open. A writing sessi
 2. **A confirmatory H2 test.** The development set has 35 no-change and 27 repair list/question cases, too few for H2. Options: (a) a new set of list and question cases made after the freeze, with its own review;
    (b) the locked final set if its metadata shows enough such cases (metadata only; do not open it); (c) report H2 as exploratory.
 3. **Human annotation.** 150 blinded pairs plus 15 duplicates; needs the author's time with the annotation app. Without it there is no human check on the judges and the circularity limitation stays open.
+   Build the packet with `--differing-only` (see LIMITATIONS 15): with the uniform draw about 125 of the 150 pairs would be identical text. The packet is written to `A/research/annotation/pairs.jsonl`, which the annotation app reads by default.
 4. **Sealing and the final set.** The pre-registration is unsealed. Sealing (`tools/prereg_freeze.py --seal`) must come before any use of the locked final set, which is opened once per system.
    The selected model and the baselines are the systems to evaluate there.
 5. **Anthropic authorization.** No formal written answer exists. Do not release Claude-generated rows, targets or weights, and cite the support reply only as informal guidance.
