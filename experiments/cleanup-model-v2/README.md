@@ -811,3 +811,18 @@ training runs and seed-level measurements are supplied by their owning lanes.
    For frozen `refined` or `fresh` outputs, use that exact prefix instead of
    `final`; its original freeze/hash gates still apply. Never rename a final
    population as development to bypass a gate.
+
+## Exporting adapters trained on a GPU pod
+
+Runs trained on a pod fine-tune a bf16 base, and their `request.json` records the pod's path for it. That path does not exist on the evaluation machine, so name the local bf16 base explicitly with `--bf16-base`. The adapter is fused into that base and the result is quantized to 4-bit (affine, group 64) the way C was; tokenizer and template files come from B. Without the flag, behavior is unchanged.
+
+```sh
+# A 4B adapter trained fresh (the local bf16 4B base)
+PYTHONPATH=experiments/cleanup-model-v2 .venv/bin/python -m v2.training export RUN --checkpoint CKPT --bf16-base 4b --compact
+
+# The 9B adapter (a local bf16 9B directory whose chat template equals B's)
+PYTHONPATH=experiments/cleanup-model-v2 .venv/bin/python -m v2.training export RUN --checkpoint CKPT \
+  --bf16-base ~/Documents/LocalAI/models/hub/models--Qwen--Qwen3.5-9B/snapshots/c202236235762e1c871ad0ccb60c8ee5ba337b9a --compact
+```
+
+`--compact` also compacts the candidate's JSON metadata (the candidate name then ends in `-compact`). Runs that continue C's adapter have no base in `request.json` and export without `--bf16-base`. A base directory whose `chat_template.jinja` differs from B's is refused with both file paths in the message.
