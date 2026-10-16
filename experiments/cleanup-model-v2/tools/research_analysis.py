@@ -282,12 +282,13 @@ def main():
     ap.add_argument("--out-dir", required=True)
     ap.add_argument("--judge", action="append", default=[], help="backend=path/to/verdicts.jsonl")
     ap.add_argument("--private-dir", help="per-case scores (no case text) are written here")
+    ap.add_argument("--cases", help="development cases file (default: the pre-registered development set)")
     ap.add_argument("--resamples", type=int, default=RESAMPLES, help="the pre-registered value is 10,000; lower only for tests")
     args = ap.parse_args()
     RESAMPLES = args.resamples
     config = json.loads(Path(args.arms).read_text())
     art = HERE / "artifacts"
-    cases = {c["case_id"]: c for c in read_jsonl(art / "refinement" / "dataset" / "validation.jsonl")}
+    cases = {c["case_id"]: c for c in read_jsonl(args.cases or art / "refinement" / "dataset" / "validation.jsonl")}
     arms = config["arms"]
     labels = sorted({l for ls in arms.values() for l in ls})
     per_system = {}
