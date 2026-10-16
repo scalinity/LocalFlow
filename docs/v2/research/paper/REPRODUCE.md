@@ -23,6 +23,14 @@ $PY experiments/cleanup-model-v2/tools/research_analysis.py docs/v2/research/pap
     --judge anthropic=$A/judge/dev-main-anthropic/verdicts.jsonl \
     --judge openai=$A/judge/openai/dev-main-openai/verdicts.jsonl \
     --judge openrouter=$A/judge/openrouter/dev-main-openrouter/verdicts.jsonl
+$PY experiments/cleanup-model-v2/tools/research_latency.py docs/v2/research/paper/results
+$PY experiments/cleanup-model-v2/tools/research_reliability.py docs/v2/research/paper/results/judge_reliability.json \
+    --judge anthropic=$A/judge/dev-main-anthropic/verdicts.jsonl --judge openai=$A/judge/openai/dev-main-openai/verdicts.jsonl \
+    --judge openrouter=$A/judge/openrouter/dev-main-openrouter/verdicts.jsonl \
+    --swapped anthropic=$A/judge/dev-swap-anthropic/verdicts.jsonl --swapped openai=$A/judge/openai/dev-swap-openai/verdicts.jsonl \
+    --swapped openrouter=$A/judge/openrouter/dev-swap-openrouter/verdicts.jsonl
+$PY experiments/cleanup-model-v2/tools/research_select.py docs/v2/research/paper/results/analysis.json \
+    docs/v2/research/paper/results/latency.json docs/v2/research/paper/data/sizes.json docs/v2/research/paper/results/selection.json
 $PY experiments/cleanup-model-v2/tools/research_report.py docs/v2/research/paper/results
 ```
 
