@@ -65,6 +65,8 @@ def judged_metrics(verdict):
 def engine_metrics(cases, art, label):
     from v2 import score
     rows = {r["case_id"]: r for r in read_jsonl(art / "eval" / f"development-{label}.jsonl")}
+    if set(rows) != set(cases):
+        return None  # an incomplete evaluation is never scored as if it were whole
     out = {}
     for cid, case in cases.items():
         row = rows.get(cid)
@@ -259,7 +261,12 @@ def main():
     cases = {c["case_id"]: c for c in read_jsonl(art / "refinement" / "dataset" / "validation.jsonl")}
     arms = config["arms"]
     labels = sorted({l for ls in arms.values() for l in ls})
-    per_system = {l: engine_metrics(cases, art, l) for l in labels if (art / "eval" / f"development-{l}.jsonl").exists()}
+    per_system = {}
+    for label in labels:
+        if (art / "eval" / f"development-{label}.jsonl").exists():
+            scored = engine_metrics(cases, art, label)
+            if scored is not None:
+                per_system[label] = scored
     judge_missing = {}
     for spec in args.judge:
         backend, path = spec.split("=", 1)
