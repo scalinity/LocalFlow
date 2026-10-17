@@ -15,7 +15,12 @@ The claims below were chosen after the development results existed:
   re-references the development set to the minimal-edit policy (judged by Opus only).
 - The Claude few-shot systems had been run on the development set but not judged; the claims were fixed before
   any H5 result was read.
+- A gpt-6.1-sol pass on the 69 development cases whose reference the rewrite changes, run so that C3 has
+  development evidence under the second final judge: a shift of +1.97 points (99 percent interval +0.35 to
+  +4.06) against Opus's +3.13. C3 keeps both judges on that evidence.
 - No human annotation result was used.
+- The author approved the claims and margins, the judges, the roster and population, H5's treatment and the C3
+  procedure on 2026-10-17, before the seal.
 - The locked final set has not been opened. Its metadata in [DATA_CARDS.md](DATA_CARDS.md) is all that was read:
   955 accepted synthetic cases, 559 of them needing no change, 150 over 200 words.
 
