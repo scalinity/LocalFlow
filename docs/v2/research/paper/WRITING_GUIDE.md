@@ -14,13 +14,29 @@ You write the paper from the files in this folder. You do not run experiments, c
 8. **Cite from the scan.** The bibliography and per-paper notes are private (`A/research/literature/scan.md`, `related.bib`); the must-cites are: Mind the Pause; DRES v2; Toward Interactive Dictation;
    Adapting LLMs for Minimal-edit GEC; AlpaGasus; Counterfactually-Augmented Data; Contrast Sets; Distilling Step-by-Step; Gated Delta Networks; PoLL (judge juries).
 
+## Framing
+
+Four of the five hypotheses are not supported and one is not tested. That sets the frame; it does not remove the paper.
+Pre-registration is what makes null and opposite-direction results credible, so report them as results, with their intervals.
+
+- Lead with what was measured, not with H1: every retrained 4B beats the installed model by about 3.5 to 3.9 judged points
+  at the same latency and size (exploratory on the development set); the new data buys safety (engine damage, supported)
+  without a judged-quality gain; and the ranking depends on the labelling policy behind the reference answers
+  (re-referencing flips the sign of H1, FINDINGS 5), a caution for any judged evaluation of minimal-edit rewriting.
+- The confirmatory claim needs the locked final set: seal the pre-registration, then evaluate the selected model and the
+  baselines once (OPEN_DECISIONS 4). Without it the paper is a development-set study and says so.
+- The human packet turns the judge-reliability section and the reference-policy finding from judge-only into
+  human-checked (OPEN_DECISIONS 3).
+- Venue fit follows the frame: a practical on-device study suits Interspeech or a negative-results workshop better than
+  a main-track claim of improvement; verify dates and calls before choosing (PAPER_BRIEF).
+
 ## Outline (adapt to the venue; keep the order of argument)
 
 1. Introduction: the product problem (cleanup must not change meaning; the cost of a wrongful edit), the study, the findings in two sentences, the limits in one.
 2. Related work: speech repair and disfluency; dictation and post-ASR correction; synthetic data and verifiers; contrast sets and learning when not to edit; LLM judges and human agreement.
 3. System and data: the engine and validator, the training pool and its sources, the contrast twins, the verifier filter (cite DATA_CARDS).
 4. Study design: arms, seeds, fixed training settings, checkpoint rule, evaluation set, metrics, judges, statistics (cite PREREGISTRATION and ANALYSIS_PLAN; state the deviations).
-5. Results in the order H1, H2, H3, H4, H5, then judge reliability (agreement between vendors, position bias, human agreement if annotation exists), then latency and cost.
+5. Results: the retrained models against the installed one, then H1 to H5 with their status words, then the reference-policy analysis, then judge reliability (agreement between vendors, position bias, human agreement if annotation exists), then latency and cost.
 6. Model selection: the rule, the gates, the outcome.
 7. Limitations and ethics (provenance, release constraints, terms).
 8. Conclusion: what a practitioner should do; what remains open.
