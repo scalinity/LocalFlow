@@ -573,7 +573,7 @@ function trust() {
   ].map(([t, s]) => `<li>${esc(t)}<span>${esc(s)}</span></li>`).join("");
   const runs = Object.entries(DATA.judge_runs).map(([k, v]) => `${k}: ${v}`).join(", ");
   document.getElementById("foot").innerHTML =
-    `<p>Generated ${esc(DATA.generated)} from <code>docs/v2/research/paper/results/</code> on the research results branch (analysis, reliability, latency, selection, categories, supplementary) and, for the worked examples, the private development outputs and Opus verdicts. Judge runs behind the columns: ${esc(runs)}.</p>` +
+    `<p>Generated ${esc(DATA.generated)} from <code>docs/v2/research/paper/results/</code> (analysis, reliability, latency, selection, categories, supplementary) and, for the worked examples, the private development outputs and Opus verdicts. Judge runs behind the columns: ${esc(runs)}.</p>` +
     `<p>Regenerate with <code>experiments/cleanup-model-v2/tools/research_page.py</code>. Earlier rounds: <a href="candidates-round.html">the candidate round</a> and <a href="prior-round.html">the round before it</a>.</p>`;
 }
 function table(cols, rows) { return `<table><thead><tr>${cols.map(c => `<th>${esc(c)}</th>`).join("")}</tr></thead><tbody>${rows.map(r => `<tr>${r.map(c => `<td>${c}</td>`).join("")}</tr>`).join("")}</tbody></table>`; }
