@@ -118,8 +118,10 @@ C5's latency and size ratios (1.6 times and 2.1 times on development) are report
 ## The rewritten key for C3
 
 - After the seal, the transformation in `experiments/cleanup-model-v2/tools/research_normalize_dev.py`
-  (`V/policy_score.py`, `minimal_target`, unchanged) rewrites the final references once, into a private file. The
-  tool gains only an argument naming its input.
+  (`V/policy_score.py`, `minimal_target`, unchanged) rewrites the final references once, into private files in
+  `A/refinement/`. The tool gains arguments naming its input and its changed-only output, and writes a record of
+  the source, rewritten and changed-subset hashes beside them; judging accepts a rewritten file only when that
+  record lists it and its source hash is the frozen population's.
 - Cases whose reference the rewrite changes are judged again by both final judges with the main pass's nine
   systems, so each request differs from its main-pass request only in the reference; C3 reads M2, A2prime, M1 and
   A2 from it. A case whose reference is unchanged keeps its main-pass verdict, because the judge would see an
@@ -149,8 +151,10 @@ carried to new data, so it is reported beside C1–C5 and outside their error bu
 
 ## Order of work
 
-1. Commit this amendment, the Stage-2 analysis and the final-run tooling, then seal with
-   `experiments/cleanup-model-v2/tools/prereg_freeze.py`.
+1. Commit this amendment, the Stage-2 analysis and the final-run tooling; seal with
+   `experiments/cleanup-model-v2/tools/prereg_freeze.py`; then freeze the comparison with
+   `v2.refinement freeze-stage2`, which binds the population hash and each fine-tuned run's model files to their
+   development digests.
 2. Generate each system's final outputs once.
 3. Judge them with Sonnet 5.5 and gpt-6.1-sol; rewrite the key; judge the changed cases.
 4. Run `research_analysis.py --stage2` and report every outcome.

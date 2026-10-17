@@ -1,4 +1,5 @@
-"""Development-only paper baselines. All execution is opt-in through the CLI.
+"""Paper baselines on the development set, and on the locked final set after the seal (Amendment 1).
+All execution is opt-in through the CLI.
 
 Importing this module never loads weights, reads a corpus, or creates clients.
 """
@@ -52,13 +53,22 @@ def check_path(path, split):
     return path
 
 
+def final_path(path):
+    """The locked final population, opened only after the seal."""
+    if not (ART / "research/prereg/FROZEN").is_file():
+        raise ValueError("Final cases need the sealed pre-registration")
+    if Path(path).resolve() != (ART / "refinement/dataset/test.jsonl").resolve():
+        raise ValueError("Use the frozen final test.jsonl")
+    return Path(path)
+
+
 def pool(path, split):
-    path = check_path(path, split)
+    path = final_path(path) if split == "final" else check_path(path, split)
     freeze = read_json(path.parent / "freeze.json")
     if not freeze or freeze.get("files", {}).get(path.name) != file_sha256(path):
         raise ValueError("Pool has no matching frozen file hash")
     rows = read_jsonl(path)
-    allowed = {"train"} if split == "train" else {"validation", "development"}
+    allowed = {"train"} if split == "train" else {"test"} if split == "final" else {"validation", "development"}
     if not rows or any(r.get("split") not in allowed or r.get("origin", "synthetic") != "synthetic" for r in rows):
         raise ValueError("Only synthetic rows from the declared split are allowed")
     ids = [r["case_id"] for r in rows]
@@ -246,9 +256,11 @@ def identity(system, cases_path, *, fewshot=None, model=None):
     return result
 
 
-def plan(system, cases_path, fewshot_path, out):
-    cases = pool(cases_path, "development")
+def plan(system, cases_path, fewshot_path, out, split="development"):
+    cases = pool(cases_path, split)
     fewshot = load_fewshot(fewshot_path, cases)
+    if split == "final" and (read_json(ART / "eval" / f"development-{system}.meta.json") or {}).get("identity", {}).get("fewshot_sha256") != sha256_json(fewshot):
+        raise ValueError("Final few-shot examples differ from the development run")
     runner = BaselineRunner(system, fewshot=fewshot, planning=True)
     requests = {}
     for case in cases:
@@ -331,8 +343,8 @@ def prepare_base(system, source, output, tokenizer_source, revision):
     validate_local(output, system, c_identity())
 
 
-def output_state(system, expected):
-    path = ART / "eval" / f"development-{system}.jsonl"
+def output_state(system, expected, split="development"):
+    path = ART / "eval" / f"{split}-{system}.jsonl"
     meta_path = path.with_suffix(".meta.json")
     meta = read_json(meta_path)
     if meta and meta["identity"] != expected:
@@ -347,17 +359,19 @@ def output_state(system, expected):
     return path, meta_path, rows, meta
 
 
-def local_run(system, cases_path, model_path):
-    cases = pool(cases_path, "development")
+def local_run(system, cases_path, model_path, split="development"):
+    cases = pool(cases_path, split)
     expected = identity(system, cases_path, model=model_path)
     expected["model_content_digest"] = validate_local(model_path, system, c_identity())
+    if split == "final" and expected["model_content_digest"] != (read_json(ART / "eval" / f"development-{system}.meta.json") or {}).get("identity", {}).get("model_content_digest"):
+        raise ValueError("Final model files differ from the development run")
     runner = BaselineRunner(system, model_path)
     import mlx.core as mx
     import psutil
     if sys.platform != "darwin":
         raise RuntimeError("Local base inference requires MLX on the Mac")
     memory_fit(model_path, psutil.virtual_memory().available)
-    path, meta_path, rows, meta = output_state(system, expected)
+    path, meta_path, rows, meta = output_state(system, expected, split)
     done = {r["case_id"] for r in rows}
     if done - {c["case_id"] for c in cases}:
         raise RuntimeError("Output contains cases outside this development pool")
@@ -443,10 +457,10 @@ def responses_from_wave(wave):
     return responses
 
 
-def batch_run(system, cases_path, plan_paths, *, wave_factory=capped_wave):
+def batch_run(system, cases_path, plan_paths, *, wave_factory=capped_wave, split="development"):
     """Lead-only execution. Two immutable plans are mandatory before any API use."""
     from lfx import batches
-    cases = pool(cases_path, "development")
+    cases = pool(cases_path, split)
     plans = [read_json(Path(p)) for p in plan_paths]
     if {p["system"] for p in plans} != set(cost.CLOUD):
         raise ValueError("Need both cloud plans")
@@ -461,12 +475,12 @@ def batch_run(system, cases_path, plan_paths, *, wave_factory=capped_wave):
     expected = identity(system, cases_path, fewshot=fewshot)
     if current["identity"] != expected:
         raise ValueError("Plan differs from current cases, few-shot examples, or engine")
-    path, meta_path, rows, meta = output_state(system, expected)
+    path, meta_path, rows, meta = output_state(system, expected, split)
     done = {r["case_id"] for r in rows}
     if done - {c["case_id"] for c in cases}:
         raise RuntimeError("Output contains cases outside this development pool")
     runner = BaselineRunner(system, fewshot=fewshot)
-    run_dir = RESEARCH / system
+    run_dir = RESEARCH / system if split == "development" else RESEARCH / split / system
     run_dir.mkdir(parents=True, exist_ok=True)
     immutable_json(run_dir / "identity.json", expected)
     responses_path = run_dir / "responses.json"
@@ -528,17 +542,20 @@ def main():
     s.add_argument("--system", choices=cost.CLOUD, required=True)
     s.add_argument("--cases", type=Path, required=True)
     s.add_argument("--plans", nargs=2, type=Path, required=True)
+    for command in ("plan", "local", "batch"):
+        sub.choices[command].add_argument("--split", choices=("development", "final"), default="development",
+                                          help="final reads the locked test.jsonl and needs the seal")
     a = p.parse_args()
     if a.command == "fewshot":
         select_fewshot(a.train_pool, a.out, a.seed)
     elif a.command == "prepare-base":
         prepare_base(a.system, a.source, a.output, a.tokenizer_source, a.revision)
     elif a.command == "plan":
-        plan(a.system, a.cases, a.fewshot, a.out)
+        plan(a.system, a.cases, a.fewshot, a.out, a.split)
     elif a.command == "local":
-        local_run(a.system, a.cases, a.model_dir)
+        local_run(a.system, a.cases, a.model_dir, a.split)
     else:
-        batch_run(a.system, a.cases, a.plans)
+        batch_run(a.system, a.cases, a.plans, split=a.split)
 
 
 if __name__ == "__main__":

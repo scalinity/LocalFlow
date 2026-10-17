@@ -335,5 +335,90 @@ class TrainingLabelConflictTests(unittest.TestCase):
             self.assertEqual(read_jsonl(dataset / 'train_captures.jsonl'), [{'case_id': 'train-kept'}])
 
 
+
+class Stage2FreezeTests(unittest.TestCase):
+    """Amendment 1: the Stage-2 record, in the format require_final reads."""
+    def setup(self, root):
+        art, run = root / 'artifacts', root / 'artifacts/refinement'
+        cases = run / 'dataset/test.jsonl'
+        cases.parent.mkdir(parents=True)
+        cases.write_text('{"case_id":"t-1","split":"test"}\n')
+        write_json(run / 'dataset/freeze.json', {'files': {'test.jsonl': file_sha256(cases)}})
+        write_json(root / 'arms_stage2.json', {'arms': {}})
+        (root / 'engine.py').write_text('fixed engine')
+        model = root / 'model'
+        model.mkdir()
+        (model / 'weights.safetensors').write_text('fixed weights')
+        for name, key in (('C-merged', 'C'), ('M2s0-ck426', 'M2s0-ck426')):
+            write_json(art / f'eval/development-{name}.meta.json', {'identity': {
+                'model': key, 'path': str(model), 'engine': 'updated_source',
+                'model_content_digest': content_digest(model)}})
+        patches = patch.multiple(refinement, ROOT=root, ART=art, RUN=run, DATASET=run / 'dataset',
+                                 SOURCE_FILES=['engine.py'], STAGE2_RUNS=('C-merged', 'M2s0-ck426'),
+                                 STAGE2_SELECTION='arms_stage2.json')
+        return art, run, cases, model, patches
+
+    def seal(self, art):
+        (art / 'research/prereg').mkdir(parents=True)
+        (art / 'research/prereg/FROZEN').write_text('sealed\n')
+
+    def test_freeze_needs_the_seal_binds_each_run_and_never_overwrites(self):
+        with tempfile.TemporaryDirectory() as directory:
+            art, run, cases, model, patches = self.setup(Path(directory))
+            with patches:
+                with self.assertRaisesRegex(RuntimeError, 'sealed'):
+                    refinement.freeze_stage2()
+                self.seal(art)
+                freeze = refinement.freeze_stage2()
+                self.assertEqual(set(freeze['models']), {'C', 'M2s0-ck426'})
+                self.assertEqual(freeze['cases_sha256'], file_sha256(cases))
+                for key in freeze['models']:
+                    refinement.require_final(cases, candidate=True, key=key, model_path=model, engine='updated_source')
+                with self.assertRaisesRegex(ValueError, 'model or engine'):
+                    refinement.require_final(cases, key='M2s0-ck426', model_path=model, engine='production')
+                with self.assertRaisesRegex(RuntimeError, 'already frozen'):
+                    refinement.freeze_stage2()
+                (Path(directory) / 'arms_stage2.json').write_text('{"arms": {"changed": []}}')
+                with self.assertRaisesRegex(ValueError, 'selection changed'):
+                    refinement.require_final(cases)
+
+    def test_freeze_refuses_changed_models_cases_or_existing_outputs(self):
+        for change in ('model', 'cases', 'outputs'):
+            with tempfile.TemporaryDirectory() as directory:
+                art, run, cases, model, patches = self.setup(Path(directory))
+                self.seal(art)
+                if change == 'model':
+                    (model / 'weights.safetensors').write_text('changed weights')
+                elif change == 'cases':
+                    cases.write_text('{"case_id":"t-2","split":"test"}\n')
+                else:
+                    (art / 'eval/final-M2s0-ck426.jsonl').write_text('')
+                with patches, self.assertRaisesRegex(RuntimeError, 'changed|differ|already exist'):
+                    refinement.freeze_stage2()
+                self.assertFalse((run / 'final-freeze.json').exists())
+
+    def test_a_recorded_rewrite_is_accepted_for_judging_but_not_evaluation(self):
+        with tempfile.TemporaryDirectory() as directory:
+            art, run, cases, model, patches = self.setup(Path(directory))
+            self.seal(art)
+            with patches:
+                refinement.freeze_stage2()
+                rewritten, changed = run / 'final-rewritten.jsonl', run / 'final-rewritten-changed.jsonl'
+                rewritten.write_text('{"case_id":"t-1","split":"test","target":"rewritten"}\n')
+                changed.write_text('{"case_id":"t-1","split":"test","target":"rewritten"}\n ')
+                with self.assertRaisesRegex(ValueError, 'exact frozen'):
+                    refinement.require_final(rewritten)
+                write_json(run / 'final-rewritten.record.json', {'source_sha256': file_sha256(cases),
+                           'rewritten_sha256': file_sha256(rewritten), 'changed_sha256': file_sha256(changed)})
+                refinement.require_final(rewritten)
+                refinement.require_final(changed)
+                with self.assertRaisesRegex(ValueError, 'exact frozen'):
+                    refinement.require_final(rewritten, key='M2s0-ck426', model_path=model, engine='updated_source')
+                write_json(run / 'final-rewritten.record.json', {'source_sha256': 'another population',
+                           'rewritten_sha256': file_sha256(rewritten)})
+                with self.assertRaisesRegex(ValueError, 'exact frozen'):
+                    refinement.require_final(rewritten)
+
+
 if __name__ == '__main__':
     unittest.main()

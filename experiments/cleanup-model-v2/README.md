@@ -470,6 +470,17 @@ calls remain in `calls` and the cloud response cache. Replay comparisons count
 as measured only when the complete call inputs match; changed calls remain
 estimates or unmeasured, as the existing replay tool reports.
 
+After the seal ([Amendment 1](../../docs/v2/research/AMENDMENT-1.md)), `plan`,
+`local` and `batch` take `--split final` with
+`--cases "$A/refinement/dataset/test.jsonl"`; `--split` defaults to
+`development`. The final split opens nothing until
+`$A/research/prereg/FROZEN` exists, accepts only that file with the hash its
+`freeze.json` records, writes `eval/final-<system>.jsonl`, and keeps its run
+directory and response cache under `research/baselines/final/<system>/`. A
+final plan must use the few-shot examples of the system's development run, a
+local base model must match its development content digest, and the cloud
+request settings are the development ones.
+
 Synthetic harness checks (CPU, no client, no downloaded weights):
 
 ```sh

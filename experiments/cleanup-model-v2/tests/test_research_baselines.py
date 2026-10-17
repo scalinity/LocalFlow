@@ -337,5 +337,99 @@ class HarnessTests(unittest.TestCase):
                 b.validate_local(path, "base-9b-prod-prompt", c)
 
 
+
+def make_final_pool(root, n=2):
+    directory = root / "refinement/dataset"
+    directory.mkdir(parents=True)
+    rows = [{"case_id": f"test-{i}", "split": "test", "origin": "synthetic",
+             "model_input": f"synthetic final item {i}", "target": f"Synthetic final item {i}.",
+             "category": "punctuation", "is_noop": False, "gold_lines": [],
+             "critical_facts": [], "protected_spans": [], "vocabulary_pairs": []} for i in range(n)]
+    path = directory / "test.jsonl"
+    write_jsonl(path, rows)
+    write_json(directory / "freeze.json", {"files": {"test.jsonl": file_sha256(path)}})
+    return path, rows
+
+
+def seal(root):
+    (root / "research/prereg").mkdir(parents=True, exist_ok=True)
+    (root / "research/prereg/FROZEN").write_text("sealed\n")
+
+
+class FinalSplitTests(unittest.TestCase):
+    def test_final_pool_needs_the_seal_before_opening_anything(self):
+        with tempfile.TemporaryDirectory() as tmp, patch.object(b, "ART", Path(tmp)):
+            root = Path(tmp)
+            with self.assertRaisesRegex(ValueError, "sealed"):
+                b.pool(root / "refinement/dataset/test.jsonl", "final")  # does not exist: refused before any open
+            path, rows = make_final_pool(root)
+            with self.assertRaisesRegex(ValueError, "sealed"):
+                b.pool(path, "final")
+            seal(root)
+            self.assertEqual(b.pool(path, "final"), rows)
+            other, _ = make_pool(root, "validation")
+            with self.assertRaisesRegex(ValueError, "frozen final test.jsonl"):
+                b.pool(other, "final")
+            self.assertEqual(len(b.pool(other, "development")), 8)
+            write_jsonl(path, rows[:1])
+            with self.assertRaisesRegex(ValueError, "matching frozen"):
+                b.pool(path, "final")
+
+    def test_final_batch_writes_its_own_outputs_and_cache(self):
+        from lfx import batches
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            train, _ = make_pool(root, "train")
+            fewshot = root / "fewshot.json"
+            b.select_fewshot(train, fewshot)
+            path, rows = make_final_pool(root)
+            seal(root)
+
+            def factory(name, requests, model):
+                directory = root / "fake-waves" / name
+                outcomes, results = {}, []
+                for rid, params in requests.items():
+                    source = json.loads(params["messages"][-1]["content"])["transcript"]
+                    message = {"stop_reason": "end_turn", "usage": {"input_tokens": 5, "output_tokens": 3},
+                               "content": [{"type": "text", "text": source.capitalize() + "."}]}
+                    results.append({"custom_id": rid + "-a1", "result": {"type": "succeeded", "message": message}})
+                    outcomes[rid] = {"status": "succeeded", "batch_id": "fake", "custom_id": rid + "-a1"}
+                write_jsonl(directory / "results-fake.jsonl", results)
+                return SimpleNamespace(dir=directory, requests=requests, outcomes=outcomes,
+                                       manifest={"attempts": [{"state": "collected", "batch_id": "fake"}]},
+                                       run=lambda **kw: None)
+
+            with patch.object(b, "ART", root), patch.object(b, "RESEARCH", root / "research"), \
+                    patch.object(batches, "ledger", side_effect=ledger):
+                manifest = read_json(fewshot)
+                for system in cost.CLOUD:
+                    write_json(root / f"eval/development-{system}.meta.json",
+                               {"identity": {"fewshot_sha256": "other examples"}})
+                with self.assertRaisesRegex(ValueError, "differ from the development run"):
+                    b.plan("sonnet-5-5-fewshot", path, fewshot, root / "refused.json", "final")
+                plans = []
+                for system in cost.CLOUD:
+                    write_json(root / f"eval/development-{system}.meta.json",
+                               {"identity": {"fewshot_sha256": sha256_json(manifest)}})
+                    plans.append(root / f"{system}-final.json")
+                    b.plan(system, path, fewshot, plans[-1], "final")
+                b.batch_run("sonnet-5-5-fewshot", path, plans, wave_factory=factory, split="final")
+                self.assertEqual(len(read_jsonl(root / "eval/final-sonnet-5-5-fewshot.jsonl")), len(rows))
+                self.assertTrue((root / "research/final/sonnet-5-5-fewshot/responses.json").is_file())
+                self.assertFalse((root / "eval/development-sonnet-5-5-fewshot.jsonl").exists())
+                self.assertFalse((root / "research/sonnet-5-5-fewshot").exists())
+
+    def test_final_local_run_needs_the_development_model(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            path, _ = make_final_pool(root)
+            seal(root)
+            write_json(root / "eval/development-base-9b-prod-prompt.meta.json",
+                       {"identity": {"model_content_digest": "development weights"}})
+            with patch.object(b, "ART", root), patch.object(b, "validate_local", return_value="other weights"):
+                with self.assertRaisesRegex(ValueError, "differ from the development run"):
+                    b.local_run("base-9b-prod-prompt", path, root / "model", "final")
+
+
 if __name__ == "__main__":
     unittest.main()

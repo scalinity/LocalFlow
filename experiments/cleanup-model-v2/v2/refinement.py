@@ -14,6 +14,10 @@ DATASET = RUN / "dataset"
 SOURCE_FILES = ["localflow/v2/cleanup/" + name for name in
                 ("engine.py", "prompts.py", "validation.py", "document_nodes.py",
                  "correction_retention.py", "model.py")]
+# Amendment 1: the six fine-tuned runs carried to the locked final set, and the roster file
+# that stands in for the earlier round's candidate-selection.json.
+STAGE2_RUNS = ("C-merged", "M2s0-ck426", "A2prime-ck199", "M1s0-ck426", "A2-ck199", "M3-ck426")
+STAGE2_SELECTION = "docs/v2/research/paper/data/arms_stage2.json"
 
 
 def training_label_conflict(row):
@@ -200,12 +204,52 @@ def freeze_final():
     return freeze
 
 
+def freeze_stage2():
+    """Bind the synthetic final population and the six fine-tuned runs, once, after the seal."""
+    from lfx.export import content_digest
+    if not (ART / "research/prereg/FROZEN").is_file():
+        raise RuntimeError("Stage 2 freezes only after the pre-registration is sealed")
+    if (RUN / "final-freeze.json").exists():
+        raise RuntimeError("The final comparison is already frozen")
+    models = {}
+    for run in STAGE2_RUNS:
+        identity = read_json(ART / "eval" / f"development-{run}.meta.json")["identity"]
+        path = str(Path(identity["path"]).resolve())
+        if content_digest(Path(path)) != identity["model_content_digest"]:
+            raise RuntimeError(f"{run} model files changed since its development evaluation")
+        if (ART / "eval" / f"final-{run}.jsonl").exists():
+            raise RuntimeError("Final outputs already exist before freeze")
+        models[identity["model"]] = {"run": run, "path": path, "engine": identity["engine"],
+                                     "content_digest": identity["model_content_digest"]}
+    cases_sha256 = file_sha256(DATASET / "test.jsonl")
+    if cases_sha256 != read_json(DATASET / "freeze.json")["files"]["test.jsonl"]:
+        raise RuntimeError("The final cases differ from their dataset freeze")
+    freeze = {"created": utc_now(), "stage": "amendment-1", "cases_sha256": cases_sha256,
+              "selection_path": STAGE2_SELECTION, "selection_sha256": file_sha256(ROOT / STAGE2_SELECTION),
+              "source_hashes": {p: file_sha256(ROOT / p) for p in SOURCE_FILES}, "models": models,
+              "data_freeze_sha256": file_sha256(DATASET / "freeze.json"), "candidate_outputs_existed": False}
+    write_json(RUN / "final-freeze.json", freeze)
+    return freeze
+
+
+def final_cases_accepted(freeze, path):
+    """The frozen population, or a rewrite of it recorded beside the file (Amendment 1, C3)."""
+    accepted = {freeze["cases_sha256"]}
+    for record in Path(path).parent.glob("*.record.json"):
+        rewrite = read_json(record)
+        if rewrite.get("source_sha256") == freeze["cases_sha256"]:
+            accepted.update(h for h in (rewrite.get("rewritten_sha256"), rewrite.get("changed_sha256")) if h)
+    return accepted
+
+
 def require_final(path, *, candidate=False, key=None, model_path=None, engine=None):
     from lfx.export import content_digest
     freeze = read_json(RUN / "final-freeze.json")
-    if not freeze or file_sha256(Path(path)) != freeze["cases_sha256"]:
+    accepted = ({freeze["cases_sha256"]} if key is not None else final_cases_accepted(freeze, path)) if freeze else set()
+    if not accepted or file_sha256(Path(path)) not in accepted:
         raise ValueError("Refined evaluation requires its exact frozen comparison file")
-    if file_sha256(RUN / "candidate-selection.json") != freeze["selection_sha256"]:
+    selection = ROOT / freeze["selection_path"] if "selection_path" in freeze else RUN / "candidate-selection.json"
+    if file_sha256(selection) != freeze["selection_sha256"]:
         raise ValueError("Development selection changed after final freeze")
     if file_sha256(DATASET / "freeze.json") != freeze["data_freeze_sha256"]:
         raise ValueError("Dataset identity changed after final freeze")
@@ -223,7 +267,7 @@ def require_final(path, *, candidate=False, key=None, model_path=None, engine=No
 
 if __name__ == "__main__":
     p = argparse.ArgumentParser()
-    p.add_argument("stage", choices=["prepare", "train", "freeze"])
+    p.add_argument("stage", choices=["prepare", "train", "freeze", "freeze-stage2"])
     args = p.parse_args()
-    result = {"prepare": prepare, "train": train, "freeze": freeze_final}[args.stage]()
+    result = {"prepare": prepare, "train": train, "freeze": freeze_final, "freeze-stage2": freeze_stage2}[args.stage]()
     print(__import__("json").dumps(result))
