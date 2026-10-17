@@ -24,6 +24,10 @@ from localflow.v2.cleanup import engine as production
 
 LOCAL = {"base-4b-prod-prompt": "Qwen/Qwen3.5-4B", "base-9b-prod-prompt": "Qwen/Qwen3.5-9B"}
 SYSTEMS = {**LOCAL, **cost.CLOUD}
+# Sonnet 5.5 answers without thinking under "between_tools"; Opus 5.5 cannot turn thinking
+# off, so it thinks adaptively at the lowest effort. The installed SDK takes no temperature.
+THINKING = {"sonnet-5-5-fewshot": {"thinking": {"type": "between_tools"}},
+            "opus-5-5-fewshot": {"thinking": {"type": "adaptive"}, "output_config": {"effort": "low"}}}
 RESEARCH = ART / "research/baselines"
 SEED = 20261015
 SOURCE_NAMES = ("engine.py", "prompts.py", "validation.py", "document_nodes.py", "correction_retention.py")
@@ -198,8 +202,7 @@ class BaselineRunner(Runner):
             return result
         messages = json.loads(prompt)
         params = {"model": SYSTEMS[self.key], "system": messages[0]["content"],
-                  "messages": messages[1:], "max_tokens": max_tokens,
-                  "temperature": 0, "thinking": {"type": "disabled"}}
+                  "messages": messages[1:], "max_tokens": max_tokens, **THINKING[self.key]}
         rid = "b" + sha256_text(self.case_id + "|" + sha256_json(params))[:40]
         if self.planning:
             self.requests[rid] = params

@@ -153,7 +153,8 @@ class HarnessTests(unittest.TestCase):
                 for params in plan["requests"].values():
                     self.assertEqual(len(params["messages"]), 11)
                     self.assertEqual(params["system"], b.production.prompts.build_messages({"transcript": "x"})[0]["content"])
-                    self.assertEqual(params["temperature"], 0)
+                    self.assertNotIn("temperature", params)
+                    self.assertEqual({k: params[k] for k in b.THINKING[plan["system"]]}, b.THINKING[plan["system"]])
 
     def test_local_render_keeps_exact_production_messages(self):
         messages = b.production.prompts.build_messages({"transcript": "synthetic input"})
