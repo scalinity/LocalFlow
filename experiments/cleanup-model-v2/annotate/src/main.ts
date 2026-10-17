@@ -1,6 +1,7 @@
 import './styles.css';
 import { backend, mock } from './backend';
 import { diff, marks } from './diff';
+import { sayLeft, timeLeft } from './pace';
 import type { Choice, Pair, Progress, Snapshot } from './types';
 const $ = <T extends HTMLElement = HTMLElement>(id: string) => document.getElementById(id) as T;
 let state: Snapshot;
@@ -46,17 +47,10 @@ function fit() {
 }
 for (const id of scrollers) $(id).addEventListener('scroll', () => edge(id), {passive:true});
 // Pairs run from a few hundred to several thousand characters, so time left scales with what is still to read.
-// Fewer than ten judgments say too little about pace to estimate from.
 const size = (x: Pair) => x.source.length + x.a.text.length + x.b.text.length;
-function estimate(p: Progress) {
-  if (p.median_seconds === null || p.completed < 10) return 'Time estimate after 10 pairs';
-  const left=new Set(state.queue);
-  const done=state.pairs.filter(x => !left.has(x.pair_id)).map(size).sort((a,b) => a-b);
-  const typical=(done[Math.floor((done.length-1)/2)] + done[Math.floor(done.length/2)])/2;
-  const minutes=p.median_seconds*state.pairs.filter(x => left.has(x.pair_id)).reduce((t,x) => t+size(x),0)/typical/60;
-  if (minutes < 20) return `about ${Math.max(1,Math.round(minutes))} min left`;
-  const rounded=Math.round(minutes/5)*5;
-  return rounded < 60 ? `about ${rounded} min left` : `about ${Math.floor(rounded/60)} h${rounded%60 ? ` ${rounded%60} min` : ''} left`;
+function remaining() {
+  const sizes=new Map(state.pairs.map(x => [x.pair_id, size(x)]));
+  return timeLeft(state.progress.timings.map(([id,seconds]) => ({chars: sizes.get(id) ?? 0, seconds})), state.queue.map(id => sizes.get(id) ?? 0));
 }
 function render() {
   $('session-line').hidden=false; $('ledger').hidden=false;
@@ -64,7 +58,8 @@ function render() {
   const pair=current();
   const p=state.progress;
   $('progress').textContent=`${p.completed} of ${p.total}`;
-  $('estimate').textContent=!pair ? 'All pairs reviewed' : estimate(p);
+  const left=remaining();
+  $('estimate').textContent=!pair ? 'All pairs reviewed' : left ? sayLeft(left) : 'Time estimate after the first pair';
   ledger(p);
   const working=!!pair && !paused;
   $('workspace').hidden=!working; $('decision').hidden=!working;

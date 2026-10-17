@@ -55,6 +55,8 @@ pub struct Progress {
     pub completed: usize,
     pub counts: BTreeMap<String, usize>,
     pub median_seconds: Option<f64>,
+    /// Each judged pair's seconds, oldest judgment first, for the time-left estimate.
+    pub timings: Vec<(String, f64)>,
 }
 #[derive(Serialize)]
 pub struct Snapshot {
@@ -268,8 +270,17 @@ impl Store {
         )
     }
     pub fn progress(&self) -> Progress {
-        let active: Vec<_> = self
-            .latest()
+        let latest = self.latest();
+        // A pair's last record decides; walking the log keeps those records in the order they were made.
+        let timings = self
+            .records
+            .iter()
+            .filter(|r| {
+                r.choice.is_some() && latest.get(&r.pair_id).is_some_and(|l| std::ptr::eq(*l, *r))
+            })
+            .map(|r| (r.pair_id.clone(), r.seconds))
+            .collect();
+        let active: Vec<_> = latest
             .into_values()
             .filter(|r| r.choice.is_some())
             .collect();
@@ -301,6 +312,7 @@ impl Store {
             } else {
                 Some((times[(n - 1) / 2] + times[n / 2]) / 2.0)
             },
+            timings,
         }
     }
     pub fn snapshot(&self) -> Snapshot {
@@ -461,6 +473,20 @@ mod tests {
         assert_eq!(store.progress().median_seconds, Some(5.0));
         assert_eq!(store.session.queue[0], "p1");
         assert_eq!(fs::read_to_string(a).unwrap().lines().count(), 3);
+    }
+    #[test]
+    fn timings_follow_judgment_order_and_drop_undone_pairs() {
+        let (_dir, p, a, s) = fixture();
+        let mut store = Store::open(p, a, s).unwrap();
+        store.judge("p0".into(), Choice::A, "".into(), 3.0).unwrap();
+        store.judge("p1".into(), Choice::B, "".into(), 7.0).unwrap();
+        store.undo().unwrap();
+        store.judge("p1".into(), Choice::Tie, "".into(), 4.0).unwrap();
+        store.judge("p2".into(), Choice::A, "".into(), 2.0).unwrap();
+        let ids = |s: &Store| s.progress().timings.into_iter().map(|(id, t)| format!("{id}:{t}")).collect::<Vec<_>>();
+        assert_eq!(ids(&store), ["p0:3", "p1:4", "p2:2"]);
+        store.undo().unwrap();
+        assert_eq!(ids(&store), ["p0:3", "p1:4"]);
     }
     #[test]
     fn truncated_last_line_is_ignored_and_next_append_recovers() {

@@ -271,15 +271,16 @@ test('Esc works from its keyup alone, as the native window delivers it',async({p
   await expect(page.locator('#workspace')).toBeVisible();
 });
 
-test('time left waits for ten judgments, then reads in minutes or hours',async({page})=>{
+test('time left starts after the first judgment as a range and firms up to one figure',async({page})=>{
   await open(page);
   await page.keyboard.press('?');
-  await expect(page.locator('#estimate')).toHaveText('Time estimate after 10 pairs');
-  for (let n=0;n<9;n++) { await page.keyboard.press('t'); await expect(page.locator('#progress')).toHaveText(`${n+1} of ${total}`); }
-  await expect(page.locator('#estimate')).toHaveText('Time estimate after 10 pairs');
+  await expect(page.locator('#estimate')).toHaveText('Time estimate after the first pair');
+  const span='(\\d+ min|\\d+ h( \\d+ min)?)';
   await page.keyboard.press('t');
-  await expect(page.locator('#progress')).toHaveText(`10 of ${total}`);
-  await expect(page.locator('#estimate')).toHaveText(/^about (\d+ min|\d+ h( \d+ min)?) left$/);
+  await expect(page.locator('#progress')).toHaveText(`1 of ${total}`);
+  await expect(page.locator('#estimate')).toHaveText(new RegExp(`^(\\d+|${span}) to ${span} left$`));
+  for (let n=1;n<20;n++) { await page.keyboard.press('t'); await expect(page.locator('#progress')).toHaveText(`${n+1} of ${total}`); }
+  await expect(page.locator('#estimate')).toHaveText(new RegExp(`^about ${span} left$`));
 });
 
 // A shortcut acts without moving focus, so no keyboard ring appears on a button.

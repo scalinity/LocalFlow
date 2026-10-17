@@ -18,7 +18,10 @@ function memoryBackend(): Backend {
     current.forEach(r => counts[r.choice as Choice]++);
     const times = current.map(r => r.seconds).sort((a,b) => a-b);
     const n = times.length;
-    return {pairs, queue: [...queue], drafts: {...drafts}, can_undo: n > 0, progress: {total: pairs.length, completed: n, counts, median_seconds: n ? (times[Math.floor((n-1)/2)] + times[Math.floor(n/2)])/2 : null}};
+    // Each judged pair's seconds, oldest first, as the store reports them.
+    const last = new Map(records.map((r, i) => [r.pair_id, i]));
+    const timings = records.flatMap((r, i): [string, number][] => r.choice && last.get(r.pair_id) === i ? [[r.pair_id, r.seconds]] : []);
+    return {pairs, queue: [...queue], drafts: {...drafts}, can_undo: n > 0, progress: {total: pairs.length, completed: n, counts, median_seconds: n ? (times[Math.floor((n-1)/2)] + times[Math.floor(n/2)])/2 : null, timings}};
   };
   return {
     async load() { return snapshot(); },
