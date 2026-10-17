@@ -7,7 +7,7 @@ Listed with what each costs and what happens if it is left open. A writing sessi
    Commands: `experiments/cleanup-model-v2/README.md`, section "Paper baseline harness", steps 3 and 5.
 2. **A confirmatory H2 test.** The development set has 35 no-change and 27 repair list/question cases, too few for H2. Options: (a) a new set of list and question cases made after the freeze, with its own review;
    (b) the locked final set if its metadata shows enough such cases (metadata only; do not open it); (c) report H2 as exploratory.
-3. **Human annotation.** 150 blinded pairs plus 15 duplicates; needs the author's time with the annotation app. Without it there is no human check on the judges and the circularity limitation stays open.
+3. **Human annotation.** Done: the author judged all 150 blinded pairs and 15 duplicates on 2026-10-17 between 21:03 and 23:03 UTC (1 h 25 min of active review), after the seal and before any final-set result existed. `annotations.jsonl` has sha256 `dd073affa2c15e31373cc450661523a13a7b0df72f7f2bee39a96f24702ce9cb`; the seal recorded the file empty. Agreement with the judges is in EVIDENCE_MAP.
    Build the packet with `--differing-only` (see LIMITATIONS 15): with the uniform draw about 125 of the 150 pairs would be identical text. The packet is written to `A/research/annotation/pairs.jsonl`, which the annotation app reads by default.
 4. **Sealing and the final set.** Decided: sealed 2026-10-17 at 20:47 UTC at commit 6a40964, before any human annotation existed. The record is
    `docs/v2/research/seal/FREEZE.json` (SHA-256 `f4a1ab44…ffa6`, the content of `seal/FROZEN`). The nine systems of Amendment 1 run once each on the 955 final cases.

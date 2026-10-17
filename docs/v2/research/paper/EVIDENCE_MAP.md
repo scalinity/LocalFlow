@@ -17,7 +17,7 @@ Statuses reflect `results/` as of the last update; re-derive them from `results/
 | Seed spread of M1 and M2 | `arm_values.csv` (seed_sd) | measured | Judged pass SD 1.1 (M1), 0.7 (M2) at the selected checkpoint |
 | Judges agree across vendors | `judge_reliability.json` | measured: pairwise kappa 0.75 to 0.80, Krippendorff alpha 0.77 over three vendors | Forward-order runs for all three vendors |
 | Judges are position-stable | `judge_reliability.json` `order_stability` | measured: 2.1 percent of outputs changed for Opus, 0.8 for gpt-6.1-sol, 3.0 for Muse | Muse over the 6,006 outputs judged in both orders |
-| Judges agree with humans | `agreement.json` | **not available** until annotation exists | Packet of 165 pairs is ready (OPEN_DECISIONS 3) |
+| Judges agree with humans | `agreement.json`, `agreement-swapped.json`, `judge-reliability.json` in `A/research/annotation/` | measured: four-way agreement 41 to 47 percent, kappa 0.25 to 0.29 (Opus 0.29, gpt-6.1-sol 0.27, Muse 0.25); where the frozen rule picks a side it matches the author on 91 percent (Opus), 98.5 (gpt-6.1-sol) and 94 (Muse) of those pairs | The rule calls 72 to 84 of the 150 pairs a tie; the author chose a side on every pair. Test-retest 15 of 15. The packet holds one C–M2 pair |
 | Latency and memory on device | `latency.json` | measured (clean sequential pass) | 4B 1.76 to 1.79 s median; 9B 2.88 s |
 | Which model to ship | `selection.json`, [SELECTION.md](SELECTION.md) | rule: **keep C**; recommendation (post hoc): M2 | Gate failed by a third of a case |
 | The selected-checkpoint rule matters | `checkpoints.json` | observed | Final checkpoint has no more damage than selected in 9 of 11 runs |
