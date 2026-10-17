@@ -38,9 +38,9 @@
       <div id="note-panel" hidden><label for="note">Note <span>Optional, and it stays with this pair</span></label><textarea id="note" rows="2" maxlength="2000" placeholder="What made the difference?"></textarea><button id="note-done">Done <kbd>Esc</kbd></button></div>
     </div>
   </section>
-  <section id="paused" class="empty" hidden><h2>Paused</h2><p>Your place is kept, and the timer is stopped.</p><button id="resume">Continue <kbd>Esc</kbd></button></section>
-  <section id="summary" class="empty" hidden><h2>Every pair, considered.</h2><p id="summary-time"></p><dl id="counts"></dl><p class="repeat-note">A few pairs appeared twice, so your choices can also be checked against each other.</p><div><button id="export">Export summary</button><button id="summary-undo">Undo last judgment <kbd>U</kbd></button></div><p id="export-status" role="status"></p></section>
-  <section id="failure" class="empty" hidden><h2 id="failure-title">Couldn’t open this session.</h2><p id="failure-text"></p><button id="retry">Try again</button><button id="try-toy" hidden>Try toy pairs</button><p id="toy-explanation" hidden>Toy choices stay in memory and never enter your research annotations.</p></section>
+  <section id="paused" class="empty" hidden><div class="stage"><h2>Paused</h2><p>Your place is kept, and the timer is stopped.</p><p id="sitting" class="sitting"></p><button id="resume">Continue <kbd>Esc</kbd></button></div></section>
+  <section id="summary" class="empty" hidden><div class="stage"><h2>Every pair, considered.</h2><p id="summary-time"></p><dl id="counts"></dl><p class="repeat-note">A few pairs appeared twice, so your choices can also be checked against each other.</p><div><button id="export">Export summary</button><button id="summary-undo">Undo last judgment <kbd>U</kbd></button></div><p id="export-status" role="status"></p></div></section>
+  <section id="failure" class="empty" hidden><div class="stage"><h2 id="failure-title">Couldn’t open this session.</h2><p id="failure-text"></p><button id="retry">Try again</button><button id="try-toy" hidden>Try toy pairs</button><p id="toy-explanation" hidden>Toy choices stay in memory and never enter your research annotations.</p></div></section>
 </main>
 <footer id="decision" class="decision" hidden>
   <div class="choices">
@@ -61,4 +61,5 @@
     <p id="reminder">Damage first, then cleanup, punctuation, self-corrections.</p>
   </div>
 </footer>
+<canvas id="confetti" aria-hidden="true" hidden></canvas>
 <script type="module" src="/src/main.ts"></script></body></html>

@@ -173,7 +173,7 @@ test('keyboard-only choices, notes, undo, skip, pause, the ledger and the summar
   for(let i=8;i<25;i++){ await page.keyboard.press('t'); await expect(page.locator('#progress')).toHaveText(`${i+1} of ${total}`); }
   await expect(page.locator('#status')).toContainText('short break');
   await expect(page.locator('#notice')).toBeVisible();
-  await expect(page.locator('#notice')).toContainText('set of 25');
+  await expect(page.locator('#notice')).toContainText('First set done.');
   for(let i=25;i<total-1;i++){ await page.keyboard.press('t'); await expect(page.locator('#progress')).toHaveText(`${i+1} of ${total}`); }
   await expect(page.locator('#notice')).toBeHidden();
   await expect(page.locator('#source')).toHaveText(original);
@@ -281,6 +281,41 @@ test('time left starts after the first judgment as a range and firms up to one f
   await expect(page.locator('#estimate')).toHaveText(new RegExp(`^(\\d+|${span}) to ${span} left$`));
   for (let n=1;n<20;n++) { await page.keyboard.press('t'); await expect(page.locator('#progress')).toHaveText(`${n+1} of ${total}`); }
   await expect(page.locator('#estimate')).toHaveText(new RegExp(`^about ${span} left$`));
+});
+
+test('the paused screen sits at the center of the window and sums up the sitting',async({page})=>{
+  await open(page); await page.keyboard.press('?');
+  for (let n=0;n<3;n++) { await page.keyboard.press('t'); await expect(page.locator('#progress')).toHaveText(`${n+1} of ${total}`); }
+  await page.keyboard.press('Escape');
+  await expect(page.locator('#paused')).toBeVisible();
+  await expect(page.locator('#sitting .line').nth(0)).toHaveText(/^3 pairs this sitting, in \d+ min of review\.$/);
+  await expect(page.locator('#sitting .line').nth(1)).toHaveText(new RegExp(`^3 of ${total} done\\. .+ left; at this pace, done around .+\\.$`));
+  const box=(await page.locator('#paused .stage').boundingBox())!, view=page.viewportSize()!;
+  expect(Math.abs(box.y+box.height/2-view.height/2)).toBeLessThan(24);
+  expect(Math.abs(box.x+box.width/2-view.width/2)).toBeLessThan(24);
+  await page.screenshot({path:`${screenshotDir}/paused.png`});
+});
+
+test('progress moments: a set lights up, halfway is marked, and the end celebrates once',async({page})=>{
+  await page.emulateMedia({reducedMotion:'no-preference'});
+  await open(page); await page.keyboard.press('?');
+  const half=Math.ceil(total/2);
+  for (let n=1;n<=total;n++) {
+    await page.keyboard.press('t'); await expect(page.locator('#progress')).toHaveText(`${n} of ${total}`);
+    if (n===half) await expect(page.locator('#notice')).toContainText('Halfway.');
+    if (n===25) {
+      await expect(page.locator('#notice')).toContainText('First set done.');
+      await expect(page.locator('#ledger .set').first()).toHaveClass(/complete/);
+      await page.waitForTimeout(500); await page.screenshot({path:`${screenshotDir}/set-done.png`});
+    }
+  }
+  await expect(page.locator('#summary')).toBeVisible();
+  await expect(page.locator('#summary')).toHaveClass(/arrived/);
+  await expect(page.locator('#confetti')).toBeVisible();
+  await page.waitForTimeout(900); await page.screenshot({path:`${screenshotDir}/finale.png`});
+  await expect(page.locator('#confetti')).toBeHidden({timeout:4000});
+  await expect(page.locator('#ledger .set.complete')).toHaveCount(Math.ceil(total/25));
+  await expect(page.locator('#summary-time')).toHaveText(new RegExp(`^${total} judgments in \\d+ min of review, \\d+ seconds? for a typical pair\\.$`));
 });
 
 // A shortcut acts without moving focus, so no keyboard ring appears on a button.

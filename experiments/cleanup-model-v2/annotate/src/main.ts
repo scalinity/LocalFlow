@@ -1,7 +1,8 @@
 import './styles.css';
 import { backend, mock } from './backend';
 import { diff, marks } from './diff';
-import { sayLeft, timeLeft } from './pace';
+import { clockAfter, duration, sayLeft, timeLeft } from './pace';
+import { confetti } from './celebrate';
 import type { Choice, Pair, Progress, Snapshot } from './types';
 const $ = <T extends HTMLElement = HTMLElement>(id: string) => document.getElementById(id) as T;
 let state: Snapshot;
@@ -9,6 +10,9 @@ let busy=false, paused=false, sourceView=false, marksOn=true, guideOpen=false, n
 let shown='';
 let started=performance.now(), elapsed=0;
 let noteWrites: Promise<void> = Promise.resolve();
+// This sitting: each pair judged since the window opened, with its seconds, and review time since the last break.
+const sitting = new Map<string, number>();
+let sinceBreak=0, lastCompleted=-1;
 const current = () => state?.pairs.find(p => p.pair_id === state.queue[0]);
 const seconds = () => elapsed + (paused ? 0 : (performance.now()-started)/1000);
 const resetTimer = () => { elapsed=0; started=performance.now(); };
@@ -17,6 +21,7 @@ const hint = (label: string, key: string) => { const k=document.createElement('k
 $('mode').textContent = mock ? 'Toy session' : '';
 $('real-session').hidden = !mock;
 // One tick per pair, in sets of 25. Ticks count judgments and never show which side won.
+// A finished set stays lit, and the tick a judgment fills pops once.
 function ledger(p: Progress) {
   const root=$('ledger');
   if (root.dataset.total !== String(p.total)) {
@@ -25,12 +30,26 @@ function ledger(p: Progress) {
     for (let i=0; i<p.total; i+=25) {
       const set=document.createElement('span'); set.className='set';
       const n=Math.min(25,p.total-i); set.style.flexGrow=String(n);
-      for (let j=0; j<n; j++) set.append(document.createElement('i'));
+      for (let j=0; j<n; j++) { const tick=document.createElement('i'); tick.style.setProperty('--i',String(j)); set.append(tick); }
       sets.push(set);
     }
     root.replaceChildren(...sets);
   }
-  root.querySelectorAll('i').forEach((tick,i) => { tick.className=i < p.completed ? 'done' : i === p.completed ? 'next' : ''; });
+  const ticks=[...root.querySelectorAll<HTMLElement>('i')];
+  ticks.forEach((tick,i) => { tick.className=i < p.completed ? 'done' : i === p.completed ? 'next' : ''; });
+  root.querySelectorAll('.set').forEach((set,k) => set.classList.toggle('complete', p.completed >= Math.min(p.total,(k+1)*25)));
+  if (lastCompleted >= 0 && p.completed === lastCompleted+1) {
+    const tick=ticks[p.completed-1]; tick.dataset.fresh=''; setTimeout(() => delete tick.dataset.fresh, 450);
+  }
+  lastCompleted=p.completed;
+}
+// A finished set sweeps left to right; at the end, every set does.
+function sweep(sets: number[]) {
+  const all=$('ledger').querySelectorAll<HTMLElement>('.set');
+  for (const k of sets) {
+    const set=all[k]; if (!set) continue;
+    set.classList.remove('sweep'); void set.offsetWidth; set.classList.add('sweep'); setTimeout(() => set.classList.remove('sweep'),1400);
+  }
 }
 // Step the type down until the source and both panes fit; past the last step they scroll inside.
 const scrollers=['source-band','a-text','b-text','candidates'];
@@ -64,6 +83,13 @@ function render() {
   const working=!!pair && !paused;
   $('workspace').hidden=!working; $('decision').hidden=!working;
   $('paused').hidden=!paused;
+  if (paused && pair) {
+    const pairs=sitting.size, spent=[...sitting.values()].reduce((t,s) => t+s,0);
+    const line=(text: string) => { const span=document.createElement('span'); span.className='line'; span.textContent=text; return span; };
+    const outlook=left ? ` ${sayLeft(left).replace(/^./, c => c.toUpperCase())}; at this pace, done around ${clockAfter(left.seconds)}.` : '';
+    $('sitting').replaceChildren(...(pairs ? [line(`${pairs} ${pairs === 1 ? 'pair' : 'pairs'} this sitting, in ${duration(spent)} of review.`)] : []),
+      line(`${p.completed} of ${p.total} done.${outlook}`));
+  }
   $('summary').hidden=!!pair || paused;
   $('pause').hidden=!pair;
   $('pause').replaceChildren(...hint(paused ? 'Continue' : 'Pause','Esc'));
@@ -89,7 +115,8 @@ function render() {
     }
     fit();
   } else if (!paused) {
-    $('summary-time').textContent=p.median_seconds === null ? 'No judgments yet.' : `${p.completed} judgments, ${p.median_seconds.toFixed(1)} seconds median per pair.`;
+    const typical=Math.max(1,Math.round(p.median_seconds ?? 0));
+    $('summary-time').textContent=p.median_seconds === null ? 'No judgments yet.' : `${p.completed} judgments in ${duration(p.timings.reduce((t,[,s]) => t+s,0))} of review, ${typical} second${typical === 1 ? '' : 's'} for a typical pair.`;
     $('counts').replaceChildren(...(['a','b','tie','both_wrong'] as const).map(choice => {
       const group=document.createElement('div'); const dt=document.createElement('dt'); const dd=document.createElement('dd');
       dt.textContent=({a:'A better',b:'B better',tie:'Tie',both_wrong:'Both wrong'})[choice]; dd.textContent=String(p.counts[choice]); group.append(dt,dd); return group;
@@ -124,18 +151,42 @@ async function load() {
   }
   catch (error) { fail(error, true); } finally { busy=false; }
 }
-async function action(run: () => Promise<Snapshot>, message: string, judged=false) {
+async function action(run: () => Promise<Snapshot>, message: string, judged?: {id: string; spent: number}) {
   if (busy || broken) return;
   busy=true;
   try {
     await noteWrites;
+    const before=state.progress.completed;
     state=await run(); noteOpen=false; resetTimer();
-    const set=judged && state.progress.completed > 0 && state.progress.completed % 25 === 0 && !!current();
-    $('notice').hidden=!set;
-    $('notice').textContent=set ? `That finishes a set of 25. A good moment for a short break; Esc pauses.` : '';
+    if (judged) { sitting.set(judged.id,judged.spent); sinceBreak+=judged.spent; }
+    else if (state.progress.completed < before && state.queue[0]) sitting.delete(state.queue[0]);  // an undone pair returns to the front
+    const moment=judged && state.progress.completed > before ? milestone(state.progress) : null;
+    $('notice').hidden=!moment?.notice;
+    $('notice').replaceChildren(...(moment?.notice ?? []));
     render();
-    status(set ? $('notice').textContent! : message);
+    status(moment?.text ?? message);
   } catch { fail(); } finally { busy=false; }
+}
+// Moments mark progress only: a set, halfway, the end, a long stretch without a break. None rewards speed.
+const BREAK=25*60;
+function milestone(p: Progress): {notice?: (Node|string)[]; text: string} | null {
+  const sets=Math.ceil(p.total/25), done=p.completed, rest='A short break keeps judgments sharp; Esc pauses.';
+  if (done === p.total) {
+    sweep([...Array(sets).keys()]); confetti($<HTMLCanvasElement>('confetti'));
+    const summary=$('summary'); summary.classList.remove('arrived'); void summary.offsetWidth; summary.classList.add('arrived');
+    return {text: 'Every pair reviewed.'};
+  }
+  let lead: string, detail: string;
+  if (done % 25 === 0) {
+    const k=done/25; sweep([k-1]);
+    lead=k === 1 ? 'First set done.' : k === sets-1 ? `Set ${k} of ${sets} done, one to go.` : `Set ${k} of ${sets} done.`;
+    detail=`${done} of ${p.total} pairs reviewed. ${rest}`;
+  } else if (done === Math.ceil(p.total/2)) { lead='Halfway.'; detail=`${done} of ${p.total} pairs reviewed.`; }
+  else if (sinceBreak >= BREAK) { lead=`${Math.round(sinceBreak/60)} minutes of review.`; detail=rest; }
+  else return null;
+  if (detail.endsWith(rest)) sinceBreak=0;
+  const strong=document.createElement('strong'); strong.textContent=lead;
+  return {notice: [strong,' ',detail], text: `${lead} ${detail}`};
 }
 // The one moment of motion: the chosen button confirms, then the next pair fades in.
 function confirm(choice: Choice) {
@@ -147,7 +198,7 @@ function judge(choice: Choice) {
   const pair=current(); if (!pair || paused || noteOpen || busy || broken) return;
   const spent=seconds(); const note=state.drafts[pair.pair_id] ?? '';
   confirm(choice);
-  void action(() => backend.judge(pair.pair_id,choice,note,spent), mock ? 'Choice recorded in memory.' : 'Choice saved.', true);
+  void action(() => backend.judge(pair.pair_id,choice,note,spent), mock ? 'Choice recorded in memory.' : 'Choice saved.', {id: pair.pair_id, spent});
 }
 function undo() { if (!paused && state?.can_undo) void action(() => backend.undo(),'Last judgment undone.'); }
 function skip() { const pair=current(); if (pair && !paused && !noteOpen) void action(() => backend.skip(pair.pair_id),'Set aside. This pair returns at the end.'); }
@@ -157,7 +208,7 @@ function openNote() { if (!current() || busy || paused) return; noteOpen=true; r
 function closeNote() { noteOpen=false; $('note').blur(); render(); }
 function pause() {
   if (!current() || busy || broken) return;
-  if (!paused) elapsed=seconds(); else started=performance.now();
+  if (!paused) { elapsed=seconds(); sinceBreak=0; } else started=performance.now();  // a pause counts as a break
   paused=!paused; render();
 }
 function toggleDiff() { if (!paused && current() && !busy) { sourceView=!sourceView; render(); } }
