@@ -1,0 +1,64 @@
+<!doctype html>
+<html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'; connect-src ipc: http://ipc.localhost http://localhost:1431 ws://localhost:1431; base-uri 'none'; form-action 'none'; object-src 'none'; frame-src 'none'"><title>LocalFlow Annotate</title></head>
+<body>
+<header data-tauri-drag-region>
+  <div class="top" data-tauri-drag-region>
+    <div class="identity" data-tauri-drag-region><span class="product">LocalFlow</span><span class="divider">/</span><strong>Annotate</strong><span id="mode"></span><span id="save-label">Saved after every choice</span><button id="real-session" hidden>Leave toy session</button></div>
+    <div class="right" data-tauri-drag-region>
+      <div id="session-line" class="progress" data-tauri-drag-region><strong id="progress">Loading…</strong><span id="estimate">Take your time.</span></div>
+      <button id="pause">Pause <kbd>Esc</kbd></button>
+    </div>
+  </div>
+  <div id="ledger" class="ledger" data-tauri-drag-region aria-hidden="true"></div>
+</header>
+<main>
+  <h1 class="visually-hidden">Pair review</h1>
+  <p id="status" class="visually-hidden" role="status" aria-live="polite"></p>
+  <section id="workspace" hidden>
+    <p id="notice" class="notice" hidden></p>
+    <section id="ladder" class="ladder" aria-labelledby="ladder-title" hidden>
+      <div class="ladder-head"><h2 id="ladder-title">How to decide</h2><button id="ladder-close">Hide guide <kbd>?</kbd></button></div>
+      <ol>
+        <li><strong>Damage first</strong><span>Changed meaning, a changed fact, invented words, or an edit nobody asked for. If only one is damaged, choose the other; if both are, choose Both wrong.</span></li>
+        <li><strong>Cleanup</strong><span>Complete beats partial, and partial beats wrong.</span></li>
+        <li><strong>Punctuation</strong><span>Improved or already fine beats left wrong, and left wrong beats made worse.</span></li>
+        <li><strong>Self-corrections</strong><span>Resolved beats unresolved, and unresolved beats wrong.</span></li>
+      </ol>
+      <p>Still equal after all four? Choose Tie.</p>
+    </section>
+    <section id="source-band" class="source" aria-labelledby="source-label"><h2 id="source-label">Dictated</h2><p id="source"></p><p id="vocabulary" class="vocabulary"></p></section>
+    <div id="candidates" class="candidates">
+      <section class="candidate" aria-labelledby="a-label"><h2 id="a-label">A</h2><p id="a-text" class="text"></p></section>
+      <section class="candidate" aria-labelledby="b-label"><h2 id="b-label">B</h2><p id="b-text" class="text"></p></section>
+    </div>
+    <div class="below">
+      <p id="marks-help" class="legend"><mark class="dis">Marked</mark> where A and B differ; a thin bar<mark class="gap"></mark>shows where only the other side has text. Point at a mark to find its match.</p>
+      <p id="diff-help" class="legend" hidden><ins>Inserted</ins> and <del>removed</del> words, compared with the dictation.</p>
+      <p id="note-preview" hidden></p>
+      <div id="note-panel" hidden><label for="note">Note <span>Optional, and it stays with this pair</span></label><textarea id="note" rows="2" maxlength="2000" placeholder="What made the difference?"></textarea><button id="note-done">Done <kbd>Esc</kbd></button></div>
+    </div>
+  </section>
+  <section id="paused" class="empty" hidden><h2>Paused</h2><p>Your place is kept, and the timer is stopped.</p><button id="resume">Continue <kbd>Esc</kbd></button></section>
+  <section id="summary" class="empty" hidden><h2>Every pair, considered.</h2><p id="summary-time"></p><dl id="counts"></dl><p class="repeat-note">A few pairs appeared twice, so your choices can also be checked against each other.</p><div><button id="export">Export summary</button><button id="summary-undo">Undo last judgment <kbd>U</kbd></button></div><p id="export-status" role="status"></p></section>
+  <section id="failure" class="empty" hidden><h2 id="failure-title">Couldn’t open this session.</h2><p id="failure-text"></p><button id="retry">Try again</button><button id="try-toy" hidden>Try toy pairs</button><p id="toy-explanation" hidden>Toy choices stay in memory and never enter your research annotations.</p></section>
+</main>
+<footer id="decision" class="decision" hidden>
+  <div class="choices">
+    <button data-choice="a" class="side"><span class="glyph">A</span><span class="label">is better</span><span class="keys"><kbd>A</kbd><kbd>←</kbd></span></button>
+    <button data-choice="tie" class="middle">Tie<span class="keys"><kbd>T</kbd><kbd>↓</kbd></span></button>
+    <button data-choice="both_wrong" class="middle">Both wrong<span class="keys"><kbd>W</kbd></span></button>
+    <button data-choice="b" class="side"><span class="glyph">B</span><span class="label">is better</span><span class="keys"><kbd>B</kbd><kbd>→</kbd></span></button>
+  </div>
+  <div class="tools">
+    <div class="tool-buttons">
+      <button id="undo">Undo <kbd>U</kbd></button>
+      <button id="add-note">Note <kbd>N</kbd></button>
+      <button id="skip">Skip<span class="long"> for later</span> <kbd>S</kbd></button>
+      <button id="marks" aria-pressed="true">Marks <kbd>M</kbd></button>
+      <button id="diff" aria-pressed="false">Source<span class="long"> changes</span> <kbd>D</kbd></button>
+      <button id="guide" aria-expanded="false" aria-controls="ladder"><span class="long">How to decide</span><span class="short">Guide</span> <kbd>?</kbd></button>
+    </div>
+    <p id="reminder">Damage first, then cleanup, punctuation, self-corrections.</p>
+  </div>
+</footer>
+<script type="module" src="/src/main.ts"></script></body></html>

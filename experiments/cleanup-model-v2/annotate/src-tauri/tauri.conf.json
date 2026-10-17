@@ -1,0 +1,47 @@
+{
+  "$schema": "https://schema.tauri.app/config/2",
+  "productName": "LocalFlow Annotate",
+  "version": "0.1.0",
+  "identifier": "ai.localflow.annotate",
+  "build": {
+    "beforeDevCommand": "npm run dev",
+    "devUrl": "http://localhost:1431",
+    "frontendDist": "../dist",
+    "beforeBuildCommand": "npm run build"
+  },
+  "app": {
+    "windows": [
+      {
+        "label": "main",
+        "title": "LocalFlow Annotate",
+        "width": 1100,
+        "height": 800,
+        "minWidth": 380,
+        "minHeight": 580,
+        "titleBarStyle": "Overlay",
+        "hiddenTitle": true
+      }
+    ],
+    "security": {
+      "csp": "default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self' data:; font-src 'self'; connect-src ipc: http://ipc.localhost; base-uri 'none'; form-action 'none'; object-src 'none'; frame-src 'none'",
+      "devCsp": "default-src 'none'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'; connect-src ipc: http://ipc.localhost http://localhost:1431 ws://localhost:1431; base-uri 'none'; form-action 'none'; object-src 'none'; frame-src 'none'"
+    }
+  },
+  "bundle": {
+    "active": true,
+    "targets": [
+      "app"
+    ],
+    "icon": [
+      "icons/32x32.png",
+      "icons/128x128.png",
+      "icons/128x128@2x.png",
+      "icons/icon.icns"
+    ],
+    "category": "Productivity",
+    "shortDescription": "Review blinded pairs of cleaned dictation.",
+    "macOS": {
+      "signingIdentity": "-"
+    }
+  }
+}

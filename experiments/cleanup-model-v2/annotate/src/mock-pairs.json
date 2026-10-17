@@ -1,0 +1,550 @@
+[
+  {
+    "pair_id": "toy-001",
+    "case_id": "case-1",
+    "source": "Notes for the garden club meeting on Saturday. We need three volunteers for the seed swap table, but only people who can stay until noon, since the hall closes early. Please bring your own trowels and gloves, and let Odile know if the compost bins behind the shed are still full, because the council cannot collect new deliveries until they have been emptied and rinsed out properly, which usually takes most of a morning.",
+    "a": {
+      "text": "Notes for the garden club meeting on Saturday:\n- We need three volunteers for the seed swap table, but only people who can stay until noon, since the hall closes early.\n- Please bring your own trowels and gloves.\n- And let Odile know if the compost bins behind the shed are still full, because the council cannot collect new deliveries until they have been emptied and rinsed out properly, which usually takes most of a morning."
+    },
+    "b": {
+      "text": "Notes for the garden club meeting on Saturday. We need three volunteers for the seed swap table, but only people who can stay until noon, since the hall closes early. Please bring your own trowels and gloves, and let Odile know if the compost bins behind the shed are still full, because the council cannot collect new deliveries until they have been emptied and rinsed out properly, which usually takes most of a morning."
+    },
+    "vocabulary": []
+  },
+  {
+    "pair_id": "toy-002",
+    "case_id": "case-2",
+    "source": "so the plan is we leave at seven pick up the rental van in town and then drive straight to the lake house without stopping unless someone needs a break. bring snacks for the drive and a warm jacket because it gets cold by the water after sunset and the cabin heater takes a while to get going",
+    "a": {
+      "text": "So the plan is we leave at seven, pick up the rental van in town and then drive straight to the lake house without stopping, unless someone needs a break. Bring snacks for the drive and a warm jacket, because it gets cold by the water after sunset and the cabin heater takes a while to get going."
+    },
+    "b": {
+      "text": "So the plan is we leave at seven, pick up the rental van in town, and then drive straight to the lake house without stopping, unless someone needs a break. Bring snacks for the drive and a warm jacket, because it gets cold by the water after sunset and the cabin heater takes a while to get going."
+    },
+    "vocabulary": []
+  },
+  {
+    "pair_id": "toy-003",
+    "case_id": "case-3",
+    "source": "please move the dentist appointment from tuesday to thursday afternoon and tell the office that the insurance card is the new one with the blue logo not the old green one. if thursday does not work any day next week is fine as long as it is after three because of school pickup",
+    "a": {
+      "text": "Please move the dentist appointment from Tuesday to Thursday afternoon, and tell the office that the insurance card is the new one with the blue logo, not the old green one. If Thursday does not work, any day next week is fine as long as it is after three, because of school pickup."
+    },
+    "b": {
+      "text": "Please move the dentist appointment from Tuesday to Thursday morning, and tell the office that the insurance card is the new one with the blue logo, not the old green one. If Thursday does not work, any day next week is fine as long as it is after three, because of school pickup."
+    },
+    "vocabulary": []
+  },
+  {
+    "pair_id": "toy-004",
+    "case_id": "case-4",
+    "source": "okay quick update on the kitchen renovation for everyone on the thread. the cabinets arrived yesterday but two of the upper doors are the wrong shade so I sent photos to the supplier and they promised replacements within ten days. the electrician finished the under cabinet lighting and the new outlets by the window although the one next to the fridge still trips the breaker when the kettle and the toaster run together so please avoid using both at once until he comes back. the countertop template appointment is on tuesday no wait wednesday at two and someone needs to be home to let them in, I can be there until three. the plumber says the sink can go in the same day as the countertop if the template goes well otherwise it moves to the following monday. for the backsplash we narrowed it down to the white zellige tiles or the pale green ones and I would like everyone to vote by friday so I can place the order before the price change. also the old dishwasher is in the garage and the recycling center only takes appliances on the first saturday of the month so it will sit there for a couple of weeks. the painter can start the week after the countertop goes in but he needs the trim color by thursday at the latest so please send me your vote for the soft white or the warm gray before then. finally the budget is still about eight percent over mostly because of the extra lighting so let's hold off on the new bar stools for now",
+    "a": {
+      "text": "Okay, quick update on the kitchen renovation for everyone on the thread. The cabinets arrived yesterday, but two of the upper doors are the wrong shade, so I sent photos to the supplier and they promised replacements within ten days. The electrician finished the under-cabinet lighting and the new outlets by the window, although the one next to the fridge still trips the breaker when the kettle and the toaster run together, so please avoid using both at once until he comes back. The countertop template appointment is on Wednesday at two, and someone needs to be home to let them in; I can be there until three. The plumber says the sink can go in the same day as the countertop if the template goes well; otherwise it moves to the following Monday. For the backsplash, we narrowed it down to the white zellige tiles or the pale green ones, and I would like everyone to vote by Friday so I can place the order before the price change. Also, the old dishwasher is in the garage, and the recycling center only takes appliances on the first Saturday of the month, so it will sit there for a couple of weeks. The painter can start the week after the countertop goes in, but he needs the trim color by Thursday at the latest, so please send me your vote for the soft white or the warm gray before then. Finally, the budget is still about eight percent over, mostly because of the extra lighting, so let’s hold off on the new bar stools for now."
+    },
+    "b": {
+      "text": "Okay, quick update on the kitchen renovation for everyone on the thread. The cabinets arrived yesterday, but two of the upper doors are the wrong shade, so I sent photos to the supplier and they promised replacements within ten days. The electrician finished the under cabinet lighting and the new outlets by the window, although the one next to the fridge still trips the breaker when the kettle and the toaster run together, so please avoid using both at once until he comes back. The countertop template appointment is on Tuesday, no wait, Wednesday at two, and someone needs to be home to let them in; I can be there until three. The plumber says the sink can go in the same day as the countertop if the template goes well; otherwise it moves to the following Monday. For the backsplash, we narrowed it down to the white zellige tiles or the pale green ones, and I would like everyone to vote by Friday so I can place the order before the price change. Also, the old dishwasher is in the garage, and the recycling center only takes appliances on the first Saturday of the month, so it will sit there for a couple of weeks. The painter can start the week after the countertop goes in, but he needs the trim color by Thursday at the latest, so please send me your vote for the soft white or the warm gray before then. Finally, the budget is still about 8% over, mostly because of the extra lighting, so let’s hold off on the new bar stools for now."
+    },
+    "vocabulary": []
+  },
+  {
+    "pair_id": "toy-005",
+    "case_id": "case-5",
+    "source": "um can you send the notes after lunch please",
+    "a": {
+      "text": "Can you send the notes after lunch, please?"
+    },
+    "b": {
+      "text": "Please send the notes before lunch."
+    },
+    "vocabulary": []
+  },
+  {
+    "pair_id": "toy-006",
+    "case_id": "case-6",
+    "source": "the blue notebook is on the kitchen table",
+    "a": {
+      "text": "The notebook is blue and on the kitchen table."
+    },
+    "b": {
+      "text": "The blue notebook is on the kitchen table."
+    },
+    "vocabulary": []
+  },
+  {
+    "pair_id": "toy-007",
+    "case_id": "case-7",
+    "source": "lets meet on thursday no sorry friday at ten",
+    "a": {
+      "text": "Let’s meet on Friday at ten."
+    },
+    "b": {
+      "text": "Let’s meet on Thursday at ten."
+    },
+    "vocabulary": []
+  },
+  {
+    "pair_id": "toy-008",
+    "case_id": "case-8",
+    "source": "add oat milk apples and rice to the list",
+    "a": {
+      "text": "Add oat milk, apples, and rice to the list."
+    },
+    "b": {
+      "text": "Add oat milk, apples, and rice to the list."
+    },
+    "vocabulary": []
+  },
+  {
+    "pair_id": "toy-009",
+    "case_id": "case-9",
+    "source": "i finished the draft but i havent sent it yet",
+    "a": {
+      "text": "I finished and sent the draft."
+    },
+    "b": {
+      "text": "I finished the draft, but I haven’t sent it yet."
+    },
+    "vocabulary": []
+  },
+  {
+    "pair_id": "toy-010",
+    "case_id": "case-10",
+    "source": "remind me to water the basil tomorrow morning",
+    "a": {
+      "text": "Water the roses tomorrow morning."
+    },
+    "b": {
+      "text": "Water the basil tonight."
+    },
+    "vocabulary": []
+  },
+  {
+    "pair_id": "toy-011",
+    "case_id": "case-11",
+    "source": "open the quick note folder and save this there",
+    "a": {
+      "text": "Open the QuickNote folder and save this there."
+    },
+    "b": {
+      "text": "Open the quick note folder and save this there."
+    },
+    "vocabulary": [
+      [
+        "quick note",
+        "QuickNote"
+      ]
+    ]
+  },
+  {
+    "pair_id": "toy-012",
+    "case_id": "case-12",
+    "source": "the walk took about twenty minutes maybe twenty five",
+    "a": {
+      "text": "The walk took exactly twenty-five minutes."
+    },
+    "b": {
+      "text": "The walk took about twenty to twenty-five minutes."
+    },
+    "vocabulary": []
+  },
+  {
+    "pair_id": "toy-013",
+    "case_id": "case-13",
+    "source": "thanks for checking i will call when i get home",
+    "a": {
+      "text": "Thanks for checking. I’ll call when I get home."
+    },
+    "b": {
+      "text": "Thanks for checking; I’ll call when I get home."
+    },
+    "vocabulary": []
+  },
+  {
+    "pair_id": "toy-014",
+    "case_id": "case-14",
+    "source": "um can you send the notes after lunch please this is for the weekend",
+    "a": {
+      "text": "Please send the notes before lunch. This is for the weekend."
+    },
+    "b": {
+      "text": "Can you send the notes after lunch, please? This is for the weekend."
+    },
+    "vocabulary": []
+  },
+  {
+    "pair_id": "toy-015",
+    "case_id": "case-15",
+    "source": "the blue notebook is on the kitchen table this is for the weekend",
+    "a": {
+      "text": "The blue notebook is on the kitchen table. This is for the weekend."
+    },
+    "b": {
+      "text": "The notebook is blue and on the kitchen table. This is for the weekend."
+    },
+    "vocabulary": []
+  },
+  {
+    "pair_id": "toy-016",
+    "case_id": "case-16",
+    "source": "lets meet on thursday no sorry friday at ten this is for the weekend",
+    "a": {
+      "text": "Let’s meet on Thursday at ten. This is for the weekend."
+    },
+    "b": {
+      "text": "Let’s meet on Friday at ten. This is for the weekend."
+    },
+    "vocabulary": []
+  },
+  {
+    "pair_id": "toy-017",
+    "case_id": "case-17",
+    "source": "add oat milk apples and rice to the list this is for the weekend",
+    "a": {
+      "text": "Add oat milk, apples, and rice to the list. This is for the weekend."
+    },
+    "b": {
+      "text": "Add oat milk, apples, and rice to the list. This is for the weekend."
+    },
+    "vocabulary": []
+  },
+  {
+    "pair_id": "toy-018",
+    "case_id": "case-18",
+    "source": "i finished the draft but i havent sent it yet this is for the weekend",
+    "a": {
+      "text": "I finished the draft, but I haven’t sent it yet. This is for the weekend."
+    },
+    "b": {
+      "text": "I finished and sent the draft. This is for the weekend."
+    },
+    "vocabulary": []
+  },
+  {
+    "pair_id": "toy-019",
+    "case_id": "case-19",
+    "source": "remind me to water the basil tomorrow morning this is for the weekend",
+    "a": {
+      "text": "Water the basil tonight. This is for the weekend."
+    },
+    "b": {
+      "text": "Water the roses tomorrow morning. This is for the weekend."
+    },
+    "vocabulary": []
+  },
+  {
+    "pair_id": "toy-020",
+    "case_id": "case-20",
+    "source": "open the quick note folder and save this there this is for the weekend",
+    "a": {
+      "text": "Open the quick note folder and save this there. This is for the weekend."
+    },
+    "b": {
+      "text": "Open the QuickNote folder and save this there. This is for the weekend."
+    },
+    "vocabulary": [
+      [
+        "quick note",
+        "QuickNote"
+      ]
+    ]
+  },
+  {
+    "pair_id": "toy-021",
+    "case_id": "case-21",
+    "source": "the walk took about twenty minutes maybe twenty five this is for the weekend",
+    "a": {
+      "text": "The walk took about twenty to twenty-five minutes. This is for the weekend."
+    },
+    "b": {
+      "text": "The walk took exactly twenty-five minutes. This is for the weekend."
+    },
+    "vocabulary": []
+  },
+  {
+    "pair_id": "toy-022",
+    "case_id": "case-22",
+    "source": "thanks for checking i will call when i get home this is for the weekend",
+    "a": {
+      "text": "Thanks for checking; I’ll call when I get home. This is for the weekend."
+    },
+    "b": {
+      "text": "Thanks for checking. I’ll call when I get home. This is for the weekend."
+    },
+    "vocabulary": []
+  },
+  {
+    "pair_id": "toy-023",
+    "case_id": "case-23",
+    "source": "um can you send the notes after lunch please this is for the morning",
+    "a": {
+      "text": "Can you send the notes after lunch, please? This is for the morning."
+    },
+    "b": {
+      "text": "Please send the notes before lunch. This is for the morning."
+    },
+    "vocabulary": []
+  },
+  {
+    "pair_id": "toy-024",
+    "case_id": "case-24",
+    "source": "the blue notebook is on the kitchen table this is for the morning",
+    "a": {
+      "text": "The notebook is blue and on the kitchen table. This is for the morning."
+    },
+    "b": {
+      "text": "The blue notebook is on the kitchen table. This is for the morning."
+    },
+    "vocabulary": []
+  },
+  {
+    "pair_id": "toy-025",
+    "case_id": "case-25",
+    "source": "lets meet on thursday no sorry friday at ten this is for the morning",
+    "a": {
+      "text": "Let’s meet on Friday at ten. This is for the morning."
+    },
+    "b": {
+      "text": "Let’s meet on Thursday at ten. This is for the morning."
+    },
+    "vocabulary": []
+  },
+  {
+    "pair_id": "toy-026",
+    "case_id": "case-26",
+    "source": "add oat milk apples and rice to the list this is for the morning",
+    "a": {
+      "text": "Add oat milk, apples, and rice to the list. This is for the morning."
+    },
+    "b": {
+      "text": "Add oat milk, apples, and rice to the list. This is for the morning."
+    },
+    "vocabulary": []
+  },
+  {
+    "pair_id": "toy-027",
+    "case_id": "case-27",
+    "source": "i finished the draft but i havent sent it yet this is for the morning",
+    "a": {
+      "text": "I finished and sent the draft. This is for the morning."
+    },
+    "b": {
+      "text": "I finished the draft, but I haven’t sent it yet. This is for the morning."
+    },
+    "vocabulary": []
+  },
+  {
+    "pair_id": "toy-028",
+    "case_id": "case-28",
+    "source": "remind me to water the basil tomorrow morning this is for the morning",
+    "a": {
+      "text": "Water the roses tomorrow morning. This is for the morning."
+    },
+    "b": {
+      "text": "Water the basil tonight. This is for the morning."
+    },
+    "vocabulary": []
+  },
+  {
+    "pair_id": "toy-029",
+    "case_id": "case-29",
+    "source": "open the quick note folder and save this there this is for the morning",
+    "a": {
+      "text": "Open the QuickNote folder and save this there. This is for the morning."
+    },
+    "b": {
+      "text": "Open the quick note folder and save this there. This is for the morning."
+    },
+    "vocabulary": [
+      [
+        "quick note",
+        "QuickNote"
+      ]
+    ]
+  },
+  {
+    "pair_id": "toy-030",
+    "case_id": "case-30",
+    "source": "the walk took about twenty minutes maybe twenty five this is for the morning",
+    "a": {
+      "text": "The walk took exactly twenty-five minutes. This is for the morning."
+    },
+    "b": {
+      "text": "The walk took about twenty to twenty-five minutes. This is for the morning."
+    },
+    "vocabulary": []
+  },
+  {
+    "pair_id": "toy-031",
+    "case_id": "case-31",
+    "source": "thanks for checking i will call when i get home this is for the morning",
+    "a": {
+      "text": "Thanks for checking. I’ll call when I get home. This is for the morning."
+    },
+    "b": {
+      "text": "Thanks for checking; I’ll call when I get home. This is for the morning."
+    },
+    "vocabulary": []
+  },
+  {
+    "pair_id": "toy-032",
+    "case_id": "case-32",
+    "source": "um can you send the notes after lunch please this is for the afternoon",
+    "a": {
+      "text": "Please send the notes before lunch. This is for the afternoon."
+    },
+    "b": {
+      "text": "Can you send the notes after lunch, please? This is for the afternoon."
+    },
+    "vocabulary": []
+  },
+  {
+    "pair_id": "toy-033",
+    "case_id": "case-33",
+    "source": "the blue notebook is on the kitchen table this is for the afternoon",
+    "a": {
+      "text": "The blue notebook is on the kitchen table. This is for the afternoon."
+    },
+    "b": {
+      "text": "The notebook is blue and on the kitchen table. This is for the afternoon."
+    },
+    "vocabulary": []
+  },
+  {
+    "pair_id": "toy-034",
+    "case_id": "case-34",
+    "source": "lets meet on thursday no sorry friday at ten this is for the afternoon",
+    "a": {
+      "text": "Let’s meet on Thursday at ten. This is for the afternoon."
+    },
+    "b": {
+      "text": "Let’s meet on Friday at ten. This is for the afternoon."
+    },
+    "vocabulary": []
+  },
+  {
+    "pair_id": "toy-035",
+    "case_id": "case-35",
+    "source": "add oat milk apples and rice to the list this is for the afternoon",
+    "a": {
+      "text": "Add oat milk, apples, and rice to the list. This is for the afternoon."
+    },
+    "b": {
+      "text": "Add oat milk, apples, and rice to the list. This is for the afternoon."
+    },
+    "vocabulary": []
+  },
+  {
+    "pair_id": "toy-036",
+    "case_id": "case-36",
+    "source": "i finished the draft but i havent sent it yet this is for the afternoon",
+    "a": {
+      "text": "I finished the draft, but I haven’t sent it yet. This is for the afternoon."
+    },
+    "b": {
+      "text": "I finished and sent the draft. This is for the afternoon."
+    },
+    "vocabulary": []
+  },
+  {
+    "pair_id": "toy-037",
+    "case_id": "case-37",
+    "source": "remind me to water the basil tomorrow morning this is for the afternoon",
+    "a": {
+      "text": "Water the basil tonight. This is for the afternoon."
+    },
+    "b": {
+      "text": "Water the roses tomorrow morning. This is for the afternoon."
+    },
+    "vocabulary": []
+  },
+  {
+    "pair_id": "toy-038",
+    "case_id": "case-38",
+    "source": "open the quick note folder and save this there this is for the afternoon",
+    "a": {
+      "text": "Open the quick note folder and save this there. This is for the afternoon."
+    },
+    "b": {
+      "text": "Open the QuickNote folder and save this there. This is for the afternoon."
+    },
+    "vocabulary": [
+      [
+        "quick note",
+        "QuickNote"
+      ]
+    ]
+  },
+  {
+    "pair_id": "toy-039",
+    "case_id": "case-39",
+    "source": "the walk took about twenty minutes maybe twenty five this is for the afternoon",
+    "a": {
+      "text": "The walk took about twenty to twenty-five minutes. This is for the afternoon."
+    },
+    "b": {
+      "text": "The walk took exactly twenty-five minutes. This is for the afternoon."
+    },
+    "vocabulary": []
+  },
+  {
+    "pair_id": "toy-040",
+    "case_id": "case-40",
+    "source": "thanks for checking i will call when i get home this is for the afternoon",
+    "a": {
+      "text": "Thanks for checking; I’ll call when I get home. This is for the afternoon."
+    },
+    "b": {
+      "text": "Thanks for checking. I’ll call when I get home. This is for the afternoon."
+    },
+    "vocabulary": []
+  },
+  {
+    "pair_id": "toy-041",
+    "case_id": "case-5",
+    "source": "um can you send the notes after lunch please",
+    "a": {
+      "text": "Can you send the notes after lunch, please?"
+    },
+    "b": {
+      "text": "Please send the notes before lunch."
+    },
+    "vocabulary": []
+  },
+  {
+    "pair_id": "toy-042",
+    "case_id": "case-6",
+    "source": "the blue notebook is on the kitchen table",
+    "a": {
+      "text": "The notebook is blue and on the kitchen table."
+    },
+    "b": {
+      "text": "The blue notebook is on the kitchen table."
+    },
+    "vocabulary": []
+  },
+  {
+    "pair_id": "toy-043",
+    "case_id": "case-7",
+    "source": "lets meet on thursday no sorry friday at ten",
+    "a": {
+      "text": "Let’s meet on Friday at ten."
+    },
+    "b": {
+      "text": "Let’s meet on Thursday at ten."
+    },
+    "vocabulary": []
+  },
+  {
+    "pair_id": "toy-044",
+    "case_id": "case-8",
+    "source": "add oat milk apples and rice to the list",
+    "a": {
+      "text": "Add oat milk, apples, and rice to the list."
+    },
+    "b": {
+      "text": "Add oat milk, apples, and rice to the list."
+    },
+    "vocabulary": []
+  }
+]
