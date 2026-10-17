@@ -9,8 +9,8 @@ Listed with what each costs and what happens if it is left open. A writing sessi
    (b) the locked final set if its metadata shows enough such cases (metadata only; do not open it); (c) report H2 as exploratory.
 3. **Human annotation.** 150 blinded pairs plus 15 duplicates; needs the author's time with the annotation app. Without it there is no human check on the judges and the circularity limitation stays open.
    Build the packet with `--differing-only` (see LIMITATIONS 15): with the uniform draw about 125 of the 150 pairs would be identical text. The packet is written to `A/research/annotation/pairs.jsonl`, which the annotation app reads by default.
-4. **Sealing and the final set.** The pre-registration is unsealed. Sealing (`tools/prereg_freeze.py --seal`) must come before any use of the locked final set, which is opened once per system.
-   The selected model and the baselines are the systems to evaluate there.
+4. **Sealing and the final set.** Decided: sealed 2026-10-17 at 20:47 UTC at commit 6a40964, before any human annotation existed. The record is
+   `docs/v2/research/seal/FREEZE.json` (SHA-256 `f4a1ab44…ffa6`, the content of `seal/FROZEN`). The nine systems of Amendment 1 run once each on the 955 final cases.
 5. **Anthropic authorization.** No formal written answer exists. Do not release Claude-generated rows, targets or weights, and cite the support reply only as informal guidance.
 6. **Which venue and when.** ACL 2027 via ARR (January 5, 2027) and Interspeech 2027 (February 9, 2027) are the dated options; an arXiv posting and an ICML workshop are the others. The advisor approves the plan once there is a convincing draft.
 7. **Footprint gate in the winner rule.** The plan excludes a model whose 4-bit weights exceed 1.5 times C's size. That is a product judgment (on-device memory); change it in `ANALYSIS_PLAN.md` before any judged result if the author disagrees.
