@@ -58,7 +58,8 @@ test('disagreement marks are on by default, M toggles them, and D swaps to sourc
   expect(await page.locator('#a-text mark.dis').count()).toBeGreaterThan(0);
   expect(await page.locator('#b-text mark.dis').count()).toBeGreaterThan(0);
   await expect(page.locator('#a-text mark.nl')).toHaveCount(3);
-  expect(await page.locator('#b-text mark.gap').count()).toBeGreaterThan(0);
+  // Each dash item B lacks gets its own thin bar, including the ones next to a changed stop.
+  await expect(page.locator('#b-text mark.gap')).toHaveCount(3);
   // Marks never change the words themselves.
   await expect(page.locator('#a-text')).toHaveJSProperty('textContent',toy[0].a.text);
   await expect(page.locator('#b-text')).toHaveJSProperty('textContent',toy[0].b.text);
@@ -138,7 +139,7 @@ test('keyboard-only choices, notes, undo, skip, pause, the ledger and the summar
   await expect(page.locator('#progress')).toHaveText(`0 of ${total}`);
   await page.keyboard.press('Escape');
   await expect(page.locator('#note-panel')).toBeHidden();
-  await expect(page.locator('#add-note')).toBeFocused();
+  expect(await page.evaluate(() => document.activeElement === document.body)).toBe(true);
   await page.keyboard.press('a');
   await expect(page.locator('#progress')).toHaveText(`1 of ${total}`);
   await expect(page.locator('#ledger i.done')).toHaveCount(1);
@@ -235,6 +236,7 @@ test('word differences and disagreement marks remain accurate',async({page})=>{
     return {simple:inspect('one two three','one four three'),repeated:inspect('go go now','go now'),long:inspect(words.join(' '),changed.join(' ')),markup:inspect('plain','<script>toy</script>'),
       comma:pair('in town and then','in town, and then'),stop:pair('the week. Then','the week: Then'),word:pair('on Thursday afternoon, and','on Thursday morning, and'),
       list:pair('Notes for Saturday. We need help.','Notes for Saturday:\n- We need help.'),same:pair('identical text','identical text'),
+      items:pair('Reminder this week. Floor 3 needs covers. Please check the cart, and tell Marguerite.','Reminder this week:\n- Floor 3 needs covers.\n- Please check the cart.\n- And tell Marguerite.'),
       longMarks:pair(words.join(' '),changed.join(' ')),toyPair:pair(toyPair.a.text,toyPair.b.text)};
   },toy[3]);
   expect(result.simple).toEqual({inserted:'four ',deleted:'two '});
@@ -247,6 +249,9 @@ test('word differences and disagreement marks remain accurate',async({page})=>{
   expect(result.word).toMatchObject({a:['afternoon,'],b:['morning,']});
   expect(result.list.nlB).toBe(1);
   expect(result.list.b).toContain('-');
+  expect(result.list.gapsA).toBe(1);
+  // Prose against a dash list: one thin bar per item, and only the changed characters marked.
+  expect(result.items).toMatchObject({a:['.',',','a'],gapsA:3,nlB:3});
   expect(result.same).toMatchObject({a:[],b:[],gapsA:0,gapsB:0});
   expect(result.longMarks).toMatchObject({a:['word550'],b:['replacement']});
   expect(result.toyPair.textA).toBe(toy[3].a.text);
@@ -275,4 +280,18 @@ test('time left waits for ten judgments, then reads in minutes or hours',async({
   await page.keyboard.press('t');
   await expect(page.locator('#progress')).toHaveText(`10 of ${total}`);
   await expect(page.locator('#estimate')).toHaveText(/^about (\d+ min|\d+ h( \d+ min)?) left$/);
+});
+
+// A shortcut acts without moving focus, so no keyboard ring appears on a button.
+test('shortcuts leave no focus ring behind',async({page})=>{
+  await open(page); await page.keyboard.press('?');
+  const onBody=() => page.evaluate(() => document.activeElement === document.body);
+  await page.keyboard.press('n'); await expect(page.locator('#note')).toBeFocused();
+  await page.keyboard.press('Escape'); await expect(page.locator('#note-panel')).toBeHidden();
+  expect(await onBody()).toBe(true);
+  await page.keyboard.press('Escape'); await expect(page.locator('#paused')).toBeVisible();
+  expect(await onBody()).toBe(true);
+  await page.keyboard.press('Escape'); await expect(page.locator('#workspace')).toBeVisible();
+  expect(await onBody()).toBe(true);
+  await page.keyboard.press('t'); await expect(page.locator('#progress')).toHaveText(`1 of ${total}`);
 });

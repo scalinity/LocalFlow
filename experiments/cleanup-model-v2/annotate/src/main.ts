@@ -157,11 +157,13 @@ function judge(choice: Choice) {
 function undo() { if (!paused && state?.can_undo) void action(() => backend.undo(),'Last judgment undone.'); }
 function skip() { const pair=current(); if (pair && !paused && !noteOpen) void action(() => backend.skip(pair.pair_id),'Set aside. This pair returns at the end.'); }
 function openNote() { if (!current() || busy || paused) return; noteOpen=true; render(); $('note').focus(); }
-function closeNote() { noteOpen=false; render(); $('add-note').focus(); }
+// Shortcuts never move focus onto a button: focus moved after a key press draws the keyboard ring.
+// The hidden note box is blurred so it cannot keep swallowing shortcuts.
+function closeNote() { noteOpen=false; $('note').blur(); render(); }
 function pause() {
   if (!current() || busy || broken) return;
   if (!paused) elapsed=seconds(); else started=performance.now();
-  paused=!paused; render(); if (paused) $('resume').focus(); else $('pause').focus();
+  paused=!paused; render();
 }
 function toggleDiff() { if (!paused && current() && !busy) { sourceView=!sourceView; render(); } }
 function toggleMarks() { if (!paused && current() && !busy) { marksOn=sourceView ? true : !marksOn; sourceView=false; render(); } }

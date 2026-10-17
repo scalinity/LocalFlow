@@ -63,6 +63,31 @@ export function diff(source: string, candidate: string): DocumentFragment {
 }
 // Punctuation and case only: "week." against "week:" marks the stop, not the word.
 const bare = (text: string) => text.replace(/[\p{P}\p{S}]/gu, '').toLowerCase();
+// Inside a changed stretch, words that differ only in punctuation or case pair up, so each pair
+// is marked on its own and what only one side has ("↵ -" before a list item) becomes an insertion
+// with a thin bar on the other side. Line breaks and dashes have no letters and never pair.
+function refine(op: Op): Op[] {
+  const { a, b } = op;
+  if (op.equal || !a.length || !b.length) return [op];
+  const ka = a.map(t => bare(t.trim())), kb = b.map(t => bare(t.trim()));
+  const dp = Array.from({ length: a.length + 1 }, () => new Uint16Array(b.length + 1));
+  for (let i = a.length - 1; i >= 0; i--) for (let j = b.length - 1; j >= 0; j--)
+    dp[i][j] = ka[i] && ka[i] === kb[j] ? dp[i + 1][j + 1] + 1 : Math.max(dp[i + 1][j], dp[i][j + 1]);
+  if (!dp[0][0]) return [op];
+  const out: Op[] = [];
+  let i = 0, j = 0, si = 0, sj = 0;
+  const rest = (ei: number, ej: number) => { if (ei > si || ej > sj) out.push({ equal: false, a: a.slice(si, ei), b: b.slice(sj, ej) }); };
+  while (i < a.length && j < b.length) {
+    if (ka[i] && ka[i] === kb[j] && dp[i][j] === dp[i + 1][j + 1] + 1) {
+      rest(i, j);
+      out.push({ equal: a[i].trim() === b[j].trim(), a: [a[i]], b: [b[j]] });
+      si = ++i; sj = ++j;
+    } else if (dp[i + 1][j] >= dp[i][j + 1]) i++;
+    else j++;
+  }
+  rest(a.length, b.length);
+  return out;
+}
 /** Where A and B disagree, marked in both. Matching marks share data-op. */
 export function marks(a: string, b: string): [DocumentFragment, DocumentFragment] {
   const out: [DocumentFragment, DocumentFragment] = [document.createDocumentFragment(), document.createDocumentFragment()];
@@ -81,7 +106,7 @@ export function marks(a: string, b: string): [DocumentFragment, DocumentFragment
       else { const core = part.trimEnd(); frag.append(node('dis', op, core), part.slice(core.length)); }
     }
   };
-  align(tokens(a), tokens(b)).forEach((op, i) => {
+  align(tokens(a), tokens(b)).flatMap(refine).forEach((op, i) => {
     const texts = [op.a.join(''), op.b.join('')];
     if (op.equal) { out[0].append(texts[0]); out[1].append(texts[1]); return; }
     const cores = texts.map(t => t.trimEnd());
