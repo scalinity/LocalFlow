@@ -120,10 +120,11 @@ C5's latency and size ratios (1.6 times and 2.1 times on development) are report
 - After the seal, the transformation in `experiments/cleanup-model-v2/tools/research_normalize_dev.py`
   (`V/policy_score.py`, `minimal_target`, unchanged) rewrites the final references once, into a private file. The
   tool gains only an argument naming its input.
-- Cases whose reference the rewrite changes are judged again for M2, A2prime, M1 and A2 by both final judges. A case
-  whose reference is unchanged keeps its main-pass verdict, because the judge would see an identical input. On
-  development every case was judged again; reusing identical inputs removes judge noise from the shift without
-  changing its expected value.
+- Cases whose reference the rewrite changes are judged again by both final judges with the main pass's nine
+  systems, so each request differs from its main-pass request only in the reference; C3 reads M2, A2prime, M1 and
+  A2 from it. A case whose reference is unchanged keeps its main-pass verdict, because the judge would see an
+  identical input. On development every case was judged again; reusing identical inputs removes judge noise from
+  the shift without changing its expected value.
 - The rewritten references serve C3 only.
 
 ## H5 on the final set
