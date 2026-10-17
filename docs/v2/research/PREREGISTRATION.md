@@ -9,6 +9,7 @@ to prepare this document. Historical development informed the product and data;
 this is a prospective study of the arms below, not a claim of result-naive product
 development. The experiment README explicitly treats an earlier exposed
 comparison as development/regression material.
+[AMENDMENT-1.md](AMENDMENT-1.md), dated 2026-10-17, adds confirmatory claims tested on the locked final set after the seal.
 
 LocalFlow is a local dictation app. Its cleanup model proposes limited text
 repairs; a deterministic rule engine and validator constrain what reaches the

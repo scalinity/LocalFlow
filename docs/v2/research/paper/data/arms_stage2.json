@@ -1,0 +1,14 @@
+{
+  "note": "Stage 2 (AMENDMENT-1.md): one run per system on the locked final set. Each label is the selected checkpoint evaluated on the development set; M1 and M2 are their seed-0 runs.",
+  "arms": {
+    "C": ["C-merged"],
+    "M2": ["M2s0-ck426"],
+    "A2prime": ["A2prime-ck199"],
+    "M1": ["M1s0-ck426"],
+    "A2": ["A2-ck199"],
+    "M3": ["M3-ck426"],
+    "base-9b-prod-prompt": ["base-9b-prod-prompt"],
+    "sonnet-5-5-fewshot": ["sonnet-5-5-fewshot"],
+    "opus-5-5-fewshot": ["opus-5-5-fewshot"]
+  }
+}
