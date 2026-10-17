@@ -309,8 +309,8 @@ no candidate passed the gates
 |---|---|
 | RunPod GPU pods, all runs and probes (billing report, lags running pods) | 42.89 |
 | Claude Opus 5.5 judge, five passes (main, swapped, final checkpoints, two normalized-reference passes) | 14.25 |
-| OpenAI gpt-6.1-sol judge (reversed-order pass and first chunks; final-checkpoint and forward-order batches unfinished) | 1.86 |
-| Meta Muse Spark via OpenRouter judge (main pass and recoveries; swapped pass unfinished) | 0.82 |
+| OpenAI gpt-6.1-sol judge, three passes (forward, reversed, final checkpoints) and a smoke test | 3.72 |
+| Meta Muse Spark via OpenRouter judge, main and swapped passes with recoveries (two lost requests written off at their maximum) | 0.95 |
 
 ## Judge reliability
 

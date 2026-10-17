@@ -1,7 +1,8 @@
 # Results (generated; do not edit)
 
 Development set, 431 cases, delivered text, selected checkpoint of each run. Percent values; seed spread is the sample SD over seeds (M1, M2 only).
-Bootstrap: 10000 resamples, seed 20261015. Unjudged rows counted as failures: {'anthropic': 0}.
+Bootstrap: 10000 resamples, seed 20261015. Unjudged rows counted as failures: {'anthropic': 0, 'openai': 0}.
+Judge runs behind each column: {'anthropic': 'dev-final-anthropic', 'openai': 'dev-final-openai'}.
 
 ## Arm values
 
@@ -13,6 +14,7 @@ Bootstrap: 10000 resamples, seed 20261015. Unjudged rows counted as failures: {'
 | Opus hallucination | 0.0% | 0.5% | 0.2% | 0.0% | 0.0% | 0.0% | 0.0% | 0.0% (sd 0.0) | 0.0% (sd 0.0) | 0.0% |
 | Opus unwanted edit | 0.0% | 5.3% | 9.0% | 0.0% | 0.2% | 0.2% | 0.0% | 0.2% (sd 0.3) | 0.0% (sd 0.0) | 0.0% |
 | Opus cleanup complete | 27.1% | 15.8% | 19.7% | 35.3% | 35.5% | 31.6% | 32.0% | 31.5% (sd 0.4) | 31.1% (sd 0.2) | 31.1% |
+| gpt-6.1-sol judged pass | 83.5% | 73.3% | 77.3% | 93.7% | 93.7% | 88.6% | 89.1% | 88.6% (sd 0.5) | 88.4% (sd 0.0) | 88.9% |
 | Engine damage | 1.6% | 3.0% | 5.6% | 1.4% | 1.4% | 0.7% | 0.7% | 0.7% (sd 0.0) | 0.7% (sd 0.0) | 0.7% |
 | Engine no-op preserved | 99.6% | 70.4% | 55.7% | 96.8% | 96.8% | 99.2% | 98.8% | 98.9% (sd 0.6) | 99.1% (sd 0.5) | 99.6% |
 | Engine repair success | 33.6% | 20.2% | 22.0% | 35.7% | 36.0% | 36.2% | 36.4% | 36.2% (sd 0.2) | 35.7% (sd 0.4) | 36.2% |
@@ -57,6 +59,16 @@ Bootstrap: 10000 resamples, seed 20261015. Unjudged rows counted as failures: {'
 | M1 vs A1 | 431 | -0.00 pts | [-0.23, +0.23] | [-0.31, +0.31] | 0.9647 | 1.0000 | 0.23 pts | no |
 | M1 vs A3 | 431 | -0.23 pts | [-0.62, +0.00] | [-0.85, +0.00] | 0.2770 | 1.0000 | 0.23 pts | no |
 | M3 vs M1 | 431 | +0.00 pts | [-0.93, +0.85] | [-1.24, +1.16] | 0.9573 | 1.0000 | 0.23 pts | no |
+
+## Contrasts on openai:judged_pass
+
+| Contrast | n | Difference (first better) | 95% interval | Adjusted interval | p | Holm p | Seed SD | Supported |
+|---|---|---|---|---|---|---|---|---|
+| M2 vs A2prime | 431 | -5.34 pts | [-7.73, -3.09] | [-8.82, -2.40] | 0.0002 | 0.0014 | 0.00 pts | no |
+| M1 vs A2 | 431 | -5.18 pts | [-7.50, -2.94] | [-8.35, -2.22] | 0.0002 | 0.0014 | 0.48 pts | no |
+| M1 vs A1 | 431 | -0.08 pts | [-1.16, +1.01] | [-1.55, +1.47] | 0.8423 | 1.0000 | 0.48 pts | no |
+| M1 vs A3 | 431 | -0.54 pts | [-1.31, +0.23] | [-1.70, +0.54] | 0.1310 | 0.6549 | 0.48 pts | no |
+| M3 vs M1 | 431 | +0.31 pts | [-1.24, +1.86] | [-1.78, +2.40] | 0.6615 | 1.0000 | 0.48 pts | no |
 
 ## Exploratory contrasts on anthropic:judged_clean (outside the pre-declared family; no multiplicity adjustment)
 
@@ -124,6 +136,50 @@ Bootstrap: 10000 resamples, seed 20261015. Unjudged rows counted as failures: {'
 | M2 vs M1 | 431 | -0.00 pts | [-0.00, -0.00] | 1.0000 |
 | A2prime vs C | 431 | +0.23 pts | [-0.46, +1.16] | 0.7823 |
 
+## Exploratory contrasts on openai:judged_clean (outside the pre-declared family; no multiplicity adjustment)
+
+| Contrast | n | Difference (first better) | 95% interval | p |
+|---|---|---|---|---|
+| M1 vs C | 431 | -0.46 pts | [-1.01, -0.08] | 0.0354 |
+| M2 vs C | 431 | -0.31 pts | [-0.85, +0.00] | 0.2724 |
+| M3 vs C | 431 | -0.23 pts | [-0.70, +0.00] | 0.7405 |
+| M2 vs base-4b-prod-prompt | 431 | +2.24 pts | [+0.77, +3.94] | 0.0012 |
+| M2 vs M1 | 431 | +0.15 pts | [-0.15, +0.46] | 0.2590 |
+| A2prime vs C | 431 | +0.00 pts | [+0.00, +0.00] | 1.0000 |
+
+## Exploratory contrasts on openai:judged_cleanup_complete (outside the pre-declared family; no multiplicity adjustment)
+
+| Contrast | n | Difference (first better) | 95% interval | p |
+|---|---|---|---|---|
+| M1 vs C | 431 | +5.10 pts | [+2.63, +7.66] | 0.0002 |
+| M2 vs C | 431 | +4.87 pts | [+2.32, +7.50] | 0.0002 |
+| M3 vs C | 431 | +5.34 pts | [+2.55, +8.12] | 0.0002 |
+| M2 vs base-4b-prod-prompt | 431 | +13.92 pts | [+10.05, +17.87] | 0.0002 |
+| M2 vs M1 | 431 | -0.23 pts | [-1.24, +0.77] | 0.6851 |
+| A2prime vs C | 431 | +10.21 pts | [+7.19, +13.23] | 0.0002 |
+
+## Exploratory contrasts on openai:judged_semantic_damage (outside the pre-declared family; no multiplicity adjustment)
+
+| Contrast | n | Difference (first better) | 95% interval | p |
+|---|---|---|---|---|
+| M1 vs C | 431 | -0.46 pts | [-1.01, -0.08] | 0.0354 |
+| M2 vs C | 431 | -0.31 pts | [-0.85, -0.00] | 0.2724 |
+| M3 vs C | 431 | -0.23 pts | [-0.70, -0.00] | 0.7405 |
+| M2 vs base-4b-prod-prompt | 431 | +0.39 pts | [-0.46, +1.39] | 0.4458 |
+| M2 vs M1 | 431 | +0.15 pts | [-0.15, +0.46] | 0.4402 |
+| A2prime vs C | 431 | -0.00 pts | [-0.00, -0.00] | 1.0000 |
+
+## Exploratory contrasts on openai:judged_unwanted_edit (outside the pre-declared family; no multiplicity adjustment)
+
+| Contrast | n | Difference (first better) | 95% interval | p |
+|---|---|---|---|---|
+| M1 vs C | 431 | -0.46 pts | [-1.01, -0.08] | 0.0354 |
+| M2 vs C | 431 | -0.31 pts | [-0.85, -0.00] | 0.2724 |
+| M3 vs C | 431 | -0.23 pts | [-0.70, -0.00] | 0.7405 |
+| M2 vs base-4b-prod-prompt | 431 | +2.24 pts | [+0.77, +3.94] | 0.0012 |
+| M2 vs M1 | 431 | +0.15 pts | [-0.15, +0.46] | 0.4402 |
+| A2prime vs C | 431 | -0.00 pts | [-0.00, -0.00] | 1.0000 |
+
 ## H2 subset (list and question cases)
 
 62 cases: 35 need no change, 27 need repair. Underpowered; exploratory.
@@ -138,18 +194,9 @@ Bootstrap: 10000 resamples, seed 20261015. Unjudged rows counted as failures: {'
 | anthropic:judged_unwanted_edit@repair | 0/27 | 1/27 | 3/27 | 0/27 | 0/27 | 0/27 | 0/27 | 0/27 | 0/27 | 0/27 |
 | engine_reference_repair@repair | 22.2% | 18.5% | 18.5% | 37.0% | 37.0% | 29.6% | 29.6% | 29.6% | 29.6% | 25.9% |
 | engine_unnecessary_edit@no_change | 0/35 | 12/35 | 14/35 | 3/35 | 3/35 | 0/35 | 0/35 | 0/35 | 0/35 | 0/35 |
-
-## Latency (sequential clean pass on an idle Mac, 4-bit)
-
-| System | median total (s) | p95 total (s) | median first token (s) | peak MLX (GB) | fallback | same text as earlier run |
-|---|---|---|---|---|---|---|
-| C | 1.79 | 7.17 | 0.99 | 4.3 | 6.5% | 431/431 |
-| base-4b-prod-prompt | 1.80 | 7.22 | 0.99 | 4.3 | 27.6% | - |
-| base-9b-prod-prompt | 2.99 | 12.89 | 1.62 | 6.9 | 31.8% | - |
-| A2prime | 1.77 | 6.79 | 0.99 | 4.3 | 3.0% | 431/431 |
-| A2 | 1.77 | 6.77 | 0.99 | 4.3 | 2.8% | 431/431 |
-| A1 | 1.77 | 6.76 | 0.99 | 4.3 | 2.3% | 431/431 |
-| A3 | 1.76 | 6.68 | 0.99 | 4.3 | 2.1% | 431/431 |
-| M1 | 1.76 | 6.77 | 0.99 | 4.3 | 1.9% | 431/431 |
-| M2 | 1.76 | 6.81 | 0.99 | 4.3 | 2.1% | 431/431 |
-| M3 | 2.88 | 11.27 | 1.62 | 6.9 | 4.2% | 431/431 |
+| openai:judged_cleanup_complete@no_change | 0.0% | 0.0% | 0.0% | 0.0% | 0.0% | 0.0% | 0.0% | 0.0% | 0.0% | 0.0% |
+| openai:judged_cleanup_complete@repair | 48.1% | 55.6% | 70.4% | 81.5% | 77.8% | 63.0% | 63.0% | 63.0% | 67.9% | 74.1% |
+| openai:judged_semantic_damage@no_change | 0/35 | 0/35 | 0/35 | 0/35 | 0/35 | 0/35 | 0/35 | 0/35 | 0/35 | 0/35 |
+| openai:judged_semantic_damage@repair | 0/27 | 1/27 | 1/27 | 0/27 | 1/27 | 0/27 | 0/27 | 0/27 | 0/27 | 0/27 |
+| openai:judged_unwanted_edit@no_change | 0/35 | 0/35 | 0/35 | 0/35 | 0/35 | 0/35 | 0/35 | 0/35 | 0/35 | 0/35 |
+| openai:judged_unwanted_edit@repair | 0/27 | 1/27 | 1/27 | 0/27 | 1/27 | 0/27 | 0/27 | 0/27 | 0/27 | 0/27 |
