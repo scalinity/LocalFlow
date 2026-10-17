@@ -2,9 +2,9 @@
 
 Listed with what each costs and what happens if it is left open. A writing session does not resolve these.
 
-1. **Claude few-shot baselines (H5).** Planned and costed, refused by the combined $6 cap because the cap checks the worst-case reservation:
-   point estimate about $3.90 (Sonnet $1.30, Opus $2.60), worst case $23.56. Spending needs a go and a decision on the cap. Without them H5 has no frontier comparator
-   and is written as not tested. Commands: `experiments/cleanup-model-v2/README.md`, section "Paper baseline harness", steps 3 and 5.
+1. **Claude few-shot baselines (H5).** Decided 2026-10-17: run them. The combined cap is $24, so the gate's worst-case reservation ($23.56) passes;
+   the point estimate is $3.70 (Sonnet $1.23, Opus $2.46). Their final-set run comes after the seal and needs its own cap.
+   Commands: `experiments/cleanup-model-v2/README.md`, section "Paper baseline harness", steps 3 and 5.
 2. **A confirmatory H2 test.** The development set has 35 no-change and 27 repair list/question cases, too few for H2. Options: (a) a new set of list and question cases made after the freeze, with its own review;
    (b) the locked final set if its metadata shows enough such cases (metadata only; do not open it); (c) report H2 as exploratory.
 3. **Human annotation.** 150 blinded pairs plus 15 duplicates; needs the author's time with the annotation app. Without it there is no human check on the judges and the circularity limitation stays open.

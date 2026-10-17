@@ -12,7 +12,7 @@ from pathlib import Path
 from .common import ART, CONFIG, PRICES, read_json
 
 PURPOSE = "research_baseline_generation"
-CAP_USD = 6.0
+CAP_USD = 24.0
 CLOUD = {"sonnet-5-5-fewshot": "claude-sonnet-5-5",
          "opus-5-5-fewshot": "claude-opus-5-5"}
 

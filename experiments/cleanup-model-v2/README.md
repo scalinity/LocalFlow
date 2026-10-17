@@ -394,7 +394,7 @@ Only `batch` submits cloud work. Do not run `run.py all` for this task.
    Sonnet $1/$5 and Opus $2/$10 (`v2.common.PRICES`, recorded October 13,
    2026; provider availability and current pricing remain unverified).
    The gate checks the **conservative upper amount**, not the smaller point
-   estimate. The two baseline systems together are capped at **$6 total**,
+   estimate. The two baseline systems together are capped at **$24 total**,
    including retries and adaptive calls. Actual plus outstanding amounts
    are rechecked before every submission, alongside all shared reservations
    and the existing global stop/spend caps. A conservative estimate above
@@ -436,7 +436,7 @@ Only `batch` submits cloud work. Do not run `run.py all` for this task.
    and may trigger the engine's child windows. Missing, refused or failed
    responses stop the run. The loop stops after at most 64 frontiers with
    retained work resumable. Cost estimate: the printed per-system estimate,
-   with the $6 combined ceiling above. Reserve a day per frontier as a planning
+   with the $24 combined ceiling above. Reserve a day per frontier as a planning
    allowance; actual queue/processing time and API schema are unverified.
 
 6. Score the four outputs with the unchanged scorer after all rows finish.

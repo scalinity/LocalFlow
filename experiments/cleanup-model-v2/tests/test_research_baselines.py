@@ -109,13 +109,13 @@ class CostTests(unittest.TestCase):
 
     def test_combined_cap_and_global_reservations_refuse(self):
         with self.assertRaisesRegex(RuntimeError, "cap exceeded"):
-            cost.require_budget(ledger(), self.plans(1_000_000))
+            cost.require_budget(ledger(), self.plans(int(cost.CAP_USD * 1_000_000)))
         led = ledger()
         led["reservations"]["other-work"] = 127
         with self.assertRaisesRegex(RuntimeError, "cap exceeded"):
             cost.require_budget(led, self.plans())
         led = ledger()
-        led["entries"]["baseline"] = {"purpose": cost.PURPOSE, "state": "outstanding", "max_usd": 5.99}
+        led["entries"]["baseline"] = {"purpose": cost.PURPOSE, "state": "outstanding", "max_usd": cost.CAP_USD - 0.01}
         with self.assertRaisesRegex(RuntimeError, "cap exceeded"):
             cost.require_budget(led, [], new_upper=0.02)
 
@@ -279,7 +279,7 @@ class HarnessTests(unittest.TestCase):
             root = Path(tmp)
             client = SimpleNamespace(messages=SimpleNamespace(batches=SimpleNamespace(create=unittest.mock.Mock())))
             led = ledger()
-            led["entries"]["other-baseline"] = {"purpose": cost.PURPOSE, "state": "outstanding", "max_usd": 6}
+            led["entries"]["other-baseline"] = {"purpose": cost.PURPOSE, "state": "outstanding", "max_usd": cost.CAP_USD}
             params = {"model": "claude-sonnet-5-5", "max_tokens": 100, "messages": [{"role": "user", "content": "fake"}]}
             with patch.object(b, "RESEARCH", root / "research"), \
                     patch.object(batches, "CLAUDE_DIR", root / "claude"), patch.object(batches, "LEDGER", root / "claude" / "ledger.json"), \
