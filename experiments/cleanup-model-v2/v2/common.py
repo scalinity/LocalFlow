@@ -26,7 +26,7 @@ CONFIG["paths"]["report_dir"] = "reports/localflow-cleanup-comparison-v2"
 # The refinement allowance was $40 beyond the $48.2556819 recorded when further
 # API work was authorized; a further $40 was authorized for the consolidated
 # training set and final comparison. Keep $1 headroom.
-CONFIG["claude"].update(spend_cap_usd=128.2556819, stop_at_usd=127.2556819)
+CONFIG["claude"].update(spend_cap_usd=178.2556819, stop_at_usd=177.2556819)
 CONFIG["targets"]["max_words"] = 650
 CONFIG["training"].update(seed=20261013, learning_rate=5e-5)
 shared.CONFIG = CONFIG

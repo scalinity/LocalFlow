@@ -111,7 +111,7 @@ class CostTests(unittest.TestCase):
         with self.assertRaisesRegex(RuntimeError, "cap exceeded"):
             cost.require_budget(ledger(), self.plans(int(cost.CAP_USD * 1_000_000)))
         led = ledger()
-        led["reservations"]["other-work"] = 127
+        led["reservations"]["other-work"] = cost.CONFIG["claude"]["stop_at_usd"]
         with self.assertRaisesRegex(RuntimeError, "cap exceeded"):
             cost.require_budget(led, self.plans())
         led = ledger()
@@ -291,7 +291,7 @@ class HarnessTests(unittest.TestCase):
                     wave.submit_pending()
                 client.messages.batches.create.assert_not_called()
                 led["entries"].pop("other-baseline")
-                led["reservations"]["parallel-work"] = 128
+                led["reservations"]["parallel-work"] = cost.CONFIG["claude"]["stop_at_usd"]
                 with self.assertRaisesRegex(RuntimeError, "cap exceeded"):
                     wave.submit_pending()
                 client.messages.batches.create.assert_not_called()
