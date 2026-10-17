@@ -183,7 +183,58 @@ EXAMPLES = [
     ),
 ]
 
-PROMPT_VERSION = "m07-v2-spoken-steps"
+RESTRICTION_FORMATTING = """Sentence boundaries must preserve what each restriction
+modifies. A trailing 'only' stays with the preceding phrase: 'use the copy only
+do not change the original' becomes 'Use the copy only. Do not change the
+original.' Never put the break before that 'only'. Keep 'only if' and its
+condition attached to the action. Keep legitimate sentence-initial 'Only'
+and the transition 'only then'. Put any clause break before 'only then',
+never between those two words. Preserve exact identifiers, including their
+underscores and punctuation; an explicit correction keeps the stated replacement."""
+
+MINIMAL_EDITS = """Make the smallest changes needed for the permitted cleanup.
+Keep already readable text exactly as written, including its existing commas
+and sentence boundaries. Do not add optional commas, replace a valid comma,
+or split an already readable sentence merely to polish its style. Missing
+boundaries may be added when they clearly separate complete clauses,
+instructions or questions; punctuation repair is still allowed.
+Set off a directly addressed person with commas; this is required punctuation,
+not optional styling. Do not set off a name that is the sentence's subject.
+Do not complete grammar by adding articles, prepositions, pronouns,
+auxiliaries or conjunctions that were not dictated. Awkward wording is not
+permission to add words. Only supplied vocabulary replacements can introduce
+new wording.
+When a quantity is corrected, keep its unit and descriptive qualifier unless
+the stated replacement explicitly supersedes them. Retain those exact source
+words beside the surviving quantity; do not invent a missing qualifier.
+Keep the words of a multiword term or noun phrase together. A word that can
+also be a verb does not make the rest of that phrase a new instruction.
+Do not split a condition or dependent continuation from the action it modifies.
+Never leave a joining conjunction stranded at the end of a new sentence.
+If no permitted repair is needed, return the transcript unchanged."""
+
+EXAMPLES.extend([
+    ("Okay so the first scene is ready, but maybe the second needs work.",
+     "Okay so the first scene is ready, but maybe the second needs work."),
+    ("Run the small batch first, then inspect it before opening the next one.",
+     "Run the small batch first, then inspect it before opening the next one."),
+    ("The eastern section Granite ridge is icy.",
+     "The eastern section Granite ridge is icy."),
+    ("install the surface mount resistor then check the supply",
+     "Install the surface mount resistor. Then check the supply."),
+    ("do not reset the console only the service team may restart it",
+     "Do not reset the console. Only the service team may restart it."),
+    ("Nadia please close the window.",
+     "Nadia, please close the window."),
+    ("Nadia will close the window.",
+     "Nadia will close the window."),
+])
+
+EXAMPLE_CONTEXT = ("Each example uses clean mode and en-US, has no supplied vocabulary "
+                   "or protected spans, and inherits the final input's destination "
+                   "profile, structure hints and permitted edits.")
+
+PROMPT_VERSION = "m07-v2-direct-address-examples"
 
 # The edits the clean mode may make (S13/S15); rendered into the payload
 # so the model sees the permitted-edits policy as data.
@@ -221,6 +272,9 @@ def prompt_revision() -> str:
     share a revision id with the old prompt)."""
     payload = json.dumps(
         {"contract": CONTRACT, "list_formatting": LIST_FORMATTING,
+         "restriction_formatting": RESTRICTION_FORMATTING,
+         "minimal_edits": MINIMAL_EDITS,
+         "example_context": EXAMPLE_CONTEXT,
          "examples": EXAMPLES, "version": PROMPT_VERSION},
         ensure_ascii=False, sort_keys=True)
     return f"m07:{hashlib.sha256(payload.encode('utf-8')).hexdigest()[:12]}"
@@ -258,13 +312,14 @@ def build_payload(transcript: str, *, mode: str = "clean",
 def build_messages(payload: dict) -> list[dict]:
     """Contract + examples + the structured payload, instructions kept
     separate from transcript/context content."""
-    messages = [{"role": "system", "content": CONTRACT + "\n\n" + LIST_FORMATTING}]
+    messages = [{"role": "system", "content": CONTRACT + "\n\n" + LIST_FORMATTING
+                 + "\n\n" + RESTRICTION_FORMATTING + "\n\n" + MINIMAL_EDITS
+                 + "\n\n" + EXAMPLE_CONTEXT}]
     for raw, cleaned in EXAMPLES:
-        # Match only the content-free destination hints. The examples
-        # teach prose restraint even when this destination allows Markdown.
+        # Shared metadata is stated once, keeping the reusable instruction
+        # prefix independent of the final dictation's destination category.
         messages.append({"role": "user", "content": json.dumps(
-            build_payload(raw, destination_profile=payload.get("destination_profile"),
-                          structure_hint_list=payload.get("structure_hints")),
+            {"transcript": raw},
             ensure_ascii=False)})
         messages.append({"role": "assistant", "content": cleaned})
     messages.append({"role": "user",

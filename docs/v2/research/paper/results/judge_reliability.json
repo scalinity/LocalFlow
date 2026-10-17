@@ -1,0 +1,145 @@
+{
+ "krippendorff_alpha_judged_pass": {
+  "alpha": 0.7687306775731032,
+  "expected_disagreement": 0.24412165595018037,
+  "observed_disagreement": 0.05645784996133024,
+  "omitted_units": 0,
+  "ratings": 18102,
+  "reason": null,
+  "units": 6034
+ },
+ "order_stability": {
+  "anthropic": {
+   "judged_pass_changed": 125,
+   "outputs": 6034,
+   "pass_rate_forward": 0.8660921445144183,
+   "pass_rate_reversed": 0.8695724229366921,
+   "share_changed": 0.020715942989724893
+  },
+  "openai": {
+   "judged_pass_changed": 49,
+   "outputs": 6034,
+   "pass_rate_forward": 0.8708982432880344,
+   "pass_rate_reversed": 0.8717268810076235,
+   "share_changed": 0.008120649651972157
+  },
+  "openrouter": {
+   "judged_pass_changed": 181,
+   "outputs": 6006,
+   "pass_rate_forward": 0.8391608391608392,
+   "pass_rate_reversed": 0.828005328005328,
+   "share_changed": 0.030136530136530136
+  }
+ },
+ "pairwise": {
+  "anthropic vs openai": {
+   "critical_fact_changed": {
+    "kappa": 0.24790600279198888,
+    "n": 6034,
+    "observed_agreement": 0.995028173682466
+   },
+   "hallucination": {
+    "kappa": 0.0,
+    "n": 6034,
+    "observed_agreement": 0.9995028173682466
+   },
+   "judged_clean": {
+    "kappa": 0.3914020199797358,
+    "n": 6034,
+    "observed_agreement": 0.9854159761352337
+   },
+   "judged_pass": {
+    "kappa": 0.7642145201196475,
+    "n": 6034,
+    "observed_agreement": 0.9461385482267153
+   },
+   "semantic_damage": {
+    "kappa": 0.4895900981777904,
+    "n": 6034,
+    "observed_agreement": 0.9948624461385482
+   },
+   "unwanted_edit": {
+    "kappa": 0.3844357667915415,
+    "n": 6034,
+    "observed_agreement": 0.9880676168379184
+   }
+  },
+  "anthropic vs openrouter": {
+   "critical_fact_changed": {
+    "kappa": 0.16026648230784266,
+    "n": 6034,
+    "observed_agreement": 0.9948624461385482
+   },
+   "hallucination": {
+    "kappa": 0.0,
+    "n": 6034,
+    "observed_agreement": 0.9995028173682466
+   },
+   "judged_clean": {
+    "kappa": 0.47820931972236136,
+    "n": 6034,
+    "observed_agreement": 0.9862446138548226
+   },
+   "judged_pass": {
+    "kappa": 0.7957092762973295,
+    "n": 6034,
+    "observed_agreement": 0.9481272787537288
+   },
+   "semantic_damage": {
+    "kappa": 0.3798957700546748,
+    "n": 6034,
+    "observed_agreement": 0.9925422605236991
+   },
+   "unwanted_edit": {
+    "kappa": 0.49079655692732993,
+    "n": 6034,
+    "observed_agreement": 0.9888962545575074
+   }
+  },
+  "openai vs openrouter": {
+   "critical_fact_changed": {
+    "kappa": 0.7614982055052345,
+    "n": 6034,
+    "observed_agreement": 0.999171362280411
+   },
+   "hallucination": {
+    "kappa": null,
+    "n": 6034,
+    "observed_agreement": 1.0
+   },
+   "judged_clean": {
+    "kappa": 0.6499446231738834,
+    "n": 6034,
+    "observed_agreement": 0.9945309910507126
+   },
+   "judged_pass": {
+    "kappa": 0.7461386507436522,
+    "n": 6034,
+    "observed_agreement": 0.9363606231355651
+   },
+   "semantic_damage": {
+    "kappa": 0.6787456492369981,
+    "n": 6034,
+    "observed_agreement": 0.9973483592973152
+   },
+   "unwanted_edit": {
+    "kappa": 0.6499446231738834,
+    "n": 6034,
+    "observed_agreement": 0.9945309910507126
+   }
+  }
+ },
+ "pass_rate": {
+  "anthropic": 0.8660921445144183,
+  "openai": 0.8708982432880344,
+  "openrouter": 0.8360954590652967
+ },
+ "unjudged_outputs": {
+  "anthropic": 0,
+  "anthropic:swapped": 0,
+  "openai": 0,
+  "openai:swapped": 0,
+  "openrouter": 0,
+  "openrouter:swapped": 28
+ }
+}

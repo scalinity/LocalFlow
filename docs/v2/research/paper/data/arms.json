@@ -1,0 +1,17 @@
+{
+  "note": "Evaluation labels of each arm's selected checkpoint (lowest validation loss of eight; ties to the earlier one). M1 and M2 list seeds 0, 1, 2 in order.",
+  "arms": {
+    "M1": ["M1s0-ck426", "M1s1-ck852", "M1s2-ck213"],
+    "M2": ["M2s0-ck426", "M2s1-ck1065", "M2s2-ck852"],
+    "M3": ["M3-ck426"],
+    "A1": ["A1-ck624"],
+    "A2": ["A2-ck199"],
+    "A2prime": ["A2prime-ck199"],
+    "A3": ["A3-ck434"],
+    "C": ["C-merged"],
+    "base-4b-prod-prompt": ["base-4b-prod-prompt"],
+    "base-9b-prod-prompt": ["base-9b-prod-prompt"],
+    "sonnet-5-5-fewshot": ["sonnet-5-5-fewshot"],
+    "opus-5-5-fewshot": ["opus-5-5-fewshot"]
+  }
+}

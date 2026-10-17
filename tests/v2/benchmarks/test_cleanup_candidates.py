@@ -299,13 +299,13 @@ class Contracts(unittest.TestCase):
     def test_production_default_unchanged(self):
         import subprocess
         for path in ("localflow/config.py", "localflow/v2/cleanup/model.py", "localflow/v2/cleanup/engine.py", "localflow/v2/cleanup/validation.py"):
-            # Integration preserves the authorized M07 engine repair, the
-            # coverage-alignment validator repair and the coverage-salvage
-            # repair of the engine and validator (benchmarks run on them,
-            # none had run before); M15-A still changes no production
-            # defaults or model.
-            revision = ("0441d15dbdc0eb28b7b1a49255c5e914883dfa3f"
-                        if path.endswith(("/engine.py", "/validation.py"))
+            # The cleanup research merge brings the parser and validation
+            # repairs to the engine and validator and the prefix prompt cache
+            # to the model wrapper: the engine every cleanup-study result was
+            # measured on. config.py, and with it the default model, is
+            # unchanged.
+            revision = ("c38e304a10e5a386f5ad7c1064daac3b74bde01a"
+                        if path.endswith(("/engine.py", "/validation.py", "/model.py"))
                         else "3505659e11562174086fe48756ab23d8bd5a96c5")
             original = subprocess.check_output(["git", "show", revision + ":" + path], cwd=ROOT)
             self.assertEqual((ROOT / path).read_bytes(), original)

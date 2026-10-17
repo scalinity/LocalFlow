@@ -1,0 +1,178 @@
+{
+ "A1": {
+  "final": {
+   "engine_correction_success": 0.8985507246376812,
+   "engine_damage": 0.0069605568445475635,
+   "engine_noop_preserved": 0.9920948616600791,
+   "engine_repair_success": 0.3619489559164733,
+   "label": "A1-final"
+  },
+  "selected": {
+   "engine_correction_success": 0.8840579710144928,
+   "engine_damage": 0.009280742459396751,
+   "engine_noop_preserved": 0.9802371541501976,
+   "engine_repair_success": 0.35962877030162416,
+   "label": "A1-ck624"
+  }
+ },
+ "A2": {
+  "final": {
+   "engine_correction_success": 0.9130434782608695,
+   "engine_damage": 0.013921113689095127,
+   "engine_noop_preserved": 0.9683794466403162,
+   "engine_repair_success": 0.35962877030162416,
+   "label": "A2-final"
+  },
+  "selected": {
+   "engine_correction_success": 0.8695652173913043,
+   "engine_damage": 0.02320185614849188,
+   "engine_noop_preserved": 0.9565217391304348,
+   "engine_repair_success": 0.35266821345707655,
+   "label": "A2-ck199"
+  }
+ },
+ "A2prime": {
+  "final": {
+   "engine_correction_success": 0.9130434782608695,
+   "engine_damage": 0.013921113689095127,
+   "engine_noop_preserved": 0.9683794466403162,
+   "engine_repair_success": 0.35730858468677495,
+   "label": "A2prime-final"
+  },
+  "selected": {
+   "engine_correction_success": 0.855072463768116,
+   "engine_damage": 0.05104408352668213,
+   "engine_noop_preserved": 0.9407114624505929,
+   "engine_repair_success": 0.34106728538283065,
+   "label": "A2prime-ck199"
+  }
+ },
+ "A3": {
+  "final": {
+   "engine_correction_success": 0.9130434782608695,
+   "engine_damage": 0.0069605568445475635,
+   "engine_noop_preserved": 0.9881422924901185,
+   "engine_repair_success": 0.3642691415313225,
+   "label": "A3-final"
+  },
+  "selected": {
+   "engine_correction_success": 0.8985507246376812,
+   "engine_damage": 0.004640371229698376,
+   "engine_noop_preserved": 0.9960474308300395,
+   "engine_repair_success": 0.35962877030162416,
+   "label": "A3-ck434"
+  }
+ },
+ "M1 seed0": {
+  "final": {
+   "engine_correction_success": 0.8840579710144928,
+   "engine_damage": 0.0069605568445475635,
+   "engine_noop_preserved": 0.9881422924901185,
+   "engine_repair_success": 0.35962877030162416,
+   "label": "M1s0-final"
+  },
+  "selected": {
+   "engine_correction_success": 0.9130434782608695,
+   "engine_damage": 0.0069605568445475635,
+   "engine_noop_preserved": 0.9841897233201581,
+   "engine_repair_success": 0.3642691415313225,
+   "label": "M1s0-ck426"
+  }
+ },
+ "M1 seed1": {
+  "final": {
+   "engine_correction_success": 0.927536231884058,
+   "engine_damage": 0.0069605568445475635,
+   "engine_noop_preserved": 0.9960474308300395,
+   "engine_repair_success": 0.3642691415313225,
+   "label": "M1s1-final"
+  },
+  "selected": {
+   "engine_correction_success": 0.8985507246376812,
+   "engine_damage": 0.004640371229698376,
+   "engine_noop_preserved": 0.9920948616600791,
+   "engine_repair_success": 0.3642691415313225,
+   "label": "M1s1-ck852"
+  }
+ },
+ "M1 seed2": {
+  "final": {
+   "engine_correction_success": 0.9130434782608695,
+   "engine_damage": 0.0069605568445475635,
+   "engine_noop_preserved": 0.9841897233201581,
+   "engine_repair_success": 0.3619489559164733,
+   "label": "M1s2-final"
+  },
+  "selected": {
+   "engine_correction_success": 0.8405797101449275,
+   "engine_damage": 0.013921113689095127,
+   "engine_noop_preserved": 0.9723320158102767,
+   "engine_repair_success": 0.345707656612529,
+   "label": "M1s2-ck213"
+  }
+ },
+ "M2 seed0": {
+  "final": {
+   "engine_correction_success": 0.8695652173913043,
+   "engine_damage": 0.0069605568445475635,
+   "engine_noop_preserved": 0.9881422924901185,
+   "engine_repair_success": 0.35266821345707655,
+   "label": "M2s0-final"
+  },
+  "selected": {
+   "engine_correction_success": 0.9130434782608695,
+   "engine_damage": 0.0069605568445475635,
+   "engine_noop_preserved": 0.9762845849802372,
+   "engine_repair_success": 0.3619489559164733,
+   "label": "M2s0-ck426"
+  }
+ },
+ "M2 seed1": {
+  "final": {
+   "engine_correction_success": 0.8985507246376812,
+   "engine_damage": 0.0069605568445475635,
+   "engine_noop_preserved": 0.9960474308300395,
+   "engine_repair_success": 0.35962877030162416,
+   "label": "M2s1-final"
+  },
+  "selected": {
+   "engine_correction_success": 0.8405797101449275,
+   "engine_damage": 0.0069605568445475635,
+   "engine_noop_preserved": 1.0,
+   "engine_repair_success": 0.3503480278422274,
+   "label": "M2s1-ck1065"
+  }
+ },
+ "M2 seed2": {
+  "final": {
+   "engine_correction_success": 0.8985507246376812,
+   "engine_damage": 0.0069605568445475635,
+   "engine_noop_preserved": 0.9881422924901185,
+   "engine_repair_success": 0.35962877030162416,
+   "label": "M2s2-final"
+  },
+  "selected": {
+   "engine_correction_success": 0.855072463768116,
+   "engine_damage": 0.01160092807424594,
+   "engine_noop_preserved": 0.9960474308300395,
+   "engine_repair_success": 0.35266821345707655,
+   "label": "M2s2-ck852"
+  }
+ },
+ "M3": {
+  "final": {
+   "engine_correction_success": 0.927536231884058,
+   "engine_damage": 0.0069605568445475635,
+   "engine_noop_preserved": 0.9960474308300395,
+   "engine_repair_success": 0.3619489559164733,
+   "label": "M3-final"
+  },
+  "selected": {
+   "engine_correction_success": 0.855072463768116,
+   "engine_damage": 0.009280742459396751,
+   "engine_noop_preserved": 0.9841897233201581,
+   "engine_repair_success": 0.35498839907192575,
+   "label": "M3-ck426"
+  }
+ }
+}

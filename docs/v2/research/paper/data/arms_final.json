@@ -1,0 +1,39 @@
+{
+  "note": "Supplementary: the final checkpoint of each run (post-hoc, exploratory). Same arms, C and base models as arms.json.",
+  "arms": {
+    "M1": [
+      "M1s0-final",
+      "M1s1-final",
+      "M1s2-final"
+    ],
+    "M2": [
+      "M2s0-final",
+      "M2s1-final",
+      "M2s2-final"
+    ],
+    "M3": [
+      "M3-final"
+    ],
+    "A1": [
+      "A1-final"
+    ],
+    "A2": [
+      "A2-final"
+    ],
+    "A2prime": [
+      "A2prime-final"
+    ],
+    "A3": [
+      "A3-final"
+    ],
+    "C": [
+      "C-merged"
+    ],
+    "base-4b-prod-prompt": [
+      "base-4b-prod-prompt"
+    ],
+    "base-9b-prod-prompt": [
+      "base-9b-prod-prompt"
+    ]
+  }
+}

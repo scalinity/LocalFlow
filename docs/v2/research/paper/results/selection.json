@@ -1,0 +1,99 @@
+{
+ "decision": "KEEP_C",
+ "reason": "no candidate passed the gates",
+ "steps": [
+  {
+   "arm": "M1",
+   "gates": {
+    "engine_noop_preserved_at_least_0.97": {
+     "limit": 0.97,
+     "passed": true,
+     "value": 0.9828722002635045
+    },
+    "judged_damage_not_above_C": {
+     "limit": 0.004640371229698376,
+     "passed": false,
+     "value": 0.0069605568445475635
+    },
+    "judged_fact_changes_not_above_C": {
+     "limit": 0.004640371229698376,
+     "passed": true,
+     "value": 0.004640371229698376
+    },
+    "median_latency_within_1.5x_C": {
+     "limit": 2677.8871875067125,
+     "passed": true,
+     "value": 1762.3637500073528
+    },
+    "quantized_size_within_1.5x_C": {
+     "limit": 3591065437.5,
+     "passed": true,
+     "value": 2382635269
+    }
+   },
+   "passed_all": false
+  },
+  {
+   "arm": "M2",
+   "gates": {
+    "engine_noop_preserved_at_least_0.97": {
+     "limit": 0.97,
+     "passed": true,
+     "value": 0.9907773386034255
+    },
+    "judged_damage_not_above_C": {
+     "limit": 0.004640371229698376,
+     "passed": false,
+     "value": 0.005413766434648105
+    },
+    "judged_fact_changes_not_above_C": {
+     "limit": 0.004640371229698376,
+     "passed": true,
+     "value": 0.003866976024748646
+    },
+    "median_latency_within_1.5x_C": {
+     "limit": 2677.8871875067125,
+     "passed": true,
+     "value": 1761.316333009745
+    },
+    "quantized_size_within_1.5x_C": {
+     "limit": 3591065437.5,
+     "passed": true,
+     "value": 2382635269
+    }
+   },
+   "passed_all": false
+  },
+  {
+   "arm": "M3",
+   "gates": {
+    "engine_noop_preserved_at_least_0.97": {
+     "limit": 0.97,
+     "passed": true,
+     "value": 0.9841897233201581
+    },
+    "judged_damage_not_above_C": {
+     "limit": 0.004640371229698376,
+     "passed": true,
+     "value": 0.002320185614849188
+    },
+    "judged_fact_changes_not_above_C": {
+     "limit": 0.004640371229698376,
+     "passed": true,
+     "value": 0.002320185614849188
+    },
+    "median_latency_within_1.5x_C": {
+     "limit": 2677.8871875067125,
+     "passed": false,
+     "value": 2877.200750008342
+    },
+    "quantized_size_within_1.5x_C": {
+     "limit": 3591065437.5,
+     "passed": false,
+     "value": 5053559204
+    }
+   },
+   "passed_all": false
+  }
+ ]
+}

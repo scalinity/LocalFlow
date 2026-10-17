@@ -136,6 +136,47 @@ class ChunkedGatedDeltaTests(unittest.TestCase):
         with self.assertRaises(ValueError):
             gated_delta_update_chunked(*args[:7], args[7], mx.ones((1, 10), dtype=mx.bool_))
 
+    def test_unit_lower_inverse_fold_is_bit_identical(self):
+        # The batch-dim fold (for MLX's 10-dim CUDA limit) against the unfolded recursion.
+        from lfx import gdn_chunked as g
+        u = mx.tril(0.05 * mx.random.normal((1, 8, 5, 64, 64), key=mx.random.key(3)), k=-1) + mx.eye(64)
+        fold = g.unit_lower_inverse
+        for device in (mx.cpu, mx.gpu):
+            with mx.stream(device):
+                folded = fold(u)
+                g.unit_lower_inverse = g._unit_lower_inverse  # the recursion calls the module name
+                try:
+                    unfolded = g._unit_lower_inverse(u)
+                finally:
+                    g.unit_lower_inverse = fold
+                self.assertEqual(folded.shape, u.shape)
+                self.assertTrue(mx.array_equal(folded, unfolded).item(), f"{device}")
+
+    def test_eval_path_selected_by_environment(self):
+        # LFX_EVAL_GDN=chunked sends eval-mode calls to the chunked path; unset leaves them as they were.
+        import os
+        import mlx_lm.models.qwen3_5 as q35
+        from lfx.gdn_chunked import patch_qwen3_5
+        original, saved = q35.gated_delta_update, os.environ.pop("LFX_EVAL_GDN", None)
+        args = inputs(T=150, seed=5)
+        try:
+            with self.cpu:
+                expected = {None: original(*args, use_kernel=True), "chunked": gated_delta_update_chunked(*args)}
+                for value, (y_want, s_want) in expected.items():
+                    q35.gated_delta_update = original
+                    if value:
+                        os.environ["LFX_EVAL_GDN"] = value
+                    patch_qwen3_5()
+                    y, s = q35.gated_delta_update(*args, use_kernel=True)
+                    self.assertTrue(mx.array_equal(y, y_want).item() and mx.array_equal(s, s_want).item(), str(value))
+                    y_train, _ = q35.gated_delta_update(*args, use_kernel=False)
+                    self.assertTrue(mx.array_equal(y_train, gated_delta_update_chunked(*args)[0]).item(), str(value))
+                    os.environ.pop("LFX_EVAL_GDN", None)
+        finally:
+            q35.gated_delta_update = original
+            if saved is not None:
+                os.environ["LFX_EVAL_GDN"] = saved
+
     def test_log_decay_matches_compute_g(self):
         _, _, _, a, _, A_log, dt_bias, _ = inputs(T=20)
         self.assertClose(mx.exp(log_decay(A_log, a, dt_bias)), compute_g(A_log, a, dt_bias), atol=1e-6)

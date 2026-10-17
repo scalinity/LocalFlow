@@ -1,0 +1,6 @@
+{
+ "RunPod GPU pods, all runs and probes (billing report, lags running pods)": 42.89,
+ "Claude Opus 5.5 judge, five passes (main, swapped, final checkpoints, two normalized-reference passes)": 14.25,
+ "OpenAI gpt-6.1-sol judge, three passes (forward, reversed, final checkpoints) and a smoke test": 3.72,
+ "Meta Muse Spark via OpenRouter judge, main and swapped passes with recoveries (two lost requests written off at their maximum)": 0.95
+}

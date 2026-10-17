@@ -1,0 +1,621 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="color-scheme" content="light dark">
+<title>LocalFlow cleanup study</title>
+<style>
+:root{
+  --bg:#FCFCFB;--surface:#FCFCFB;--shell:#F5F4F1;--stone:#EFEBE3;--ink:#1A1A1A;--text2:#5C5852;--muted:#736E67;
+  --hair:#E7E4DE;--div:#D6D1C7;--accent:#195C5D;--accent-wash:#E4EFEC;
+  --new:#00887B;--old:#B17915;--ing:#885CB5;--base:#8A8276;
+  --h0:#EEF2F5;--h1:#C9D6E2;--h2:#97AEC6;--h3:#6383A5;--h4:#365474;
+  --serif:ui-serif,"Iowan Old Style","Palatino Linotype",Palatino,Georgia,serif;
+  --sans:-apple-system,BlinkMacSystemFont,"SF Pro Text","Helvetica Neue",Arial,sans-serif;
+  color-scheme:light;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#1A1917;--surface:#1A1917;--shell:#211F1C;--stone:#282521;--ink:#F3F0EA;--text2:#AAA59D;--muted:#908B83;
+  --hair:#302D29;--div:#454038;--accent:#55AAA4;--accent-wash:#1E2E2C;
+  --new:#25A193;--old:#BA882E;--ing:#9C72CA;--base:#7F796F;
+  --h0:#23272B;--h1:#2F4256;--h2:#46627F;--h3:#6F91B3;--h4:#A9C3DD;color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#1A1917;--surface:#1A1917;--shell:#211F1C;--stone:#282521;--ink:#F3F0EA;--text2:#AAA59D;--muted:#908B83;
+  --hair:#302D29;--div:#454038;--accent:#55AAA4;--accent-wash:#1E2E2C;
+  --new:#25A193;--old:#BA882E;--ing:#9C72CA;--base:#7F796F;
+  --h0:#23272B;--h1:#2F4256;--h2:#46627F;--h3:#6F91B3;--h4:#A9C3DD;color-scheme:dark}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.55 var(--sans);-webkit-font-smoothing:antialiased}
+button{font:inherit;color:inherit}
+:focus-visible{outline:2px solid var(--accent);outline-offset:3px;border-radius:4px}
+.wrap{max-width:1120px;margin:0 auto;padding:0 28px}
+.masthead{border-bottom:1px solid var(--hair)}
+.masthead .wrap{display:flex;align-items:center;gap:14px;min-height:54px;font-size:13px;color:var(--text2)}
+.brand{font-weight:650;color:var(--ink);letter-spacing:-.01em}
+.masthead .spacer{flex:1}
+.theme{border:1px solid var(--div);background:transparent;border-radius:7px;padding:5px 10px;font-size:12.5px;color:var(--text2);cursor:pointer}
+.theme:hover{color:var(--ink);border-color:var(--muted)}
+.hero{display:grid;grid-template-columns:minmax(0,1.3fr) minmax(0,1fr);gap:48px;padding-top:56px;padding-bottom:40px;align-items:start}
+h1{font:400 46px/1.06 var(--serif);letter-spacing:-.022em;margin:0 0 22px;max-width:15ch}
+.deck{color:var(--text2);max-width:64ch;margin:0}
+.hero .deck{font-size:16.5px}
+.verdict{background:var(--shell);border-radius:14px;padding:22px 24px}
+.verdict .lab{font-size:12.5px;color:var(--muted);margin:0 0 4px}
+.verdict p.big{color:var(--ink);font-size:27px;font-weight:620;letter-spacing:-.015em;margin:0 0 6px;display:flex;align-items:center;gap:10px}
+.verdict p{font-size:13.5px;color:var(--text2);margin:0}
+.verdict hr{border:0;border-top:1px solid var(--div);margin:18px 0}
+.key{position:sticky;top:0;z-index:5;background:color-mix(in srgb,var(--bg) 94%,transparent);backdrop-filter:blur(6px);border-top:1px solid var(--hair);border-bottom:1px solid var(--hair)}
+.key .wrap{display:flex;flex-wrap:wrap;align-items:center;gap:4px 6px;padding-top:9px;padding-bottom:9px}
+.key .hint{font-size:12px;color:var(--muted);margin-right:6px}
+.chip{display:inline-flex;align-items:center;gap:7px;border:1px solid transparent;background:transparent;border-radius:999px;padding:4px 10px 4px 7px;font-size:13px;cursor:pointer;color:var(--ink)}
+.chip:hover{background:var(--shell)}
+.chip[aria-pressed="true"]{background:var(--shell);border-color:var(--div)}
+.chip small{display:none}
+.chip svg{flex:none}
+.clear{font-size:12px;color:var(--accent);background:none;border:0;cursor:pointer;padding:4px 6px}
+.plate{padding-top:64px}
+.plate h2{font:400 29px/1.18 var(--serif);letter-spacing:-.015em;margin:0 0 10px;max-width:32ch}
+.plate .deck{font-size:15px}
+.chart{margin-top:22px;min-height:40px}
+.chart svg{display:block;overflow:visible}
+.legend{display:flex;flex-wrap:wrap;gap:6px 18px;font-size:12.5px;color:var(--text2);margin-top:16px}
+.legend span{display:inline-flex;align-items:center;gap:7px}
+details.numbers{margin-top:14px}
+details.numbers summary{cursor:pointer;font-size:12.5px;color:var(--accent);width:max-content}
+.tablewrap{overflow-x:auto;margin-top:10px;border:1px solid var(--hair);border-radius:9px}
+table{border-collapse:collapse;width:100%;font-size:12.5px}
+th,td{padding:7px 10px;text-align:right;border-bottom:1px solid var(--hair);white-space:nowrap;font-variant-numeric:tabular-nums}
+th{font-weight:550;color:var(--text2);background:var(--shell)}
+th:first-child,td:first-child{text-align:left}
+tr:last-child td{border-bottom:0}
+/* chart marks */
+.mk{stroke-width:2;paint-order:stroke}
+.mk.solid{fill:var(--m);stroke:var(--surface)}
+.mk.ring{fill:var(--surface);stroke:var(--m);stroke-width:2.25}
+.fam-today{--m:var(--ink)}.fam-new{--m:var(--new)}.fam-ingredient{--m:var(--ing)}.fam-earlier{--m:var(--old)}.fam-untuned{--m:var(--base)}
+.seed{fill:var(--m);opacity:.55}
+svg text{font-family:var(--sans)}
+.lbl{font-size:13px;font-weight:600;fill:var(--ink)}
+.sub{font-size:11.5px;fill:var(--muted)}
+.tick{font-size:11px;fill:var(--muted);font-variant-numeric:tabular-nums}
+.ptitle{font-size:12.5px;font-weight:600;fill:var(--ink)}
+.pnote{font-size:11.5px;fill:var(--muted)}
+.val{font-size:12px;fill:var(--text2);font-variant-numeric:tabular-nums}
+.grid{stroke:var(--hair);stroke-width:1}
+.zero{stroke:var(--muted);stroke-width:1}
+.refline{stroke:var(--div);stroke-width:1.5}
+.rng{stroke:var(--m,var(--muted));stroke-width:2;stroke-linecap:round;opacity:.55}
+.ci{stroke:var(--text2);stroke-width:2;stroke-linecap:round}
+.ci.adj{stroke:var(--div);stroke-width:6}
+.ci.yes{stroke:var(--accent)}
+.jg{fill:var(--text2)}
+.jline{stroke:var(--div);stroke-width:2;stroke-linecap:round}
+.slope{fill:none;stroke:var(--m);stroke-width:2;stroke-linecap:round}
+.leader{stroke:var(--div);stroke-width:1}
+.hit{fill:transparent}
+.cell{shape-rendering:crispEdges}
+.h0{fill:var(--h0)}.h1{fill:var(--h1)}.h2{fill:var(--h2)}.h3{fill:var(--h3)}.h4{fill:var(--h4)}
+.sw{display:inline-block;width:14px;height:10px;border-radius:2px}
+[data-sys]{transition:opacity .18s}
+.dim{opacity:.14}
+/* hypotheses */
+.hyps{margin-top:22px;border-top:1px solid var(--hair)}
+.hyp{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.25fr) minmax(0,.8fr);gap:24px;padding:20px 0;border-bottom:1px solid var(--hair);align-items:center}
+.hyp h3{font:400 19px/1.3 var(--serif);margin:0 0 4px}
+.hyp .q{font-size:13px;color:var(--muted);margin:0}
+.hyp .verdicts{display:flex;flex-direction:column;gap:6px;font-size:13.5px}
+.vchip{display:inline-flex;align-items:baseline;gap:7px}
+.vchip b{font-weight:600}
+.vchip .ic{width:16px;text-align:center;font-weight:700}
+.vchip.yes .ic{color:var(--accent)}
+.vchip.no .ic,.vchip.nt .ic{color:var(--muted)}
+.vchip small{color:var(--muted);font-size:12px}
+/* examples */
+.extabs{display:flex;flex-wrap:wrap;gap:6px;margin-top:22px}
+.extab{border:1px solid var(--div);background:transparent;border-radius:9px;padding:7px 12px;font-size:13px;cursor:pointer;text-align:left;color:var(--text2)}
+.extab[aria-selected="true"]{background:var(--ink);border-color:var(--ink);color:var(--bg)}
+.extab small{display:block;font-size:11.5px;opacity:.8}
+.exsource{background:var(--shell);border-radius:12px;padding:18px 22px;margin-top:16px}
+.exsource .lab,.exgroup .lab{font-size:12px;color:var(--muted);margin:0 0 6px}
+.prose{font:400 17px/1.6 var(--serif);white-space:pre-wrap;overflow-wrap:anywhere;margin:0;max-width:72ch}
+.exref{margin-top:10px;font-size:12.5px}
+.exref summary{cursor:pointer;color:var(--accent)}
+.exref .prose{font-size:15px;color:var(--text2);margin-top:8px}
+.exgroup{display:grid;grid-template-columns:200px minmax(0,1fr);gap:20px;padding:16px 0;border-bottom:1px solid var(--hair)}
+.exwho{display:flex;flex-wrap:wrap;gap:6px 10px;align-content:start}
+.exwho span{display:inline-flex;align-items:center;gap:6px;font-size:13px;font-weight:600}
+.exwho em{font-style:normal;font-weight:700;font-size:12px}
+.exwho .pass{color:var(--accent)}.exwho .fail{color:var(--muted)}
+.exgroup .prose{font-size:16px}
+.why{font-size:12.5px;color:var(--muted);margin:8px 0 0;max-width:72ch}
+ins{background:var(--accent-wash);color:var(--ink);text-decoration:none;border-bottom:1.5px solid var(--accent);border-radius:2px}
+del{color:var(--muted);text-decoration-thickness:1px;margin-right:2px}
+.extoggle{margin-top:14px;font-size:12.5px;color:var(--text2);display:inline-flex;gap:8px;align-items:center}
+/* trust */
+.tiles{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px;margin-top:22px}
+.tile{background:var(--shell);border-radius:12px;padding:16px 18px}
+.tile .lab{font-size:12.5px;color:var(--muted);margin:0}
+.tile p.num{color:var(--ink);font-size:30px;font-weight:600;letter-spacing:-.02em;margin:4px 0}
+.tile p{font-size:12.5px;color:var(--text2);margin:0}
+.open{margin:22px 0 0;padding:0;list-style:none;border-top:1px solid var(--hair)}
+.open li{padding:12px 0;border-bottom:1px solid var(--hair);font-size:14px;display:grid;grid-template-columns:minmax(0,1fr) auto;gap:16px}
+.open li span{color:var(--muted);font-size:12.5px;text-align:right}
+footer{margin-top:72px;border-top:1px solid var(--hair);padding:24px 0 48px;font-size:12.5px;color:var(--muted)}
+footer p{margin:0 0 6px;max-width:90ch}
+footer a{color:var(--accent)}
+#tip{position:fixed;z-index:20;pointer-events:none;background:var(--ink);color:var(--bg);font-size:12.5px;line-height:1.45;padding:8px 11px;border-radius:8px;max-width:300px;box-shadow:0 8px 24px -10px rgba(0,0,0,.45)}
+#tip b{font-weight:650}
+@media (max-width:820px){
+  .hero{grid-template-columns:1fr;gap:28px;padding-top:36px}
+  h1{font-size:36px}
+  .hyp{grid-template-columns:1fr;gap:12px}
+  .tiles{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .exgroup{grid-template-columns:1fr;gap:8px}
+  .key{position:static}
+}
+@media (max-width:520px){
+  .wrap{padding:0 16px}
+  h1{font-size:31px}
+  .plate h2{font-size:24px}
+  .tiles{grid-template-columns:1fr}
+}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+</head>
+<body>
+<header class="masthead"><div class="wrap"><span class="brand">LocalFlow</span><span>Cleanup model study, development set</span><span class="spacer"></span><button class="theme" id="theme" type="button">Dark</button></div></header>
+<main>
+  <section class="hero wrap" aria-labelledby="title">
+    <div><h1 id="title"></h1><p class="deck" id="hero-deck"></p></div>
+    <aside class="verdict" id="verdict" aria-label="Which model to ship"></aside>
+  </section>
+  <nav class="key" aria-label="Highlight a model in every chart"><div class="wrap" id="key"></div></nav>
+
+  <section class="plate wrap" id="field" aria-labelledby="field-h">
+    <h2 id="field-h">Quality and safety, side by side.</h2>
+    <p class="deck" id="field-deck"></p>
+    <div class="chart" data-chart="field"></div>
+    <div class="legend" id="recipe"></div>
+    <details class="numbers"><summary>Show every number</summary><div class="tablewrap" data-table="field"></div></details>
+  </section>
+
+  <section class="plate wrap" id="judges" aria-labelledby="judges-h">
+    <h2 id="judges-h">Three judges from three vendors, one ranking.</h2>
+    <p class="deck" id="judges-deck"></p>
+    <div class="legend" id="judge-legend"></div>
+    <div class="chart" data-chart="judges"></div>
+  </section>
+
+  <section class="plate wrap" id="versus" aria-labelledby="versus-h">
+    <h2 id="versus-h">Against C: about four points more passes, and no extra damage, unless the data is the earlier set.</h2>
+    <p class="deck" id="versus-deck"></p>
+    <div class="chart" data-chart="versus"></div>
+    <details class="numbers"><summary>Show the numbers</summary><div class="tablewrap" data-table="versus"></div></details>
+  </section>
+
+  <section class="plate wrap" id="questions" aria-labelledby="questions-h">
+    <h2 id="questions-h">What the five pre-registered questions found.</h2>
+    <p class="deck" id="questions-deck"></p>
+    <div class="hyps" id="hyps"></div>
+    <details class="numbers"><summary>Show the numbers</summary><div class="tablewrap" data-table="questions"></div></details>
+  </section>
+
+  <section class="plate wrap" id="references" aria-labelledby="references-h">
+    <h2 id="references-h">Change the answer key and the earlier data's lead disappears.</h2>
+    <p class="deck" id="references-deck"></p>
+    <div class="chart" data-chart="references"></div>
+    <details class="numbers"><summary>Show the numbers</summary><div class="tablewrap" data-table="references"></div></details>
+  </section>
+
+  <section class="plate wrap" id="categories" aria-labelledby="categories-h">
+    <h2 id="categories-h">The differences are all in the repairs.</h2>
+    <p class="deck" id="categories-deck"></p>
+    <div class="chart" data-chart="categories"></div>
+    <div class="legend" id="heat-legend"></div>
+    <details class="numbers"><summary>Show the numbers</summary><div class="tablewrap" data-table="categories"></div></details>
+  </section>
+
+  <section class="plate wrap" id="speed" aria-labelledby="speed-h">
+    <h2 id="speed-h"></h2>
+    <p class="deck" id="speed-deck"></p>
+    <div class="chart" data-chart="speed"></div>
+  </section>
+
+  <section class="plate wrap" id="examples" aria-labelledby="examples-h">
+    <h2 id="examples-h">The same dictation through ten models.</h2>
+    <p class="deck">Development cases picked to show the study's contrasts. Identical outputs are grouped, and the marks show what each output changed from the dictation. The check or cross is Opus 5.5's verdict.</p>
+    <div class="extabs" role="tablist" id="extabs"></div>
+    <div id="expanel" role="tabpanel"></div>
+  </section>
+
+  <section class="plate wrap" id="trust" aria-labelledby="trust-h">
+    <h2 id="trust-h">How far to trust these numbers.</h2>
+    <p class="deck">Everything above is the development set. The locked final set has not been opened, and no human has judged an output yet.</p>
+    <div class="tiles" id="tiles"></div>
+    <ul class="open" id="open"></ul>
+  </section>
+</main>
+<footer><div class="wrap" id="foot"></div></footer>
+<div id="tip" role="tooltip" hidden></div>
+<script>const DATA = /*DATA*/null;</script>
+<script>
+"use strict";
+const SYS = DATA.systems, BY = Object.fromEntries(SYS.map(s => [s.key, s])), A = DATA.arm;
+const MODELS = ["M1", "M2", "M3", "A1", "A2", "A2prime", "A3"];
+const esc = s => String(s ?? "").replace(/[&<>"]/g, c => ({"&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;"})[c]);
+const pct = (v, d = 1) => v == null ? "–" : (v * 100).toFixed(d) + "%";
+const num = (v, d = 1) => (v * 100).toFixed(d);
+const pts = (v, d = 1) => { const r = +(v * 100).toFixed(d); return (r > 0 ? "+" : r < 0 ? "−" : "") + Math.abs(r).toFixed(d); };
+/* pre-declared contrasts store raw intervals; orient them so positive means the first model is better, as the report does */
+const orient = (c, ci) => { const s = c.polarity ?? 1; return [s * ci[0], s * ci[1]].sort((x, y) => x - y); };
+const sec = v => v.toFixed(2) + " s";
+const lab = k => BY[k]?.label ?? k;
+const lin = (d0, d1, r0, r1) => v => r0 + (v - d0) / (d1 - d0) * (r1 - r0);
+const svg = (w, h, label, body) => `<svg width="${w}" height="${h}" viewBox="0 0 ${w} ${h}" role="img" aria-label="${esc(label)}">${body}</svg>`;
+
+function mark(s, x, y, r = 6) {
+  const fill = s.family === "untuned" || s.start === "fresh" ? "ring" : "solid";
+  const cls = `mk fam-${s.family} ${fill}`;
+  if (s.size === "9B") { const d = r * 1.3; return `<path class="${cls}" d="M${x} ${y - d}L${x + d} ${y}L${x} ${y + d}L${x - d} ${y}Z"/>`; }
+  return `<circle class="${cls}" cx="${x}" cy="${y}" r="${r}"/>`;
+}
+const markIcon = (s, r = 5.5) => svg(r * 2 + 6, r * 2 + 6, "", mark(s, r + 3, r + 3, r));
+
+/* rows grouped by family, with a gap between groups */
+function layout(keys, rowH, top) {
+  let y = top, prev = null;
+  const rows = keys.map(k => { const s = BY[k]; if (prev && prev !== s.family) y += 12; prev = s.family; const r = {s, y: y + rowH / 2}; y += rowH; return r; });
+  return {rows, bottom: y};
+}
+
+/* aligned dot panels: one label column, then one or more panels sharing the rows */
+function panels(el, keys, specs, opt = {}) {
+  const w = Math.max(300, el.clientWidth), narrow = w < 660;
+  const rowH = opt.rowH ?? 40, top = 40, axis = 30, labelW = narrow ? 64 : (opt.labelW ?? 212);
+  const groups = narrow ? specs.map(p => [p]) : [specs];
+  el.innerHTML = groups.map(group => {
+    const {rows, bottom} = layout(keys, rowH, top), h = bottom + axis, gap = 32;
+    const pw = (w - labelW - gap * (group.length - 1)) / group.length;
+    let b = "";
+    for (const {s, y} of rows) {
+      b += `<g data-sys="${s.key}">${mark(s, 9, y, 5.5)}<text class="lbl" x="23" y="${narrow ? y + 4.5 : y - 2}">${esc(s.label)}</text>`;
+      if (!narrow) b += `<text class="sub" x="23" y="${y + 13}">${esc(s.about)}</text>`;
+      b += `</g>`;
+    }
+    group.forEach((p, i) => { b += panel(p, labelW + i * (pw + gap), pw, rows, top, bottom); });
+    return svg(w, h, group.map(p => p.title).join("; "), b);
+  }).join("");
+}
+
+function panel(p, x0, pw, rows, top, bottom) {
+  const valW = p.valW ?? 58, plotW = pw - valW - 10;
+  const sx = p.reverse ? lin(p.domain[0], p.domain[1], x0 + plotW, x0) : lin(p.domain[0], p.domain[1], x0, x0 + plotW);
+  let b = `<text class="ptitle" x="${x0}" y="14">${esc(p.title)}</text>`;
+  if (p.note) b += `<text class="pnote" x="${x0}" y="29">${esc(p.note)}</text>`;
+  if (p.heads) p.heads.forEach((t, i) => { b += `<text class="pnote" x="${x0 + pw - (p.heads.length - 1 - i) * 44}" y="29" text-anchor="end">${esc(t)}</text>`; });
+  for (const t of p.ticks) { const x = sx(t); b += `<line class="grid" x1="${x}" x2="${x}" y1="${top - 4}" y2="${bottom}"/><text class="tick" x="${x}" y="${bottom + 17}" text-anchor="middle">${p.tick(t)}</text>`; }
+  if (p.zero) { const x = sx(0); b += `<line class="zero" x1="${x}" x2="${x}" y1="${top - 4}" y2="${bottom}"/>`; }
+  if (p.ref != null) { const x = sx(p.ref); b += `<line class="refline" x1="${x}" x2="${x}" y1="${top - 4}" y2="${bottom}"/>`; }
+  for (const {s, y} of rows) {
+    const v = p.value(s.key); if (v == null) continue;
+    let g = `<g data-sys="${s.key}" class="fam-${s.family}" data-tip="${esc(p.tip(s.key))}" tabindex="-1"><rect class="hit" x="${x0 - 6}" y="${y - 17}" width="${pw + 6}" height="34"/>`;
+    if (p.range) { const [lo, hi] = p.range(s.key); g += `<line class="${p.rangeClass ?? "rng"}" x1="${sx(lo)}" x2="${sx(hi)}" y1="${y}" y2="${y}"/>`; }
+    if (p.seeds) for (const sv of p.seeds(s.key) ?? []) g += `<circle class="seed" cx="${sx(sv)}" cy="${y}" r="2.7"/>`;
+    if (p.glyphs) g += p.glyphs(s.key, sx, y); else g += mark(s, sx(v), y, 6.5);
+    const vals = p.values ? p.values(s.key) : [p.fmt(v, s.key)];
+    vals.forEach((t, i) => { g += `<text class="val" x="${x0 + pw - (vals.length - 1 - i) * 44}" y="${y + 4}" text-anchor="end">${t}</text>`; });
+    b += g + `</g>`;
+  }
+  return b;
+}
+
+const ORDER = SYS.map(s => s.key);
+const C = A.C;
+
+/* ---------- hero ---------- */
+function hero() {
+  const trained = MODELS.map(k => A[k].opus), gain = MODELS.map(k => A[k].opus - C.opus);
+  document.getElementById("title").textContent = trained.every(v => v > C.opus) ? "Every retrained model cleans better than C." : "The retrained models against C.";
+  const sel = DATA.selection, m2 = sel.steps.find(s => s.arm === "M2"), dmg = m2?.gates.judged_damage_not_above_C;
+  document.getElementById("hero-deck").textContent =
+    `Ten systems cleaned the same 431 development dictations, and three judges from three vendors assessed every output. ` +
+    `The retrained models pass ${num(Math.min(...gain))} to ${num(Math.max(...gain))} points more often than C on Opus 5.5's verdicts. ` +
+    `The rule written before any verdict still says keep C: M1 and M2 miss its damage gate by about a third of a case out of 431.`;
+  const fails = sel.steps.map(s => `${lab(s.arm)} fails ${Object.entries(s.gates).filter(([, g]) => !g.passed).map(([n]) => GATE[n] ?? n).join(" and ")}`).join("; ");
+  const vsC = DATA.versus_c["anthropic:judged_pass"].find(r => r.first === "M2");
+  document.getElementById("verdict").innerHTML =
+    `<p class="lab">The pre-registered rule says</p><p class="big">${sel.decision === "KEEP_C" ? `${markIcon(BY.C, 7)}Keep C` : esc(sel.decision)}</p>` +
+    `<p>${esc(fails)}. C damaged ${Math.round(dmg.limit * 431)} of 431 cases on Opus's reading; M2 averages ${(dmg.value * 431).toFixed(1)} across its three seeds.</p><hr>` +
+    `<p class="lab">Recommended outside the rule, pending your 165 judgments</p><p class="big">${markIcon(BY.M2, 7)}M2</p>` +
+    `<p>New data, continued from C. ${pts(vsC.difference_first_better)} points judged pass over C (95% interval ${pts(vsC.ci95_first_better[0])} to ${pts(vsC.ci95_first_better[1])}), engine damage ${pct(A.M2.damage)} against ${pct(C.damage)}, the same speed and size.</p>`;
+}
+const GATE = {judged_damage_not_above_C: "the damage gate", judged_fact_changes_not_above_C: "the fact gate", engine_noop_preserved_at_least_0_97: "the no-op gate",
+  "engine_noop_preserved_at_least_0.97": "the no-op gate", "median_latency_within_1.5x_C": "the speed gate", "quantized_size_within_1.5x_C": "the size gate"};
+
+function key() {
+  const el = document.getElementById("key");
+  el.innerHTML = `<span class="hint">Highlight a model</span>` + SYS.map(s =>
+    `<button class="chip" type="button" data-pick="${s.key}" aria-pressed="false" title="${esc(s.about)}">${markIcon(s)}${esc(s.label)} <small>${esc(s.about)}</small></button>`).join("") +
+    `<button class="clear" type="button" id="clear" hidden>Show all</button>`;
+  el.addEventListener("click", e => { const b = e.target.closest("[data-pick]"); if (b) pick(b.dataset.pick); });
+  document.getElementById("clear").onclick = () => pick(null);
+  document.getElementById("recipe").innerHTML = [
+    ["new", "Teal: the new v2 data"], ["ingredient", "Lavender: the new data with one ingredient changed"], ["earlier", "Ochre: the earlier data"],
+  ].map(([f, t]) => `<span>${svg(16, 16, "", `<circle class="mk solid fam-${f}" cx="8" cy="8" r="5.5"/>`)}${t}</span>`).join("") +
+    `<span>${svg(16, 16, "", `<circle class="mk solid fam-today" cx="8" cy="8" r="5.5"/>`)}Ink: C, today's model</span>` +
+    `<span>${svg(16, 16, "", `<circle class="mk solid fam-new" cx="8" cy="8" r="5.5"/>`)}Filled: continued from C's adapter</span>` +
+    `<span>${svg(16, 16, "", `<circle class="mk ring fam-new" cx="8" cy="8" r="5"/>`)}Ring: a fresh adapter</span>` +
+    `<span>${svg(18, 18, "", `<path class="mk ring fam-untuned" d="M9 2L16 9L9 16L2 9Z"/>`)}Diamond: 9B; circle: 4B</span>`;
+}
+
+let focus = null;
+function pick(k) {
+  focus = focus === k ? null : k;
+  document.querySelectorAll("[data-pick]").forEach(b => b.setAttribute("aria-pressed", String(b.dataset.pick === focus)));
+  document.getElementById("clear").hidden = !focus;
+  applyFocus();
+}
+function applyFocus() { document.querySelectorAll("main [data-sys]").forEach(e => e.classList.toggle("dim", !!focus && e.dataset.sys !== focus)); }
+
+/* ---------- plates ---------- */
+const P = (v, d = 1) => (v * 100).toFixed(d);
+function field(el) {
+  document.getElementById("field-deck").textContent =
+    `Right is better in both panels. The earlier data passes a little more often; the new data damages less. The vertical line marks C. Small dots are the other seeds of M1 and M2.`;
+  panels(el, ORDER, [
+    {title: "Judged pass, Opus 5.5", note: "no flag and a complete cleanup", domain: [0.68, 0.95], ticks: [0.7, 0.75, 0.8, 0.85, 0.9, 0.95], tick: v => P(v, 0) + "%",
+      ref: C.opus, value: k => A[k].opus, seeds: k => A[k].opus_seeds.length > 1 ? A[k].opus_seeds : null, fmt: v => P(v),
+      tip: k => `<b>${lab(k)}</b>: ${pct(A[k].opus)} judged pass${A[k].opus_sd ? ` (seed SD ${P(A[k].opus_sd)} pts)` : ""}`},
+    {title: "Engine damage", note: "rule-engine count; fewer to the right", domain: [0, 0.06], reverse: true, ticks: [0, 0.02, 0.04, 0.06], tick: v => P(v, 0) + "%",
+      ref: C.damage, value: k => A[k].damage, seeds: k => A[k].damage_seeds.length > 1 ? A[k].damage_seeds : null, fmt: v => P(v),
+      tip: k => `<b>${lab(k)}</b>: ${pct(A[k].damage)} engine damage; no-op preserved ${pct(A[k].noop)}`},
+  ]);
+}
+function judges(el) {
+  const R = DATA.reliability, kp = Object.values(R.kappa), J = [["opus", "Opus 5.5", "circle"], ["sol", "gpt-6.1-sol", "tri"], ["muse", "Muse Spark", "square"]];
+  document.getElementById("judges-deck").textContent =
+    `Pairwise kappa on judged pass is ${Math.min(...kp).toFixed(2)} to ${Math.max(...kp).toFixed(2)} (Krippendorff's alpha ${R.alpha.toFixed(2)}). Muse is stricter across the board, yet every judge puts every retrained model above C and both untuned models at the bottom.`;
+  const glyph = (t, x, y) => t === "circle" ? `<circle class="jg" cx="${x}" cy="${y}" r="5" style="fill:var(--surface);stroke:var(--text2);stroke-width:2"/>` : t === "tri" ? `<path class="jg" d="M${x} ${y - 5.5}L${x + 5.2} ${y + 3.8}L${x - 5.2} ${y + 3.8}Z"/>` : `<rect class="jg" x="${x - 4}" y="${y - 4}" width="8" height="8"/>`;
+  document.getElementById("judge-legend").innerHTML = J.map(([, n, t]) => `<span>${svg(14, 14, "", glyph(t, 7, 7.5))}${n}</span>`).join("");
+  panels(el, ORDER, [{title: "Judged pass by judge", domain: [0.68, 0.95], ticks: [0.7, 0.75, 0.8, 0.85, 0.9, 0.95], tick: v => P(v, 0) + "%", valW: 140, heads: ["Opus", "sol", "Muse"],
+    ref: C.opus, value: k => A[k].opus, range: k => [Math.min(A[k].opus, A[k].sol, A[k].muse), Math.max(A[k].opus, A[k].sol, A[k].muse)], rangeClass: "jline",
+    glyphs: (k, sx, y) => J.map(([f, , t]) => glyph(t, sx(A[k][f]), y)).join(""), values: k => J.map(([f]) => P(A[k][f])),
+    tip: k => `<b>${lab(k)}</b>: Opus ${pct(A[k].opus)}, gpt-6.1-sol ${pct(A[k].sol)}, Muse ${pct(A[k].muse)}`}]);
+}
+function versus(el) {
+  const pass = DATA.versus_c["anthropic:judged_pass"], dmg = DATA.versus_c.engine_damage;
+  const keys = ORDER.filter(k => pass.some(r => r.first === k));
+  document.getElementById("versus-deck").textContent =
+    `Differences from C on the same 431 cases, with 95% bootstrap intervals. These comparisons sit outside the pre-declared tests, so treat them as exploratory. Right of the line is better than C.`;
+  const row = (rows, k) => rows.find(r => r.first === k);
+  panels(el, keys, [
+    {title: "Judged pass against C", note: "points; Opus 5.5", domain: [-0.04, 0.09], ticks: [-0.04, 0, 0.04, 0.08], tick: v => pts(v, 0), zero: true, valW: 112,
+      value: k => row(pass, k).difference_first_better, range: k => row(pass, k).ci95_first_better, fmt: (v, k) => `${pts(v)} (${pts(row(pass, k).ci95_first_better[0])} to ${pts(row(pass, k).ci95_first_better[1])})`,
+      tip: k => `<b>${lab(k)} − C</b>: ${pts(row(pass, k).difference_first_better)} points judged pass, p ${row(pass, k).p.toFixed(4)}`},
+    {title: "Engine damage avoided against C", note: "points; positive is less damage", domain: [-0.06, 0.03], ticks: [-0.06, -0.03, 0, 0.03], tick: v => pts(v, 0), zero: true, valW: 112,
+      value: k => row(dmg, k).difference_first_better, range: k => row(dmg, k).ci95_first_better, fmt: (v, k) => `${pts(v)} (${pts(row(dmg, k).ci95_first_better[0])} to ${pts(row(dmg, k).ci95_first_better[1])})`,
+      tip: k => `<b>${lab(k)} − C</b>: ${pts(row(dmg, k).difference_first_better)} points less engine damage, p ${row(dmg, k).p.toFixed(4)}`},
+  ], {rowH: 44});
+}
+
+const HYPS = [
+  {id: "H1", q: "Does the new data beat the earlier data?", pairs: [["M2", "A2prime"], ["M1", "A2"]]},
+  {id: "H2", q: "Do contrast pairs help?", pairs: [["M1", "A1"]], note: "Only 35 left-alone and 27 repair list and question cases: too few to test properly."},
+  {id: "H3", q: "Does filtering out vetoed rows help?", pairs: [["M1", "A3"]]},
+  {id: "H4", q: "Is the 9B worth it?", pairs: [["M3", "M1"]]},
+  {id: "H5", q: "Does the 4B approach few-shot frontier models?", pairs: []},
+];
+const METRICS = [["anthropic:judged_pass", "Judged pass, Opus"], ["openai:judged_pass", "Judged pass, gpt-6.1-sol"], ["openrouter:judged_pass", "Judged pass, Muse"], ["engine_damage", "Engine damage avoided"]];
+function contrast(metric, a, b) { return DATA.contrasts[metric]?.find(r => r.first === a && r.second === b); }
+function hyps() {
+  document.getElementById("questions-deck").textContent =
+    `Each bar is a difference between two models on the same cases: thick and pale is the multiplicity-adjusted interval the plan's rule uses, the thin line the plain 95% interval. A result counts as supported only when the Holm-adjusted p is under 0.05, the adjusted interval excludes zero and the difference exceeds the seed spread.`;
+  const el = document.getElementById("hyps"), w = Math.min(520, Math.max(280, (el.clientWidth || 900) * 0.42));
+  el.innerHTML = HYPS.map(h => {
+    const rows = h.pairs.flatMap(([a, b]) => METRICS.map(([m, name]) => ({c: contrast(m, a, b), name, a, b, m}))).filter(r => r.c);
+    let chart = "", verdicts = "";
+    if (rows.length) {
+      rows.forEach(r => { r.adj = orient(r.c, r.c.ci_adjusted_bonferroni); r.ci = orient(r.c, r.c.ci95); });
+      const lo = Math.min(-0.02, ...rows.map(r => r.adj[0])), hi = Math.max(0.02, ...rows.map(r => r.adj[1]));
+      const span = Math.max(-lo, hi) * 1.1, labelW = 168, rh = 22, top = 8, height = top + rows.length * rh + 22;
+      const sx = lin(-span, span, labelW, w - 8);
+      let b = `<line class="zero" x1="${sx(0)}" x2="${sx(0)}" y1="2" y2="${height - 18}"/>`;
+      const step = span > 0.05 ? 0.04 : 0.02;
+      for (let t = -Math.floor(span / step) * step; t <= span + 1e-9; t += step) b += `<text class="tick" x="${sx(t)}" y="${height - 4}" text-anchor="middle">${pts(t, 0)}</text>`;
+      rows.forEach((r, i) => {
+        const y = top + i * rh + rh / 2, yes = r.c.superiority_supported, c = r.c.difference_first_better;
+        b += `<g data-sys="${r.a}" data-tip="${esc(`<b>${lab(r.a)} − ${lab(r.b)}</b>, ${r.name}: ${pts(c)} points; adjusted interval ${pts(r.adj[0])} to ${pts(r.adj[1])}; Holm p ${r.c.p_holm.toFixed(3)}${yes ? "; supported" : ""}`)}"><rect class="hit" x="0" y="${y - rh / 2}" width="${w}" height="${rh}"/>` +
+          `<text class="sub" x="0" y="${y + 4}">${esc(r.name.replace("Judged pass, ", ""))}${h.pairs.length > 1 ? `, ${esc(lab(r.a))} − ${esc(lab(r.b))}` : ""}</text>` +
+          `<line class="ci adj" x1="${sx(r.adj[0])}" x2="${sx(r.adj[1])}" y1="${y}" y2="${y}"/>` +
+          `<line class="ci${yes ? " yes" : ""}" x1="${sx(r.ci[0])}" x2="${sx(r.ci[1])}" y1="${y}" y2="${y}"/>` +
+          `<circle cx="${sx(c)}" cy="${y}" r="4" class="${yes ? "jg" : "jg"}" style="${yes ? "fill:var(--accent)" : ""}"/></g>`;
+      });
+      chart = svg(w, height, `${h.id} contrasts`, b);
+      const q = rows.filter(r => r.m.endsWith("judged_pass")), d = rows.filter(r => r.m === "engine_damage");
+      const quality = q.some(r => r.c.superiority_supported) ? ["yes", "Supported on judged quality"] : q.every(r => r.c.difference_first_better < 0) ? ["no", "Not supported on judged quality", `estimates favour ${[...new Set(h.pairs.map(([, b]) => lab(b)))].join(" and ")}`] : ["no", "Not supported on judged quality"];
+      const safety = d.length ? (d.every(r => r.c.superiority_supported) ? ["yes", "Supported on engine damage", "less damage"] : ["no", "No difference in engine damage"]) : null;
+      verdicts = [quality, safety].filter(Boolean).map(([c, t, s]) => `<span class="vchip ${c}"><span class="ic">${c === "yes" ? "✓" : "–"}</span><span><b>${t}</b>${s ? ` <small>${s}</small>` : ""}</span></span>`).join("");
+    } else {
+      verdicts = `<span class="vchip nt"><span class="ic">○</span><span><b>Not tested</b> <small>the Claude few-shot baselines did not run</small></span></span>`;
+    }
+    const extra = h.id === "H4" ? `<p class="q">Also ${(DATA.latency.M3.median_s / DATA.latency.M1.median_s).toFixed(1)} times slower and ${(DATA.latency.M3.peak_gb / DATA.latency.M1.peak_gb).toFixed(1)} times the memory.</p>` : h.note ? `<p class="q">${esc(h.note)}</p>` : "";
+    return `<div class="hyp"><div><h3>${h.id}. ${esc(h.q)}</h3><p class="q">${h.pairs.map(([a, b]) => `${esc(lab(a))} against ${esc(lab(b))}`).join(" and ") || "Few-shot Claude Sonnet 5.5 and Opus 5.5"}</p>${extra}</div><div>${chart}</div><div class="verdicts">${verdicts}</div></div>`;
+  }).join("");
+}
+function references(el) {
+  const R = DATA.references, rr = DATA.rewritten_references;
+  const trained = MODELS.map(k => R[k].rewritten);
+  document.getElementById("references-deck").textContent =
+    `${rr.changed} of the ${rr.repair_cases} repair answers in the development set change when rewritten to the new minimal-edit policy; the original answers follow the earlier labelling policy. ` +
+    `Judged against the rewritten answers (Opus, selected checkpoints), the trained models land between ${P(Math.min(...trained))}% and ${P(Math.max(...trained))}% and C at ${P(R.C.rewritten)}%. Neither answer key is neutral: which is right is a product decision, and your 165 judgments are the tie-breaker.`;
+  const w = Math.max(300, el.clientWidth), narrow = w < 560, h = 380, top = 30, bottom = h - 26;
+  const L = narrow ? 34 : 150, Rx = w - (narrow ? 96 : 190);
+  const all = SYS.flatMap(s => [R[s.key].original, R[s.key].rewritten]);
+  const sy = lin(Math.min(...all) - 0.01, Math.max(...all) + 0.005, bottom, top);
+  let b = `<text class="ptitle" x="${narrow ? 0 : L}" y="14" text-anchor="${narrow ? "start" : "middle"}">Answers as written</text><text class="ptitle" x="${Rx}" y="14" text-anchor="middle">Rewritten to the new policy</text>`;
+  b += `<line class="grid" x1="${L}" x2="${L}" y1="${top - 6}" y2="${bottom}"/><line class="grid" x1="${Rx}" x2="${Rx}" y1="${top - 6}" y2="${bottom}"/>`;
+  for (const t of [0.7, 0.75, 0.8, 0.85, 0.9, 0.95]) if (sy(t) > top - 4 && sy(t) < bottom + 2) b += `<text class="tick" x="${L - 10}" y="${sy(t) + 4}" text-anchor="end">${P(t, 0)}%</text><line class="grid" x1="${L}" x2="${Rx}" y1="${sy(t)}" y2="${sy(t)}" opacity=".5"/>`;
+  const ends = SYS.map(s => ({s, y: sy(R[s.key].rewritten)})).sort((a, c) => a.y - c.y);
+  for (let i = 1; i < ends.length; i++) ends[i].ly = Math.max(ends[i].y, (ends[i - 1].ly ?? ends[i - 1].y) + 17);
+  ends[0].ly = ends[0].y;
+  const over = ends.at(-1).ly - (bottom + 4); if (over > 0) ends.forEach(e => { e.ly -= over; });
+  for (const {s, y, ly} of ends) {
+    const y0 = sy(R[s.key].original);
+    b += `<g data-sys="${s.key}" class="fam-${s.family}" data-tip="${esc(`<b>${s.label}</b>: ${pct(R[s.key].original)} with the answers as written, ${pct(R[s.key].rewritten)} with rewritten answers`)}">` +
+      `<line class="hit" x1="${L}" x2="${Rx}" y1="${y0}" y2="${y}" stroke="transparent" stroke-width="14"/><line class="slope" x1="${L}" x2="${Rx}" y1="${y0}" y2="${y}"/>` +
+      mark(s, L, y0, 5) + mark(s, Rx, y, 5) +
+      `<line class="leader" x1="${Rx + 9}" x2="${Rx + 20}" y1="${y}" y2="${ly}"/><text class="lbl" x="${Rx + 24}" y="${ly + 4}">${esc(s.label)}</text><text class="val" x="${Rx + 58}" y="${ly + 4}">${P(R[s.key].rewritten)}%</text></g>`;
+  }
+  el.innerHTML = svg(w, h, "Judged pass with the original and the rewritten answers", b);
+}
+const BINS = [[0.02, "h0", "under 2%"], [0.08, "h1", "2 to 8%"], [0.18, "h2", "8 to 18%"], [0.35, "h3", "18 to 35%"], [Infinity, "h4", "35% or more"]];
+function categories(el) {
+  const cat = DATA.categories, names = Object.keys(cat.cases_per_category);
+  const topic = c => c.replace(/^(preserve|repair)_/, "");
+  const NAME = {boundary_questions: "Questions at boundaries", function_words: "Function words", identifier_corrections: "Identifier corrections", list_structure: "List structure",
+    multiple_corrections: "Several corrections", phrase_boundaries: "Phrase boundaries", quantity_qualifier: "Quantity qualifiers", restriction_scope: "Restriction scope", long_instructions: "Long instructions"};
+  const groups = [["Should be left alone", names.filter(n => n.startsWith("preserve_"))], ["Needs a repair", names.filter(n => n.startsWith("repair_"))], ["Long instructions", names.filter(n => n === "long_instructions")]];
+  const leave = groups[0][1], repair = groups[1][1];
+  const fail = (n, k) => 1 - cat.judged_pass[n][k];
+  const worstLeave = Math.max(...leave.flatMap(n => MODELS.map(k => fail(n, k))));
+  document.getElementById("categories-deck").textContent =
+    `Opus 5.5, selected checkpoints. Darker cells fail more often. In the cases that should be left alone, no retrained model fails more than ${P(worstLeave, 0)}% of a category; the spread is in the repairs and long instructions.`;
+  document.getElementById("heat-legend").innerHTML = `<span>Share failing:</span>` + BINS.map(([, c, t]) => `<span><svg width="14" height="10"><rect class="${c}" width="14" height="10" rx="2"/></svg>${t}</span>`).join("");
+  const w = Math.max(300, el.clientWidth), narrow = w < 640, labelW = narrow ? 118 : 220, head = 46, rh = narrow ? 24 : 26, gapG = 26;
+  const cw = (w - labelW) / SYS.length;
+  let y = head, b = "";
+  SYS.forEach((s, i) => { const x = labelW + i * cw + cw / 2; b += `<g data-sys="${s.key}">${mark(s, x, 12, 5)}<text class="lbl" x="${x}" y="36" text-anchor="middle" style="font-size:${narrow ? 11 : 12.5}px">${esc(s.label)}</text></g>`; });
+  for (const [gname, list] of groups) {
+    b += `<text class="pnote" x="0" y="${y + 14}" style="font-weight:600;fill:var(--ink)">${gname}</text>`; y += gapG - 4;
+    for (const n of list) {
+      if (gname !== "Long instructions") b += `<text class="sub" x="${narrow ? 0 : 12}" y="${y + rh / 2 + 4}" style="font-size:${narrow ? 11 : 12.5}px;fill:var(--text2)">${esc(NAME[topic(n)] ?? n)}</text>`;
+      SYS.forEach((s, i) => {
+        const f = fail(n, s.key), bin = BINS.find(([t]) => f < t);
+        b += `<rect class="cell ${bin[1]}" data-sys="${s.key}" x="${labelW + i * cw + 1}" y="${y + 1}" width="${cw - 2}" height="${rh - 2}" rx="2" data-tip="${esc(`<b>${s.label}</b>, ${NAME[topic(n)]}${gname === "Long instructions" ? "" : " (" + gname.toLowerCase() + ")"}: ${P(cat.judged_pass[n][s.key])}% pass, ${cat.cases_per_category[n]} cases`)}"/>`;
+      });
+      y += rh;
+    }
+    y += 8;
+  }
+  el.innerHTML = svg(w, y + 4, "Failure share by category and model", b);
+}
+function speed(el) {
+  const L = DATA.latency, four = SYS.filter(s => s.size === "4B").map(s => L[s.key].median_s);
+  document.getElementById("speed-h").textContent = `Every 4B model cleans in about ${Math.min(...four).toFixed(1)} seconds.`;
+  document.getElementById("speed-deck").textContent =
+    `Measured one system at a time on an idle Mac, 4-bit weights, all 431 cases. Dots are medians and the line runs to the 95th percentile. The 9B models take ${L.M3.median_s.toFixed(1)} to ${L["base-9b-prod-prompt"].median_s.toFixed(1)} s and need ${L.M3.peak_gb.toFixed(1)} GB.`;
+  panels(el, ORDER, [
+    {title: "Time per cleanup", note: "median to 95th percentile", domain: [0, 13.5], ticks: [0, 4, 8, 12], tick: v => v + " s", value: k => L[k].median_s, range: k => [L[k].median_s, L[k].p95_s],
+      fmt: v => v.toFixed(2), tip: k => `<b>${lab(k)}</b>: median ${sec(L[k].median_s)}, 95th percentile ${sec(L[k].p95_s)}, first token ${sec(L[k].first_token_s)}`},
+    {title: "Peak memory", note: "GB during cleanup", domain: [0, 8], ticks: [0, 2, 4, 6, 8], tick: v => v, value: k => L[k].peak_gb, fmt: v => v.toFixed(1),
+      tip: k => `<b>${lab(k)}</b>: ${L[k].peak_gb.toFixed(2)} GB peak`},
+    {title: "Gave back the dictation unchanged", note: "fallbacks; fewer to the right", domain: [0, 0.35], reverse: true, ticks: [0, 0.1, 0.2, 0.3], tick: v => P(v, 0) + "%", value: k => L[k].fallback, fmt: v => P(v),
+      tip: k => `<b>${lab(k)}</b>: fell back to the unchanged dictation on ${pct(L[k].fallback)} of cases`},
+  ]);
+}
+
+/* ---------- examples ---------- */
+function tokens(s) { return s.match(/\s+|[\p{L}\p{N}'’]+|[^\s\p{L}\p{N}]/gu) ?? []; }
+function diffHTML(src, out) {
+  const a = tokens(src), b = tokens(out), n = a.length, m = b.length;
+  const dp = Array.from({length: n + 1}, () => new Uint16Array(m + 1));
+  for (let i = n - 1; i >= 0; i--) for (let j = m - 1; j >= 0; j--) dp[i][j] = a[i] === b[j] ? dp[i + 1][j + 1] + 1 : Math.max(dp[i + 1][j], dp[i][j + 1]);
+  let i = 0, j = 0, html = "";
+  const isSpace = t => /^\s+$/.test(t);
+  while (i < n || j < m) {
+    if (i < n && j < m && a[i] === b[j]) { html += esc(b[j]); i++; j++; }
+    else if (i < n && (j >= m || dp[i + 1][j] >= dp[i][j + 1])) { if (!isSpace(a[i])) html += `<del>${esc(a[i])}</del>`; i++; }
+    else { html += isSpace(b[j]) ? esc(b[j]) : `<ins>${esc(b[j])}</ins>`; j++; }
+  }
+  return html.replace(/<\/ins>(\s*)<ins>/g, "$1").replace(/<\/del><del>/g, "");
+}
+let exIndex = 0, showChanges = true;
+function examples() {
+  const ex = DATA.examples, tabs = document.getElementById("extabs");
+  tabs.innerHTML = ex.map((e, i) => `<button class="extab" role="tab" type="button" aria-selected="${i === exIndex}" data-ex="${i}">${esc(e.title)}<small>${esc(e.category)}${e.is_noop ? ", leave alone" : ", repair"}</small></button>`).join("");
+  tabs.onclick = ev => { const b = ev.target.closest("[data-ex]"); if (b) { exIndex = +b.dataset.ex; examples(); } };
+  const e = ex[exIndex]; if (!e) return;
+  const groups = new Map();
+  for (const s of SYS) { const t = e.outputs[s.key].text; if (!groups.has(t)) groups.set(t, []); groups.get(t).push(s.key); }
+  let html = `<div class="exsource"><p class="lab">What was dictated</p><p class="prose">${esc(e.source)}</p>` +
+    `<details class="exref"><summary>The answer the judge was given</summary><p class="prose">${esc(e.reference)}</p></details></div>` +
+    `<label class="extoggle"><input type="checkbox" id="exchg" ${showChanges ? "checked" : ""}> Mark changes from the dictation</label>`;
+  for (const [text, keys] of groups) {
+    const o = e.outputs[keys[0]];
+    const why = !o.pass && o.reason ? `<p class="why">Opus 5.5: ${esc(o.reason)}</p>` : "";
+    html += `<div class="exgroup" data-sys-group="${keys.join(" ")}"><div class="exwho">${keys.map(k => `<span data-sys="${k}">${markIcon(BY[k], 5)}${esc(lab(k))}<em class="${o.pass ? "pass" : "fail"}" aria-label="${o.pass ? "passed" : "failed"}">${o.pass ? "✓" : "✕"}</em></span>`).join("")}</div>` +
+      `<div><p class="prose">${showChanges ? diffHTML(e.source, text) : esc(text)}</p>${why}</div></div>`;
+  }
+  const panel = document.getElementById("expanel"); panel.innerHTML = html;
+  document.getElementById("exchg").onchange = ev => { showChanges = ev.target.checked; examples(); };
+  applyFocus();
+}
+
+/* ---------- trust, footer, tables ---------- */
+function trust() {
+  const R = DATA.reliability, O = R.order, kp = Object.values(R.kappa);
+  const flips = ["anthropic", "openai", "openrouter"].map(j => O[j] ? P(O[j].share_changed) + "%" : "–");
+  const shares = Object.values(O).map(o => o.share_changed * 100);
+  const cost = Object.entries(DATA.costs), total = cost.reduce((a, [, v]) => a + v, 0);
+  document.getElementById("tiles").innerHTML = [
+    ["Judges agree", R.alpha.toFixed(2), `Krippendorff's alpha on judged pass across the three vendors; pairwise kappa ${Math.min(...kp).toFixed(2)} to ${Math.max(...kp).toFixed(2)}.`],
+    ["Verdicts that flip with order", `${Math.min(...shares).toFixed(1)} to ${Math.max(...shares).toFixed(1)}%`, `Opus ${flips[0]}, gpt-6.1-sol ${flips[1]}, Muse ${flips[2]} of verdicts changed when the outputs were shown in reverse order.`],
+    ["Unjudged outputs", Object.entries(DATA.unjudged_rows).map(([, v]) => v).join(" / "), "in the main pass for each judge; unjudged would count as failures."],
+    ["GPU and judge spend", "$" + total.toFixed(2), cost.map(([k, v]) => `${k.split(" (")[0].split(",")[0]} $${v.toFixed(2)}`).join("; ") + "."],
+  ].map(([l, n, p]) => `<div class="tile"><p class="lab">${l}</p><p class="num">${n}</p><p>${esc(p)}</p></div>`).join("");
+  document.getElementById("open").innerHTML = [
+    ["Your 165 blind judgments of paired outputs, the human check on the judges", "settles M2 against C"],
+    ["The few-shot Claude baselines", "H5; not run"],
+    ["A confirmatory set with more list and question cases", "H2 and the answer-key question"],
+    ["Sealing the pre-registration, then one pass over the locked final set", "the confirmatory result"],
+  ].map(([t, s]) => `<li>${esc(t)}<span>${esc(s)}</span></li>`).join("");
+  const runs = Object.entries(DATA.judge_runs).map(([k, v]) => `${k}: ${v}`).join(", ");
+  document.getElementById("foot").innerHTML =
+    `<p>Generated ${esc(DATA.generated)} from <code>docs/v2/research/paper/results/</code> on the research results branch (analysis, reliability, latency, selection, categories, supplementary) and, for the worked examples, the private development outputs and Opus verdicts. Judge runs behind the columns: ${esc(runs)}.</p>` +
+    `<p>Regenerate with <code>experiments/cleanup-model-v2/tools/research_page.py</code>. Earlier rounds: <a href="candidates-round.html">the candidate round</a> and <a href="prior-round.html">the round before it</a>.</p>`;
+}
+function table(cols, rows) { return `<table><thead><tr>${cols.map(c => `<th>${esc(c)}</th>`).join("")}</tr></thead><tbody>${rows.map(r => `<tr>${r.map(c => `<td>${c}</td>`).join("")}</tr>`).join("")}</tbody></table>`; }
+function tables() {
+  const L = DATA.latency, T = (n, html) => { document.querySelector(`[data-table="${n}"]`).innerHTML = html; };
+  T("field", table(["Model", "Judged pass, Opus", "gpt-6.1-sol", "Muse", "Engine damage", "No-op kept", "Repair success", "Median time", "Peak GB"],
+    SYS.map(s => { const a = A[s.key]; return [`${esc(s.label)}, ${esc(s.about)}`, pct(a.opus), pct(a.sol), pct(a.muse), pct(a.damage), pct(a.noop), pct(a.repair), sec(L[s.key].median_s), L[s.key].peak_gb.toFixed(1)]; })));
+  T("versus", table(["Contrast", "Metric", "Difference (points)", "95% interval", "p"], ["anthropic:judged_pass", "engine_damage"].flatMap(m => DATA.versus_c[m].map(r =>
+    [`${esc(lab(r.first))} − C`, m === "engine_damage" ? "Engine damage avoided" : "Judged pass, Opus", pts(r.difference_first_better), `${pts(r.ci95_first_better[0])} to ${pts(r.ci95_first_better[1])}`, r.p.toFixed(4)]))));
+  T("questions", table(["Question", "Contrast", "Metric", "Difference", "Adjusted interval", "Holm p", "Supported"], HYPS.flatMap(h => h.pairs.flatMap(([a, b]) => METRICS.map(([m, name]) => {
+    const c = contrast(m, a, b); return c && [h.id, `${esc(lab(a))} − ${esc(lab(b))}`, name, pts(c.difference_first_better), `${pts(orient(c, c.ci_adjusted_bonferroni)[0])} to ${pts(orient(c, c.ci_adjusted_bonferroni)[1])}`, c.p_holm.toFixed(3), c.superiority_supported ? "yes" : "no"];
+  }).filter(Boolean)))));
+  const R = DATA.references;
+  T("references", table(["Model", "Answers as written", "Rewritten answers", "Final checkpoint, as written", "Final checkpoint, rewritten"], SYS.map(s =>
+    [esc(s.label), pct(R[s.key].original), pct(R[s.key].rewritten), pct(R[s.key].original_final), pct(R[s.key].rewritten_final)])));
+  const cat = DATA.categories;
+  T("categories", table(["Category", "Cases", ...SYS.map(s => s.label)], Object.keys(cat.cases_per_category).map(n => [esc(n.replace(/_/g, " ")), cat.cases_per_category[n], ...SYS.map(s => P(cat.judged_pass[n][s.key]) + "%")])));
+}
+
+/* ---------- tooltip, theme, rendering ---------- */
+const tip = document.getElementById("tip");
+function showTip(target, x, y) {
+  tip.innerHTML = target.dataset.tip; tip.hidden = false;
+  const r = tip.getBoundingClientRect(), vw = innerWidth;
+  tip.style.left = Math.min(vw - r.width - 8, Math.max(8, x + 14)) + "px";
+  tip.style.top = (y + r.height + 20 > innerHeight ? y - r.height - 12 : y + 16) + "px";
+}
+document.addEventListener("pointermove", e => { const t = e.target.closest?.("[data-tip]"); if (t) showTip(t, e.clientX, e.clientY); else tip.hidden = true; });
+document.addEventListener("click", e => { const t = e.target.closest?.("main svg [data-sys]"); if (t) pick(t.dataset.sys); });
+const CHARTS = {field, judges, versus, references, categories, speed};
+function render() {
+  for (const el of document.querySelectorAll("[data-chart]")) CHARTS[el.dataset.chart](el);
+  hyps(); applyFocus();
+}
+const themeBtn = document.getElementById("theme");
+function themeLabel() { const dark = document.documentElement.dataset.theme ? document.documentElement.dataset.theme === "dark" : matchMedia("(prefers-color-scheme: dark)").matches; themeBtn.textContent = dark ? "Light" : "Dark"; return dark; }
+try { const saved = localStorage.getItem("lf-study-theme"); if (saved) document.documentElement.dataset.theme = saved; } catch {}
+themeBtn.onclick = () => { const next = themeLabel() ? "light" : "dark"; document.documentElement.dataset.theme = next; try { localStorage.setItem("lf-study-theme", next); } catch {} themeLabel(); };
+themeLabel();
+hero(); key(); render(); examples(); trust(); tables();
+let lastW = 0, frame = 0;
+new ResizeObserver(() => { const w = document.querySelector("main").clientWidth; if (w !== lastW) { lastW = w; cancelAnimationFrame(frame); frame = requestAnimationFrame(render); } }).observe(document.querySelector("main"));
+</script>
+</body>
+</html>

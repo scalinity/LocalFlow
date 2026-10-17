@@ -1,0 +1,1254 @@
+{
+ "arms_file_sha256": "df4656ed5ee2a82d63b4a22767db89aca8fa83cb094ac8cdadef7d7701077e26",
+ "datasets": {
+  "arms/A1": {
+   "freeze_sha256": "147bd66df22418cfc51a2d5ea5ee98f487e910fe7577adb28ba23c9f20accb32",
+   "train_captures": 9575
+  },
+  "arms/A3": {
+   "freeze_sha256": "01ab6c041f94c31a03a4a701408a6f7160500bf948f46a8c12da1cae5f89b129",
+   "train_captures": 10011
+  },
+  "dataset": {
+   "freeze_sha256": "253b49cc38f5599a2e36a32ca70b3af4a618cd1a9b544a35d9c60b15d4fd84ef",
+   "train_captures": 9436
+  },
+  "dataset-v2-merged": {
+   "freeze_sha256": "6a180c7bcee65dcef1abd74b72302e1cdb42d59de94e48bd3231419e8b77d032",
+   "train_captures": 9897
+  }
+ },
+ "git_branch": "codex/cleanup-research-results",
+ "git_head": "55f6a2a790fd283dd05bb0c9ad5e49300813c96b",
+ "gpu": {
+  "billed_usd_recorded": 2.51,
+  "note": "RunPod billing reports lag running pods; the console balance is authoritative.",
+  "pods": 12,
+  "price_usd_per_hour": [
+   1.79
+  ]
+ },
+ "runs": {
+  "A1": {
+   "checkpoint_validation": [
+    {
+     "checkpoint": "ckpt-00208",
+     "val_loss": 0.028479486586743524
+    },
+    {
+     "checkpoint": "ckpt-00416",
+     "val_loss": 0.027197839166743863
+    },
+    {
+     "checkpoint": "ckpt-00624",
+     "val_loss": 0.025052070446506154
+    },
+    {
+     "checkpoint": "ckpt-00832",
+     "val_loss": 0.029143711141998162
+    },
+    {
+     "checkpoint": "ckpt-01040",
+     "val_loss": 0.0290066048878772
+    },
+    {
+     "checkpoint": "ckpt-01248",
+     "val_loss": 0.030521497603689433
+    },
+    {
+     "checkpoint": "ckpt-01456",
+     "val_loss": 0.030395128657834936
+    },
+    {
+     "checkpoint": "ckpt-01664",
+     "val_loss": 0.03032846956645496
+    }
+   ],
+   "dataset": "arms/A1",
+   "dataset_freeze_sha256": "147bd66df22418cfc51a2d5ea5ee98f487e910fe7577adb28ba23c9f20accb32",
+   "examples": 13304,
+   "final_train_loss_last_update": 0.01484837635553049,
+   "fresh_adapter": true,
+   "grad_accum": 8,
+   "initial_adapter": null,
+   "learning_rate": 3e-05,
+   "run": "v2-a1-4bfresh-s0",
+   "save_at": [
+    208,
+    416,
+    624,
+    832,
+    1040,
+    1248,
+    1456,
+    1664
+   ],
+   "seed_env": null,
+   "selected_checkpoint": "ckpt-00624",
+   "train_captures": 9575,
+   "updates": 1664,
+   "validation_curve": [
+    {
+     "update": 0,
+     "val_loss": 0.046402808493139935
+    },
+    {
+     "update": 166,
+     "val_loss": 0.020506345831266377
+    },
+    {
+     "update": 332,
+     "val_loss": 0.02697922200489533
+    },
+    {
+     "update": 498,
+     "val_loss": 0.023793619373895767
+    },
+    {
+     "update": 664,
+     "val_loss": 0.02591744469811087
+    },
+    {
+     "update": 830,
+     "val_loss": 0.029331607456667855
+    },
+    {
+     "update": 996,
+     "val_loss": 0.029042158924500235
+    },
+    {
+     "update": 1162,
+     "val_loss": 0.029675748435092714
+    },
+    {
+     "update": 1328,
+     "val_loss": 0.030383347333651813
+    },
+    {
+     "update": 1494,
+     "val_loss": 0.030352907084028137
+    },
+    {
+     "update": 1660,
+     "val_loss": 0.030398946808308173
+    },
+    {
+     "update": 1664,
+     "val_loss": 0.03032846956645496
+    }
+   ],
+   "validation_examples": 160,
+   "warmup": 30
+  },
+  "A2": {
+   "checkpoint_validation": [
+    {
+     "checkpoint": "ckpt-00199",
+     "val_loss": 0.022317676131049125
+    },
+    {
+     "checkpoint": "ckpt-00398",
+     "val_loss": 0.022619632434348304
+    },
+    {
+     "checkpoint": "ckpt-00597",
+     "val_loss": 0.025500752402660396
+    },
+    {
+     "checkpoint": "ckpt-00796",
+     "val_loss": 0.02457170641575326
+    },
+    {
+     "checkpoint": "ckpt-00994",
+     "val_loss": 0.024472694373032972
+    },
+    {
+     "checkpoint": "ckpt-01193",
+     "val_loss": 0.023303864448841735
+    },
+    {
+     "checkpoint": "ckpt-01392",
+     "val_loss": 0.02472558007876317
+    },
+    {
+     "checkpoint": "ckpt-01591",
+     "val_loss": 0.024554214805383476
+    }
+   ],
+   "dataset": "dataset",
+   "dataset_freeze_sha256": "253b49cc38f5599a2e36a32ca70b3af4a618cd1a9b544a35d9c60b15d4fd84ef",
+   "examples": 12720,
+   "final_train_loss_last_update": 0.014351136404911813,
+   "fresh_adapter": true,
+   "grad_accum": 8,
+   "initial_adapter": null,
+   "learning_rate": 3e-05,
+   "run": "v2-a2-4bfresh-s0",
+   "save_at": [
+    199,
+    398,
+    597,
+    796,
+    994,
+    1193,
+    1392,
+    1591
+   ],
+   "seed_env": null,
+   "selected_checkpoint": "ckpt-00199",
+   "train_captures": 9436,
+   "updates": 1591,
+   "validation_curve": [
+    {
+     "update": 0,
+     "val_loss": 0.04828462328258224
+    },
+    {
+     "update": 159,
+     "val_loss": 0.02283821948072206
+    },
+    {
+     "update": 318,
+     "val_loss": 0.022976527852346402
+    },
+    {
+     "update": 477,
+     "val_loss": 0.024735012506226443
+    },
+    {
+     "update": 636,
+     "val_loss": 0.028106539020558725
+    },
+    {
+     "update": 795,
+     "val_loss": 0.02462246387160526
+    },
+    {
+     "update": 954,
+     "val_loss": 0.024207403492405636
+    },
+    {
+     "update": 1113,
+     "val_loss": 0.023719539639974904
+    },
+    {
+     "update": 1272,
+     "val_loss": 0.024449269891654617
+    },
+    {
+     "update": 1431,
+     "val_loss": 0.02476940263693104
+    },
+    {
+     "update": 1590,
+     "val_loss": 0.024571385828115522
+    },
+    {
+     "update": 1591,
+     "val_loss": 0.024554214805383476
+    }
+   ],
+   "validation_examples": 160,
+   "warmup": 30
+  },
+  "A2prime": {
+   "checkpoint_validation": [
+    {
+     "checkpoint": "ckpt-00199",
+     "val_loss": 0.022064321523232944
+    },
+    {
+     "checkpoint": "ckpt-00398",
+     "val_loss": 0.024123150278663505
+    },
+    {
+     "checkpoint": "ckpt-00597",
+     "val_loss": 0.026951553144640174
+    },
+    {
+     "checkpoint": "ckpt-00796",
+     "val_loss": 0.025354264986019292
+    },
+    {
+     "checkpoint": "ckpt-00994",
+     "val_loss": 0.025349139784945574
+    },
+    {
+     "checkpoint": "ckpt-01193",
+     "val_loss": 0.024189024337576748
+    },
+    {
+     "checkpoint": "ckpt-01392",
+     "val_loss": 0.025092399067207238
+    },
+    {
+     "checkpoint": "ckpt-01591",
+     "val_loss": 0.02503488320943817
+    }
+   ],
+   "dataset": "dataset",
+   "dataset_freeze_sha256": "253b49cc38f5599a2e36a32ca70b3af4a618cd1a9b544a35d9c60b15d4fd84ef",
+   "examples": 12720,
+   "final_train_loss_last_update": 0.01863978029973623,
+   "fresh_adapter": false,
+   "grad_accum": 8,
+   "initial_adapter": "C",
+   "learning_rate": 3e-05,
+   "run": "v2-a2prime-4b-s0",
+   "save_at": [
+    199,
+    398,
+    597,
+    796,
+    994,
+    1193,
+    1392,
+    1591
+   ],
+   "seed_env": null,
+   "selected_checkpoint": "ckpt-00199",
+   "train_captures": 9436,
+   "updates": 1591,
+   "validation_curve": [
+    {
+     "update": 0,
+     "val_loss": 0.02988804962358627
+    },
+    {
+     "update": 159,
+     "val_loss": 0.025785562586135888
+    },
+    {
+     "update": 318,
+     "val_loss": 0.02482432617543814
+    },
+    {
+     "update": 477,
+     "val_loss": 0.02549992815242942
+    },
+    {
+     "update": 636,
+     "val_loss": 0.02867929890351248
+    },
+    {
+     "update": 795,
+     "val_loss": 0.0253202021456297
+    },
+    {
+     "update": 954,
+     "val_loss": 0.025028462661852057
+    },
+    {
+     "update": 1113,
+     "val_loss": 0.024489387656847526
+    },
+    {
+     "update": 1272,
+     "val_loss": 0.02481772974239842
+    },
+    {
+     "update": 1431,
+     "val_loss": 0.025141039208919642
+    },
+    {
+     "update": 1590,
+     "val_loss": 0.02501937517231811
+    },
+    {
+     "update": 1591,
+     "val_loss": 0.02503488320943817
+    }
+   ],
+   "validation_examples": 160,
+   "warmup": 30
+  },
+  "A3": {
+   "checkpoint_validation": [
+    {
+     "checkpoint": "ckpt-00217",
+     "val_loss": 0.025699411118898233
+    },
+    {
+     "checkpoint": "ckpt-00434",
+     "val_loss": 0.02432960036576397
+    },
+    {
+     "checkpoint": "ckpt-00651",
+     "val_loss": 0.02681070681716794
+    },
+    {
+     "checkpoint": "ckpt-00868",
+     "val_loss": 0.028306973690523218
+    },
+    {
+     "checkpoint": "ckpt-01085",
+     "val_loss": 0.029418050448791047
+    },
+    {
+     "checkpoint": "ckpt-01302",
+     "val_loss": 0.02976853670609279
+    },
+    {
+     "checkpoint": "ckpt-01519",
+     "val_loss": 0.029723636382295034
+    },
+    {
+     "checkpoint": "ckpt-01736",
+     "val_loss": 0.029996148067695745
+    }
+   ],
+   "dataset": "arms/A3",
+   "dataset_freeze_sha256": "01ab6c041f94c31a03a4a701408a6f7160500bf948f46a8c12da1cae5f89b129",
+   "examples": 13880,
+   "final_train_loss_last_update": 0.01227798455829543,
+   "fresh_adapter": true,
+   "grad_accum": 8,
+   "initial_adapter": null,
+   "learning_rate": 3e-05,
+   "run": "v2-a3-4bfresh-s0",
+   "save_at": [
+    217,
+    434,
+    651,
+    868,
+    1085,
+    1302,
+    1519,
+    1736
+   ],
+   "seed_env": null,
+   "selected_checkpoint": "ckpt-00434",
+   "train_captures": 10011,
+   "updates": 1736,
+   "validation_curve": [
+    {
+     "update": 0,
+     "val_loss": 0.046402808493139935
+    },
+    {
+     "update": 173,
+     "val_loss": 0.023435882515753615
+    },
+    {
+     "update": 346,
+     "val_loss": 0.02708068752155605
+    },
+    {
+     "update": 519,
+     "val_loss": 0.026206486956851335
+    },
+    {
+     "update": 692,
+     "val_loss": 0.027308737205172826
+    },
+    {
+     "update": 865,
+     "val_loss": 0.02809417876621121
+    },
+    {
+     "update": 1038,
+     "val_loss": 0.028396514536627
+    },
+    {
+     "update": 1211,
+     "val_loss": 0.029373627672652697
+    },
+    {
+     "update": 1384,
+     "val_loss": 0.029272195002860706
+    },
+    {
+     "update": 1557,
+     "val_loss": 0.029130189168191014
+    },
+    {
+     "update": 1730,
+     "val_loss": 0.03002843818303095
+    },
+    {
+     "update": 1736,
+     "val_loss": 0.029996148067695745
+    }
+   ],
+   "validation_examples": 160,
+   "warmup": 30
+  },
+  "M1-seed0": {
+   "checkpoint_validation": [
+    {
+     "checkpoint": "ckpt-00213",
+     "val_loss": 0.02916868250352913
+    },
+    {
+     "checkpoint": "ckpt-00426",
+     "val_loss": 0.024466724990890542
+    },
+    {
+     "checkpoint": "ckpt-00639",
+     "val_loss": 0.027310697352582874
+    },
+    {
+     "checkpoint": "ckpt-00852",
+     "val_loss": 0.027949267011015667
+    },
+    {
+     "checkpoint": "ckpt-01065",
+     "val_loss": 0.02860172931173917
+    },
+    {
+     "checkpoint": "ckpt-01278",
+     "val_loss": 0.029544008191456163
+    },
+    {
+     "checkpoint": "ckpt-01491",
+     "val_loss": 0.029081848674241295
+    },
+    {
+     "checkpoint": "ckpt-01704",
+     "val_loss": 0.029041470273799053
+    }
+   ],
+   "dataset": "dataset-v2-merged",
+   "dataset_freeze_sha256": "6a180c7bcee65dcef1abd74b72302e1cdb42d59de94e48bd3231419e8b77d032",
+   "examples": 13628,
+   "final_train_loss_last_update": 0.011353475674695801,
+   "fresh_adapter": true,
+   "grad_accum": 8,
+   "initial_adapter": null,
+   "learning_rate": 3e-05,
+   "run": "v2-m1-4bfresh-s0",
+   "save_at": [
+    213,
+    426,
+    639,
+    852,
+    1065,
+    1278,
+    1491,
+    1704
+   ],
+   "seed_env": 0,
+   "selected_checkpoint": "ckpt-00426",
+   "train_captures": 9897,
+   "updates": 1704,
+   "validation_curve": [
+    {
+     "update": 0,
+     "val_loss": 0.046402808493139935
+    },
+    {
+     "update": 170,
+     "val_loss": 0.029378510876873154
+    },
+    {
+     "update": 340,
+     "val_loss": 0.024318455359807745
+    },
+    {
+     "update": 510,
+     "val_loss": 0.025817972379303944
+    },
+    {
+     "update": 680,
+     "val_loss": 0.029379057515216463
+    },
+    {
+     "update": 850,
+     "val_loss": 0.027797990886082036
+    },
+    {
+     "update": 1020,
+     "val_loss": 0.030050945053828687
+    },
+    {
+     "update": 1190,
+     "val_loss": 0.02819393395589974
+    },
+    {
+     "update": 1360,
+     "val_loss": 0.02866416639272062
+    },
+    {
+     "update": 1530,
+     "val_loss": 0.029162506915961024
+    },
+    {
+     "update": 1700,
+     "val_loss": 0.029164065571768413
+    },
+    {
+     "update": 1704,
+     "val_loss": 0.029041470273799053
+    }
+   ],
+   "validation_examples": 160,
+   "warmup": 30
+  },
+  "M1-seed1": {
+   "checkpoint_validation": [
+    {
+     "checkpoint": "ckpt-00213",
+     "val_loss": 0.029542191754852735
+    },
+    {
+     "checkpoint": "ckpt-00426",
+     "val_loss": 0.030596947986889854
+    },
+    {
+     "checkpoint": "ckpt-00639",
+     "val_loss": 0.030130482682007537
+    },
+    {
+     "checkpoint": "ckpt-00852",
+     "val_loss": 0.029498834441049913
+    },
+    {
+     "checkpoint": "ckpt-01065",
+     "val_loss": 0.029855764574428963
+    },
+    {
+     "checkpoint": "ckpt-01278",
+     "val_loss": 0.02964716437564411
+    },
+    {
+     "checkpoint": "ckpt-01491",
+     "val_loss": 0.02981093914193306
+    },
+    {
+     "checkpoint": "ckpt-01704",
+     "val_loss": 0.030714797727089654
+    }
+   ],
+   "dataset": "dataset-v2-merged",
+   "dataset_freeze_sha256": "6a180c7bcee65dcef1abd74b72302e1cdb42d59de94e48bd3231419e8b77d032",
+   "examples": 13628,
+   "final_train_loss_last_update": 0.005083075623133482,
+   "fresh_adapter": true,
+   "grad_accum": 8,
+   "initial_adapter": null,
+   "learning_rate": 3e-05,
+   "run": "v2-m1-4bfresh-s1",
+   "save_at": [
+    213,
+    426,
+    639,
+    852,
+    1065,
+    1278,
+    1491,
+    1704
+   ],
+   "seed_env": 1,
+   "selected_checkpoint": "ckpt-00852",
+   "train_captures": 9897,
+   "updates": 1704,
+   "validation_curve": [
+    {
+     "update": 0,
+     "val_loss": 0.046402808493139935
+    },
+    {
+     "update": 170,
+     "val_loss": 0.026016855263453962
+    },
+    {
+     "update": 340,
+     "val_loss": 0.02887106735180463
+    },
+    {
+     "update": 510,
+     "val_loss": 0.028224852702066025
+    },
+    {
+     "update": 680,
+     "val_loss": 0.02794395849091025
+    },
+    {
+     "update": 850,
+     "val_loss": 0.029356552915797886
+    },
+    {
+     "update": 1020,
+     "val_loss": 0.029143077686338108
+    },
+    {
+     "update": 1190,
+     "val_loss": 0.0314031649729271
+    },
+    {
+     "update": 1360,
+     "val_loss": 0.029174038119607656
+    },
+    {
+     "update": 1530,
+     "val_loss": 0.030182886190269292
+    },
+    {
+     "update": 1700,
+     "val_loss": 0.030654415413394052
+    },
+    {
+     "update": 1704,
+     "val_loss": 0.030714797727089654
+    }
+   ],
+   "validation_examples": 160,
+   "warmup": 30
+  },
+  "M1-seed2": {
+   "checkpoint_validation": [
+    {
+     "checkpoint": "ckpt-00213",
+     "val_loss": 0.027088567485949226
+    },
+    {
+     "checkpoint": "ckpt-00426",
+     "val_loss": 0.029313490084405706
+    },
+    {
+     "checkpoint": "ckpt-00639",
+     "val_loss": 0.02861246809633384
+    },
+    {
+     "checkpoint": "ckpt-00852",
+     "val_loss": 0.029938118787580178
+    },
+    {
+     "checkpoint": "ckpt-01065",
+     "val_loss": 0.02827340860064738
+    },
+    {
+     "checkpoint": "ckpt-01278",
+     "val_loss": 0.030770820053707265
+    },
+    {
+     "checkpoint": "ckpt-01491",
+     "val_loss": 0.029742959732350097
+    },
+    {
+     "checkpoint": "ckpt-01704",
+     "val_loss": 0.02973880145788537
+    }
+   ],
+   "dataset": "dataset-v2-merged",
+   "dataset_freeze_sha256": "6a180c7bcee65dcef1abd74b72302e1cdb42d59de94e48bd3231419e8b77d032",
+   "examples": 13628,
+   "final_train_loss_last_update": 0.006422945837130101,
+   "fresh_adapter": true,
+   "grad_accum": 8,
+   "initial_adapter": null,
+   "learning_rate": 3e-05,
+   "run": "v2-m1-4bfresh-s2",
+   "save_at": [
+    213,
+    426,
+    639,
+    852,
+    1065,
+    1278,
+    1491,
+    1704
+   ],
+   "seed_env": 2,
+   "selected_checkpoint": "ckpt-00213",
+   "train_captures": 9897,
+   "updates": 1704,
+   "validation_curve": [
+    {
+     "update": 0,
+     "val_loss": 0.046402808493139935
+    },
+    {
+     "update": 170,
+     "val_loss": 0.024989087397535248
+    },
+    {
+     "update": 340,
+     "val_loss": 0.0286056640195495
+    },
+    {
+     "update": 510,
+     "val_loss": 0.030451285629660516
+    },
+    {
+     "update": 680,
+     "val_loss": 0.02787203556252235
+    },
+    {
+     "update": 850,
+     "val_loss": 0.029965528104438064
+    },
+    {
+     "update": 1020,
+     "val_loss": 0.028906329491797975
+    },
+    {
+     "update": 1190,
+     "val_loss": 0.02816415385904851
+    },
+    {
+     "update": 1360,
+     "val_loss": 0.03019426762086248
+    },
+    {
+     "update": 1530,
+     "val_loss": 0.0294662753730808
+    },
+    {
+     "update": 1700,
+     "val_loss": 0.029803294061377005
+    },
+    {
+     "update": 1704,
+     "val_loss": 0.02973880145788537
+    }
+   ],
+   "validation_examples": 160,
+   "warmup": 30
+  },
+  "M2-seed0": {
+   "checkpoint_validation": [
+    {
+     "checkpoint": "ckpt-00213",
+     "val_loss": 0.0313599437611289
+    },
+    {
+     "checkpoint": "ckpt-00426",
+     "val_loss": 0.02668275167174641
+    },
+    {
+     "checkpoint": "ckpt-00639",
+     "val_loss": 0.02885459675567817
+    },
+    {
+     "checkpoint": "ckpt-00852",
+     "val_loss": 0.02929296397146913
+    },
+    {
+     "checkpoint": "ckpt-01065",
+     "val_loss": 0.02962490852645388
+    },
+    {
+     "checkpoint": "ckpt-01278",
+     "val_loss": 0.031838670649197064
+    },
+    {
+     "checkpoint": "ckpt-01491",
+     "val_loss": 0.030934275093534174
+    },
+    {
+     "checkpoint": "ckpt-01704",
+     "val_loss": 0.030840252280271686
+    }
+   ],
+   "dataset": "dataset-v2-merged",
+   "dataset_freeze_sha256": "6a180c7bcee65dcef1abd74b72302e1cdb42d59de94e48bd3231419e8b77d032",
+   "examples": 13628,
+   "final_train_loss_last_update": 0.011694690696458565,
+   "fresh_adapter": false,
+   "grad_accum": 8,
+   "initial_adapter": "C",
+   "learning_rate": 3e-05,
+   "run": "v2-m2-4b-s0",
+   "save_at": [
+    213,
+    426,
+    639,
+    852,
+    1065,
+    1278,
+    1491,
+    1704
+   ],
+   "seed_env": 0,
+   "selected_checkpoint": "ckpt-00426",
+   "train_captures": 9897,
+   "updates": 1704,
+   "validation_curve": [
+    {
+     "update": 0,
+     "val_loss": 0.02227227976650043
+    },
+    {
+     "update": 170,
+     "val_loss": 0.030201900500833864
+    },
+    {
+     "update": 340,
+     "val_loss": 0.026952557774944822
+    },
+    {
+     "update": 510,
+     "val_loss": 0.028395181453025574
+    },
+    {
+     "update": 680,
+     "val_loss": 0.02871704695234887
+    },
+    {
+     "update": 850,
+     "val_loss": 0.029207226918930056
+    },
+    {
+     "update": 1020,
+     "val_loss": 0.03104193333110184
+    },
+    {
+     "update": 1190,
+     "val_loss": 0.02992617462651781
+    },
+    {
+     "update": 1360,
+     "val_loss": 0.03133495208134367
+    },
+    {
+     "update": 1530,
+     "val_loss": 0.030910739534323127
+    },
+    {
+     "update": 1700,
+     "val_loss": 0.030879966014245135
+    },
+    {
+     "update": 1704,
+     "val_loss": 0.030840252280271686
+    }
+   ],
+   "validation_examples": 160,
+   "warmup": 30
+  },
+  "M2-seed1": {
+   "checkpoint_validation": [
+    {
+     "checkpoint": "ckpt-00213",
+     "val_loss": 0.028774803889636418
+    },
+    {
+     "checkpoint": "ckpt-00426",
+     "val_loss": 0.031485969244480674
+    },
+    {
+     "checkpoint": "ckpt-00639",
+     "val_loss": 0.030726106666855216
+    },
+    {
+     "checkpoint": "ckpt-00852",
+     "val_loss": 0.029299252195325722
+    },
+    {
+     "checkpoint": "ckpt-01065",
+     "val_loss": 0.028468432429061316
+    },
+    {
+     "checkpoint": "ckpt-01278",
+     "val_loss": 0.029102491825783082
+    },
+    {
+     "checkpoint": "ckpt-01491",
+     "val_loss": 0.028592385127180386
+    },
+    {
+     "checkpoint": "ckpt-01704",
+     "val_loss": 0.02966081646059084
+    }
+   ],
+   "dataset": "dataset-v2-merged",
+   "dataset_freeze_sha256": "6a180c7bcee65dcef1abd74b72302e1cdb42d59de94e48bd3231419e8b77d032",
+   "examples": 13628,
+   "final_train_loss_last_update": 0.003067471301619662,
+   "fresh_adapter": false,
+   "grad_accum": 8,
+   "initial_adapter": "C",
+   "learning_rate": 3e-05,
+   "run": "v2-m2-4b-s1",
+   "save_at": [
+    213,
+    426,
+    639,
+    852,
+    1065,
+    1278,
+    1491,
+    1704
+   ],
+   "seed_env": 1,
+   "selected_checkpoint": "ckpt-01065",
+   "train_captures": 9897,
+   "updates": 1704,
+   "validation_curve": [
+    {
+     "update": 0,
+     "val_loss": 0.02227227976650043
+    },
+    {
+     "update": 170,
+     "val_loss": 0.028166027493521453
+    },
+    {
+     "update": 340,
+     "val_loss": 0.029578356054151142
+    },
+    {
+     "update": 510,
+     "val_loss": 0.028498180387975514
+    },
+    {
+     "update": 680,
+     "val_loss": 0.028475639309636955
+    },
+    {
+     "update": 850,
+     "val_loss": 0.02911877515807854
+    },
+    {
+     "update": 1020,
+     "val_loss": 0.02780844680873854
+    },
+    {
+     "update": 1190,
+     "val_loss": 0.03028184304950027
+    },
+    {
+     "update": 1360,
+     "val_loss": 0.028381261438148574
+    },
+    {
+     "update": 1530,
+     "val_loss": 0.02882825897979189
+    },
+    {
+     "update": 1700,
+     "val_loss": 0.029686583683625405
+    },
+    {
+     "update": 1704,
+     "val_loss": 0.02966081646059084
+    }
+   ],
+   "validation_examples": 160,
+   "warmup": 30
+  },
+  "M2-seed2": {
+   "checkpoint_validation": [
+    {
+     "checkpoint": "ckpt-00213",
+     "val_loss": 0.03390972684197497
+    },
+    {
+     "checkpoint": "ckpt-00426",
+     "val_loss": 0.03362584701362685
+    },
+    {
+     "checkpoint": "ckpt-00639",
+     "val_loss": 0.030451540653758907
+    },
+    {
+     "checkpoint": "ckpt-00852",
+     "val_loss": 0.029335412548776134
+    },
+    {
+     "checkpoint": "ckpt-01065",
+     "val_loss": 0.030542039653306766
+    },
+    {
+     "checkpoint": "ckpt-01278",
+     "val_loss": 0.03205493168971019
+    },
+    {
+     "checkpoint": "ckpt-01491",
+     "val_loss": 0.03125549799646082
+    },
+    {
+     "checkpoint": "ckpt-01704",
+     "val_loss": 0.03139801048188611
+    }
+   ],
+   "dataset": "dataset-v2-merged",
+   "dataset_freeze_sha256": "6a180c7bcee65dcef1abd74b72302e1cdb42d59de94e48bd3231419e8b77d032",
+   "examples": 13628,
+   "final_train_loss_last_update": 0.00903933241716004,
+   "fresh_adapter": false,
+   "grad_accum": 8,
+   "initial_adapter": "C",
+   "learning_rate": 3e-05,
+   "run": "v2-m2-4b-s2",
+   "save_at": [
+    213,
+    426,
+    639,
+    852,
+    1065,
+    1278,
+    1491,
+    1704
+   ],
+   "seed_env": 2,
+   "selected_checkpoint": "ckpt-00852",
+   "train_captures": 9897,
+   "updates": 1704,
+   "validation_curve": [
+    {
+     "update": 0,
+     "val_loss": 0.02227227976650043
+    },
+    {
+     "update": 170,
+     "val_loss": 0.029429216811264203
+    },
+    {
+     "update": 340,
+     "val_loss": 0.031170435983420362
+    },
+    {
+     "update": 510,
+     "val_loss": 0.034017995483723557
+    },
+    {
+     "update": 680,
+     "val_loss": 0.02913285874566466
+    },
+    {
+     "update": 850,
+     "val_loss": 0.0292576020396391
+    },
+    {
+     "update": 1020,
+     "val_loss": 0.031336799980533354
+    },
+    {
+     "update": 1190,
+     "val_loss": 0.030793957471526176
+    },
+    {
+     "update": 1360,
+     "val_loss": 0.032161900140890994
+    },
+    {
+     "update": 1530,
+     "val_loss": 0.031122896562660186
+    },
+    {
+     "update": 1700,
+     "val_loss": 0.03131804807857768
+    },
+    {
+     "update": 1704,
+     "val_loss": 0.03139801048188611
+    }
+   ],
+   "validation_examples": 160,
+   "warmup": 30
+  },
+  "M3": {
+   "checkpoint_validation": [
+    {
+     "checkpoint": "ckpt-00213",
+     "val_loss": 0.025509511099903414
+    },
+    {
+     "checkpoint": "ckpt-00426",
+     "val_loss": 0.023895975234790895
+    },
+    {
+     "checkpoint": "ckpt-00639",
+     "val_loss": 0.027031482705168017
+    },
+    {
+     "checkpoint": "ckpt-00852",
+     "val_loss": 0.026485240189568326
+    },
+    {
+     "checkpoint": "ckpt-01065",
+     "val_loss": 0.027147092063184133
+    },
+    {
+     "checkpoint": "ckpt-01278",
+     "val_loss": 0.028820130914241408
+    },
+    {
+     "checkpoint": "ckpt-01491",
+     "val_loss": 0.027895480425341266
+    },
+    {
+     "checkpoint": "ckpt-01704",
+     "val_loss": 0.0272952389090102
+    }
+   ],
+   "dataset": "dataset-v2-merged",
+   "dataset_freeze_sha256": "6a180c7bcee65dcef1abd74b72302e1cdb42d59de94e48bd3231419e8b77d032",
+   "examples": 13628,
+   "final_train_loss_last_update": 0.010404678199847694,
+   "fresh_adapter": true,
+   "grad_accum": 8,
+   "initial_adapter": null,
+   "learning_rate": 3e-05,
+   "run": "v2-m3-9b-s0",
+   "save_at": [
+    213,
+    426,
+    639,
+    852,
+    1065,
+    1278,
+    1491,
+    1704
+   ],
+   "seed_env": null,
+   "selected_checkpoint": "ckpt-00426",
+   "train_captures": 9897,
+   "updates": 1704,
+   "validation_curve": [
+    {
+     "update": 0,
+     "val_loss": 0.04955121567205514
+    },
+    {
+     "update": 170,
+     "val_loss": 0.028734404645106845
+    },
+    {
+     "update": 340,
+     "val_loss": 0.024447003395863434
+    },
+    {
+     "update": 510,
+     "val_loss": 0.02495570616236026
+    },
+    {
+     "update": 680,
+     "val_loss": 0.028564666539006252
+    },
+    {
+     "update": 850,
+     "val_loss": 0.026512203383077675
+    },
+    {
+     "update": 1020,
+     "val_loss": 0.027874626495830675
+    },
+    {
+     "update": 1190,
+     "val_loss": 0.0270271914156676
+    },
+    {
+     "update": 1360,
+     "val_loss": 0.027720810039213672
+    },
+    {
+     "update": 1530,
+     "val_loss": 0.027731780315814265
+    },
+    {
+     "update": 1700,
+     "val_loss": 0.02731209394324322
+    },
+    {
+     "update": 1704,
+     "val_loss": 0.0272952389090102
+    }
+   ],
+   "validation_examples": 160,
+   "warmup": 30
+  }
+ }
+}
