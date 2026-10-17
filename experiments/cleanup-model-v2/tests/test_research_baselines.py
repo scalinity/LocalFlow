@@ -282,7 +282,7 @@ class HarnessTests(unittest.TestCase):
             led["entries"]["other-baseline"] = {"purpose": cost.PURPOSE, "state": "outstanding", "max_usd": 6}
             params = {"model": "claude-sonnet-5-5", "max_tokens": 100, "messages": [{"role": "user", "content": "fake"}]}
             with patch.object(b, "RESEARCH", root / "research"), \
-                    patch.object(batches, "CLAUDE_DIR", root / "claude"), \
+                    patch.object(batches, "CLAUDE_DIR", root / "claude"), patch.object(batches, "LEDGER", root / "claude" / "ledger.json"), \
                     patch.object(batches, "ledger", return_value=led), \
                     patch("v2.common.anthropic_client", return_value=client):
                 wave = b.capped_wave("synthetic-cap", {"r": params}, params["model"])
