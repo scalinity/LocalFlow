@@ -2,7 +2,7 @@
 
 Development set, 431 cases, delivered text, selected checkpoint of each run. Percent values; seed spread is the sample SD over seeds (M1, M2 only).
 Bootstrap: 10000 resamples, seed 20261015. Unjudged rows counted as failures: {'anthropic': 0, 'openai': 0, 'openrouter': 0}.
-Judge runs behind each column: {'anthropic': 'dev-main-anthropic', 'openai': 'dev-swap-openai', 'openrouter': 'dev-main-openrouter'}.
+Judge runs behind each column: {'anthropic': 'dev-main-anthropic', 'openai': 'dev-main-openai', 'openrouter': 'dev-main-openrouter'}.
 
 ## Arm values
 
@@ -14,7 +14,7 @@ Judge runs behind each column: {'anthropic': 'dev-main-anthropic', 'openai': 'de
 | Opus hallucination | 0.0% | 0.5% | 0.2% | 0.0% | 0.0% | 0.0% | 0.0% | 0.0% (sd 0.0) | 0.0% (sd 0.0) | 0.0% |
 | Opus unwanted edit | 0.2% | 4.4% | 8.6% | 1.9% | 0.7% | 0.2% | 0.0% | 0.5% (sd 0.8) | 0.1% (sd 0.1) | 0.5% |
 | Opus cleanup complete | 26.7% | 15.8% | 19.7% | 32.9% | 33.4% | 31.3% | 30.6% | 30.5% (sd 1.0) | 30.2% (sd 0.7) | 30.6% |
-| gpt-6.1-sol judged pass | 83.5% | 73.3% | 77.3% | 91.9% | 93.3% | 91.0% | 88.4% | 89.3% (sd 0.8) | 88.2% (sd 0.9) | 89.1% |
+| gpt-6.1-sol judged pass | 83.8% | 73.1% | 77.0% | 91.6% | 92.6% | 91.0% | 88.6% | 89.2% (sd 1.1) | 88.3% (sd 0.9) | 89.1% |
 | Muse judged pass | 81.7% | 72.2% | 73.8% | 88.4% | 90.5% | 86.5% | 84.9% | 84.8% (sd 0.7) | 84.3% (sd 0.5) | 85.2% |
 | Engine damage | 1.6% | 3.0% | 5.6% | 5.1% | 2.3% | 0.9% | 0.5% | 0.9% (sd 0.5) | 0.9% (sd 0.3) | 0.9% |
 | Engine no-op preserved | 99.6% | 70.4% | 55.7% | 94.1% | 95.7% | 98.0% | 99.6% | 98.3% (sd 1.0) | 99.1% (sd 1.3) | 98.4% |
@@ -65,11 +65,11 @@ Judge runs behind each column: {'anthropic': 'dev-main-anthropic', 'openai': 'de
 
 | Contrast | n | Difference (first better) | 95% interval | Adjusted interval | p | Holm p | Seed SD | Supported |
 |---|---|---|---|---|---|---|---|---|
-| M2 vs A2prime | 431 | -3.63 pts | [-6.19, -1.16] | [-7.19, -0.23] | 0.0040 | 0.0240 | 0.94 pts | no |
-| M1 vs A2 | 431 | -3.94 pts | [-6.34, -1.70] | [-7.35, -0.85] | 0.0012 | 0.0084 | 0.80 pts | no |
-| M1 vs A1 | 431 | -1.62 pts | [-3.02, -0.31] | [-3.56, +0.08] | 0.0092 | 0.0460 | 0.80 pts | no |
-| M1 vs A3 | 431 | +0.93 pts | [-0.31, +2.32] | [-0.77, +2.78] | 0.1744 | 0.6975 | 0.80 pts | no |
-| M3 vs M1 | 431 | -0.23 pts | [-1.78, +1.24] | [-2.40, +1.78] | 0.8151 | 1.0000 | 0.80 pts | no |
+| M2 vs A2prime | 431 | -3.33 pts | [-5.80, -0.93] | [-6.73, -0.00] | 0.0060 | 0.0300 | 0.88 pts | no |
+| M1 vs A2 | 431 | -3.40 pts | [-5.72, -1.24] | [-6.73, -0.31] | 0.0032 | 0.0224 | 1.14 pts | no |
+| M1 vs A1 | 431 | -1.78 pts | [-3.17, -0.46] | [-3.63, -0.08] | 0.0036 | 0.0224 | 1.14 pts | no |
+| M1 vs A3 | 431 | +0.54 pts | [-0.77, +1.93] | [-1.31, +2.50] | 0.4586 | 1.0000 | 1.14 pts | no |
+| M3 vs M1 | 431 | -0.08 pts | [-1.70, +1.47] | [-2.24, +1.93] | 0.9711 | 1.0000 | 1.14 pts | no |
 
 ## Contrasts on openrouter:judged_pass
 
@@ -151,23 +151,23 @@ Judge runs behind each column: {'anthropic': 'dev-main-anthropic', 'openai': 'de
 
 | Contrast | n | Difference (first better) | 95% interval | p |
 |---|---|---|---|---|
-| M1 vs C | 431 | -0.39 pts | [-0.77, -0.08] | 0.0142 |
+| M1 vs C | 431 | -0.46 pts | [-0.85, -0.15] | 0.0058 |
 | M2 vs C | 431 | -0.31 pts | [-0.85, +0.00] | 0.2724 |
 | M3 vs C | 431 | +0.00 pts | [+0.00, +0.00] | 1.0000 |
-| M2 vs base-4b-prod-prompt | 431 | +2.47 pts | [+0.93, +4.18] | 0.0006 |
-| M2 vs M1 | 431 | +0.08 pts | [-0.39, +0.54] | 0.6421 |
+| M2 vs base-4b-prod-prompt | 431 | +2.47 pts | [+0.93, +4.18] | 0.0012 |
+| M2 vs M1 | 431 | +0.15 pts | [-0.31, +0.62] | 0.4434 |
 | A2prime vs C | 431 | -0.46 pts | [-1.16, +0.00] | 0.2676 |
 
 ## Exploratory contrasts on openai:judged_cleanup_complete (outside the pre-declared family; no multiplicity adjustment)
 
 | Contrast | n | Difference (first better) | 95% interval | p |
 |---|---|---|---|---|
-| M1 vs C | 431 | +5.80 pts | [+3.33, +8.28] | 0.0002 |
-| M2 vs C | 431 | +4.72 pts | [+2.17, +7.35] | 0.0002 |
-| M3 vs C | 431 | +5.57 pts | [+2.55, +8.58] | 0.0002 |
-| M2 vs base-4b-prod-prompt | 431 | +13.53 pts | [+9.67, +17.63] | 0.0002 |
-| M2 vs M1 | 431 | -1.08 pts | [-2.09, -0.08] | 0.0372 |
-| A2prime vs C | 431 | +8.58 pts | [+5.57, +11.60] | 0.0002 |
+| M1 vs C | 431 | +5.49 pts | [+3.02, +7.97] | 0.0002 |
+| M2 vs C | 431 | +4.56 pts | [+2.01, +7.19] | 0.0006 |
+| M3 vs C | 431 | +5.34 pts | [+2.55, +8.12] | 0.0006 |
+| M2 vs base-4b-prod-prompt | 431 | +13.61 pts | [+9.67, +17.63] | 0.0002 |
+| M2 vs M1 | 431 | -0.93 pts | [-2.01, +0.15] | 0.0996 |
+| A2prime vs C | 431 | +8.12 pts | [+5.10, +11.14] | 0.0002 |
 
 ## Exploratory contrasts on openai:judged_semantic_damage (outside the pre-declared family; no multiplicity adjustment)
 
@@ -176,7 +176,7 @@ Judge runs behind each column: {'anthropic': 'dev-main-anthropic', 'openai': 'de
 | M1 vs C | 431 | -0.39 pts | [-0.77, -0.08] | 0.0142 |
 | M2 vs C | 431 | -0.31 pts | [-0.85, -0.00] | 0.2724 |
 | M3 vs C | 431 | -0.00 pts | [-0.00, -0.00] | 1.0000 |
-| M2 vs base-4b-prod-prompt | 431 | +0.39 pts | [-0.46, +1.39] | 0.4412 |
+| M2 vs base-4b-prod-prompt | 431 | +0.39 pts | [-0.46, +1.39] | 0.4458 |
 | M2 vs M1 | 431 | +0.08 pts | [-0.39, +0.54] | 0.8273 |
 | A2prime vs C | 431 | -0.23 pts | [-0.70, -0.00] | 0.7437 |
 
@@ -184,11 +184,11 @@ Judge runs behind each column: {'anthropic': 'dev-main-anthropic', 'openai': 'de
 
 | Contrast | n | Difference (first better) | 95% interval | p |
 |---|---|---|---|---|
-| M1 vs C | 431 | -0.39 pts | [-0.77, -0.08] | 0.0142 |
+| M1 vs C | 431 | -0.46 pts | [-0.85, -0.15] | 0.0058 |
 | M2 vs C | 431 | -0.31 pts | [-0.85, -0.00] | 0.2724 |
 | M3 vs C | 431 | -0.00 pts | [-0.00, -0.00] | 1.0000 |
-| M2 vs base-4b-prod-prompt | 431 | +2.47 pts | [+0.93, +4.18] | 0.0006 |
-| M2 vs M1 | 431 | +0.08 pts | [-0.39, +0.54] | 0.8273 |
+| M2 vs base-4b-prod-prompt | 431 | +2.47 pts | [+0.93, +4.18] | 0.0012 |
+| M2 vs M1 | 431 | +0.15 pts | [-0.31, +0.62] | 0.6083 |
 | A2prime vs C | 431 | -0.46 pts | [-1.16, -0.00] | 0.2676 |
 
 ## Exploratory contrasts on openrouter:judged_clean (outside the pre-declared family; no multiplicity adjustment)
@@ -250,7 +250,7 @@ Judge runs behind each column: {'anthropic': 'dev-main-anthropic', 'openai': 'de
 | engine_reference_repair@repair | 22.2% | 18.5% | 18.5% | 40.7% | 33.3% | 25.9% | 29.6% | 29.6% | 29.6% | 25.9% |
 | engine_unnecessary_edit@no_change | 0/35 | 12/35 | 14/35 | 2/35 | 3/35 | 0/35 | 1/35 | 0/35 | 1/35 | 0/35 |
 | openai:judged_cleanup_complete@no_change | 0.0% | 0.0% | 0.0% | 0.0% | 0.0% | 0.0% | 0.0% | 0.0% | 0.0% | 0.0% |
-| openai:judged_cleanup_complete@repair | 51.9% | 55.6% | 70.4% | 81.5% | 88.9% | 81.5% | 63.0% | 74.1% | 69.1% | 77.8% |
+| openai:judged_cleanup_complete@repair | 55.6% | 55.6% | 70.4% | 85.2% | 88.9% | 85.2% | 66.7% | 75.3% | 70.4% | 77.8% |
 | openai:judged_semantic_damage@no_change | 0/35 | 0/35 | 0/35 | 0/35 | 0/35 | 0/35 | 0/35 | 0/35 | 0/35 | 0/35 |
 | openai:judged_semantic_damage@repair | 0/27 | 1/27 | 1/27 | 0/27 | 1/27 | 0/27 | 0/27 | 0/27 | 0/27 | 0/27 |
 | openai:judged_unwanted_edit@no_change | 0/35 | 0/35 | 0/35 | 0/35 | 0/35 | 0/35 | 0/35 | 0/35 | 0/35 | 0/35 |
@@ -317,9 +317,9 @@ no candidate passed the gates
 ```json
 {
  "krippendorff_alpha_judged_pass": {
-  "alpha": 0.779235095761226,
-  "expected_disagreement": 0.24372628178458086,
-  "observed_disagreement": 0.05380620925864545,
+  "alpha": 0.7687306775731032,
+  "expected_disagreement": 0.24412165595018037,
+  "observed_disagreement": 0.05645784996133024,
   "omitted_units": 0,
   "ratings": 18102,
   "reason": null,
@@ -332,6 +332,20 @@ no candidate passed the gates
    "pass_rate_forward": 0.8660921445144183,
    "pass_rate_reversed": 0.8695724229366921,
    "share_changed": 0.020715942989724893
+  },
+  "openai": {
+   "judged_pass_changed": 49,
+   "outputs": 6034,
+   "pass_rate_forward": 0.8708982432880344,
+   "pass_rate_reversed": 0.8717268810076235,
+   "share_changed": 0.008120649651972157
+  },
+  "openrouter": {
+   "judged_pass_changed": 181,
+   "outputs": 6006,
+   "pass_rate_forward": 0.8391608391608392,
+   "pass_rate_reversed": 0.828005328005328,
+   "share_changed": 0.030136530136530136
   }
  },
  "pairwise": {
@@ -342,19 +356,19 @@ no candidate passed the gates
     "observed_agreement": 0.995028173682466
    },
    "hallucination": {
-    "kappa": -0.00024865312891500166,
+    "kappa": 0.0,
     "n": 6034,
-    "observed_agreement": 0.9993370898243288
+    "observed_agreement": 0.9995028173682466
    },
    "judged_clean": {
-    "kappa": 0.40313425875769693,
+    "kappa": 0.3914020199797358,
     "n": 6034,
-    "observed_agreement": 0.9860788863109049
+    "observed_agreement": 0.9854159761352337
    },
    "judged_pass": {
-    "kappa": 0.7730431474174094,
+    "kappa": 0.7642145201196475,
     "n": 6034,
-    "observed_agreement": 0.9482930062976467
+    "observed_agreement": 0.9461385482267153
    },
    "semantic_damage": {
     "kappa": 0.4895900981777904,
@@ -362,9 +376,9 @@ no candidate passed the gates
     "observed_agreement": 0.9948624461385482
    },
    "unwanted_edit": {
-    "kappa": 0.39859877466068494,
+    "kappa": 0.3844357667915415,
     "n": 6034,
-    "observed_agreement": 0.9887305270135897
+    "observed_agreement": 0.9880676168379184
    }
   },
   "anthropic vs openrouter": {
@@ -406,42 +420,44 @@ no candidate passed the gates
     "observed_agreement": 0.999171362280411
    },
    "hallucination": {
-    "kappa": 0.0,
+    "kappa": null,
     "n": 6034,
-    "observed_agreement": 0.9998342724560823
+    "observed_agreement": 1.0
    },
    "judged_clean": {
-    "kappa": 0.6790036945044724,
+    "kappa": 0.6499446231738834,
     "n": 6034,
-    "observed_agreement": 0.9951939012263838
+    "observed_agreement": 0.9945309910507126
    },
    "judged_pass": {
-    "kappa": 0.7687632659380672,
+    "kappa": 0.7461386507436522,
     "n": 6034,
-    "observed_agreement": 0.9421610871726881
+    "observed_agreement": 0.9363606231355651
    },
    "semantic_damage": {
-    "kappa": 0.7189024430823749,
+    "kappa": 0.6787456492369981,
     "n": 6034,
-    "observed_agreement": 0.9976798143851509
+    "observed_agreement": 0.9973483592973152
    },
    "unwanted_edit": {
-    "kappa": 0.6790036945044724,
+    "kappa": 0.6499446231738834,
     "n": 6034,
-    "observed_agreement": 0.9951939012263838
+    "observed_agreement": 0.9945309910507126
    }
   }
  },
  "pass_rate": {
   "anthropic": 0.8660921445144183,
-  "openai": 0.8717268810076235,
+  "openai": 0.8708982432880344,
   "openrouter": 0.8360954590652967
  },
  "unjudged_outputs": {
   "anthropic": 0,
   "anthropic:swapped": 0,
   "openai": 0,
-  "openrouter": 0
+  "openai:swapped": 0,
+  "openrouter": 0,
+  "openrouter:swapped": 28
  }
 }
 ```

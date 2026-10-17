@@ -19,7 +19,7 @@ M2 minus C on Opus semantic damage is 0.08 points worse with a 95 percent interv
 
 ## What a noninferiority reading recommends (post hoc, labeled as such)
 
-The rule as written was strict. A reading that asks "is the candidate not worse than C within sampling noise" would pass M1 and M2 on the damage gate. Under that reading, with every other gate passed and the OpenAI cross-check satisfied (gpt-6.1-sol judged pass: M2 88.2 percent, C 83.5), the highest-scoring survivor is M1 (89.2) and M2 (88.9) is tied with it within seed spread (SD 1.1 and 0.7), so the tie rule prefers **M2** (it continues C's adapter and has the lowest unwanted-edit rate, 0.1 percent).
+The rule as written was strict. A reading that asks "is the candidate not worse than C within sampling noise" would pass M1 and M2 on the damage gate. Under that reading, with every other gate passed and the OpenAI cross-check satisfied (gpt-6.1-sol judged pass: M2 88.3 percent, C 83.8), the highest-scoring survivor is M1 (89.2) and M2 (88.9) is tied with it within seed spread (SD 1.1 and 0.7), so the tie rule prefers **M2** (it continues C's adapter and has the lowest unwanted-edit rate, 0.1 percent).
 
 **Recommendation: M2 (4B continued from C, full v2 data, seed 0, selected checkpoint 426) is the candidate to replace C**, on these grounds: judged pass 3.5 points above C (interval excludes zero), engine damage 0.9 percent against C's 1.6, identical latency and size, consistent across three seeds.
 This is a recommendation beyond the pre-registered rule. It stands only if the author accepts the noninferiority reading, and it should be confirmed by:
