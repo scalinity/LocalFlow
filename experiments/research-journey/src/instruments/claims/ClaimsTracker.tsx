@@ -80,7 +80,7 @@ export default function ClaimsTracker({ depth }: InstrumentProps) {
         <h4 id="claims-stage-2" className="label">
           The final test’s five claims (sealed October 17)
         </h4>
-        <p className="caption mt-1 text-[13px]">Each needs both final graders to agree, at 99% confidence. None is decided yet.</p>
+        <p className="caption mt-1 text-[13px]">Each judged claim needed both final graders to agree, at 99% confidence. The registered analysis decided all five on October 18.</p>
         <ol className="mt-3">
           {stage2.map((c) => (
             <Row key={c.id} claim={c} depth={depth} focused={at === c.id} />
