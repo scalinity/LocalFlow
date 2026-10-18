@@ -1,0 +1,14 @@
+{
+ "note": "H5 on the development set: M2 (seed 0, ck426) read from the H5 pass beside the two few-shot systems (DEVIATIONS 2026-10-17)",
+ "arms": {
+  "M2": [
+   "M2s0-ck426"
+  ],
+  "sonnet-5-5-fewshot": [
+   "sonnet-5-5-fewshot"
+  ],
+  "opus-5-5-fewshot": [
+   "opus-5-5-fewshot"
+  ]
+ }
+}

@@ -34,6 +34,16 @@ $PY experiments/cleanup-model-v2/tools/research_select.py docs/v2/research/paper
 $PY experiments/cleanup-model-v2/tools/research_report.py docs/v2/research/paper/results
 ```
 
+H5 on the development set (pre-registered; its own judge pass shows M2 seed 0 beside the two few-shot systems, see DEVIATIONS):
+
+```sh
+$PY experiments/cleanup-model-v2/tools/research_analysis.py docs/v2/research/paper/data/arms_h5.json \
+    --out-dir docs/v2/research/paper/results/h5_development \
+    --judge anthropic=$A/judge/dev-h5-anthropic/verdicts.jsonl \
+    --judge openai=$A/judge/openai/dev-h5-openai/verdicts.jsonl \
+    --judge openrouter=$A/judge/openrouter/dev-h5-openrouter/verdicts.jsonl
+```
+
 Supplementary analyses (post hoc; see DEVIATIONS):
 
 ```sh
@@ -44,7 +54,7 @@ $PY experiments/cleanup-model-v2/tools/research_categories.py docs/v2/research/p
 $PY experiments/cleanup-model-v2/tools/research_checkpoints.py docs/v2/research/paper/results/checkpoints.json
 ```
 
-Judge runs used (names under `$A/judge`): `dev-main-*`, `dev-swap-*`, `dev-final-*`, `dev-norm-sel-anthropic`, `dev-norm-final-anthropic`; commands are `python -m v2.judge CASES SYSTEMS --prefix development --role development --backend B --name NAME [--swap-order]`; a rerun of the same command resumes.
+Judge runs used (names under `$A/judge`): `dev-main-*`, `dev-swap-*`, `dev-final-*`, `dev-h5-*`, `dev-norm-sel-anthropic`, `dev-norm-final-anthropic`; commands are `python -m v2.judge CASES SYSTEMS --prefix development --role development --backend B --name NAME [--swap-order]`; a rerun of the same command resumes.
 Every judge run is complete. A run whose collecting process stopped is resumed by rerunning its identical command; check the provider's batch status first, since a batch can finish while its collector is down.
 
 The analysis uses `random.Random(20261015)` and 10,000 resamples; both are fixed by the pre-registration.

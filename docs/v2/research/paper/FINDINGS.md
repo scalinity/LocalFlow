@@ -20,11 +20,24 @@ Development set, 431 cases. "Selected" is the checkpoint chosen by the pre-regis
 6. **Contrast rows (H2) show no benefit.** A1 (without contrast rows) is not worse than M1: judged pass 90.0 against 89.2 (Opus, M1 minus A1 −0.8 points, Holm 0.71); gpt-6.1-sol gives M1 minus A1 −1.8 points (Holm 0.022, adjusted interval −3.6 to −0.1, so on that judge A1 is ahead); engine damage is the same. The development set has too few list and question cases to test H2 (35 no-change, 27 repair).
 7. **Verifier filtering (H3) shows no benefit.** A3 (vetoed rows unfiltered) matches M1 within seed spread on the primary and damage metrics; no contrast is supported (Opus M1 minus A3 −0.1 points, gpt-6.1-sol +0.5).
 8. **The 9B (H4) shows no benefit.** M3 equals M1 on every endpoint (judged pass 89.1 against 89.2) at 1.6 times the latency and 2.1 times the size.
-9. **H5 is not tested.** The Claude few-shot systems did not run (cost gate; OPEN_DECISIONS 1).
+9. **H5 was not tested on this date.** The Claude few-shot systems had not run (cost gate; OPEN_DECISIONS 1). See the 2026-10-17 entry.
 10. **Latency and size** (clean sequential pass, `results/latency.json`): every 4B system has median 1.76 to 1.79 s (p95 6.7 to 7.2 s), first token 0.99 s, peak memory 4.3 GB; the 9B 2.88 s (p95 11.3), first token 1.62 s, 6.9 GB.
     Delivered text on every re-run equals the earlier concurrent run on all 431 cases. The base models fall back to the unchanged input on 27.6 percent (4B) and 31.8 percent (9B) of cases; the trained models on 1.9 to 6.5 percent.
 11. **Judges.** The three vendors agree on the judged pass rate: pairwise observed agreement 93.6 to 94.8 percent, kappa 0.76 (Opus and gpt-6.1-sol), 0.80 (Opus and Muse), 0.75 (gpt-6.1-sol and Muse), Krippendorff alpha 0.77 over all three (`results/judge_reliability.json`). Agreement on the no-flag rate is lower (kappa 0.39 to 0.65) because flags are rare. Muse's pass rates are lower (C 81.7, M1 84.8, M2 84.3, M3 85.2, A2 90.5, A2prime 88.4) but rank the arms the same way: the earlier-data models ahead of the new-data models, all retrained arms ahead of C. Reversing the presentation order changed the judged pass of 2.1 percent of outputs for Opus (86.6 against 87.0 percent pass rate), 0.8 percent for gpt-6.1-sol (87.1 against 87.2) and 3.0 percent for Muse (83.9 against 82.8, over the 6,006 outputs judged in both orders).
 12. **Checkpoint rule.** The lowest validation loss fell early (12 to 63 percent of training); the final checkpoint has no more engine damage than the selected one in 9 of 11 runs (`results/checkpoints.json`).
+
+## 2026-10-17: H5 on the development set
+
+From `results/h5_development/analysis.json`: one judge pass showing M2 (seed 0, checkpoint 426) beside the two few-shot systems, under all three judges, every output judged.
+
+13. **H5 is not supported: M2 is noninferior to Opus 5.5 few-shot but not shown noninferior to Sonnet 5.5 few-shot.**
+    Judged pass, M2 / Sonnet few-shot / Opus few-shot: Opus judge 90.3 / 88.6 / 81.4 percent; gpt-6.1-sol 88.6 / 88.9 / 81.9; Muse 84.7 / 87.9 / 77.7.
+    - Against Opus few-shot, M2 is ahead under every judge (+8.8, +6.7 and +7.0 points); each adjusted interval excludes zero (lower ends +3.7, +2.3 and +1.6), so noninferiority holds.
+      H5 registered only noninferiority, so M2's lead is an observation, not a supported superiority claim.
+    - Against Sonnet few-shot the differences are +1.6 (Opus judge), −0.2 (gpt-6.1-sol) and −3.3 points (Muse). The adjusted intervals' lower ends are −3.02, −4.64 and −8.35 against the −3.0 margin: the primary judge misses by 0.02 points, and 431 cases leave the intervals about ±4 to 5 points wide.
+14. **On the engine's checks M2 is ahead of both few-shot systems** (seed 0): self-correction success 91.3 percent against 62.3 (Sonnet) and 39.1 (Opus); no-op preserved 97.6 against 84.6 and 95.7; repair success 36.2 against 31.6 and 27.1; engine damage 0.7 against 1.9 and 1.2; Opus-judged unwanted edits 0.5 against 1.9 and 2.3.
+    Opus-judged semantic damage is lowest for Sonnet few-shot: 0.2 percent against M2's 0.5 and Opus few-shot's 0.9.
+    M2 runs on the device with no per-use cost; the few-shot systems' API costs are in the Claude ledger and not yet in `results/`.
 
 ## Model selection
 
