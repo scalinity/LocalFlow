@@ -9,7 +9,9 @@
     "build": "tsc --noEmit && vite build",
     "preview": "vite preview",
     "snapshot": "node scripts/snapshot.mjs",
-    "private-examples": "node scripts/private-examples.mjs"
+    "private-examples": "node scripts/private-examples.mjs",
+    "tauri": "tauri",
+    "app": "tauri dev --runner \"$PWD/scripts/tauri-runner.sh\""
   },
   "dependencies": {
     "@fontsource-variable/newsreader": "5.3.0",
@@ -22,6 +24,7 @@
   },
   "devDependencies": {
     "@tailwindcss/vite": "4.3.3",
+    "@tauri-apps/cli": "2.12.3",
     "@types/d3-array": "3.2.2",
     "@types/d3-scale": "4.0.9",
     "@types/d3-shape": "3.2.0",

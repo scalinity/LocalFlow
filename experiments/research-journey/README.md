@@ -11,6 +11,14 @@ npm run private-examples   # optional: real practice cases, local only (see belo
 npm run dev                # http://127.0.0.1:5181
 ```
 
+## Open it as a desktop window
+
+```sh
+npm run app       # the journey in its own window, with no title bar
+```
+
+The window is a [Tauri](https://tauri.app) shell around the dev server, so edits still reload live. It needs the Rust toolchain; the first start compiles the shell, which takes a few minutes. `scripts/tauri-runner.sh` starts it under the name “LocalFlow Research Journey”, because macOS names a program that is not in an app bundle after its file, and a Rust binary’s file name cannot contain spaces. Source links open in the default browser.
+
 ## Build the static site
 
 ```sh

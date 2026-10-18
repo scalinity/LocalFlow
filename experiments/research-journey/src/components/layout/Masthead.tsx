@@ -14,8 +14,9 @@ export function Masthead() {
     { to: hrefFor(['glossary'], keep), label: 'Glossary', active: path[0] === 'glossary' },
   ]
   return (
-    <header className="masthead z-40 border-b border-rule lg:sticky lg:top-0">
-      <div className="mx-auto flex max-w-[1480px] flex-wrap items-center gap-x-6 gap-y-3 px-4 py-3 sm:px-6 lg:flex-nowrap">
+    // In the desktop window the masthead's empty space moves the window (data-tauri-drag-region).
+    <header data-tauri-drag-region className="masthead z-40 border-b border-rule lg:sticky lg:top-0">
+      <div data-tauri-drag-region className="masthead-row mx-auto flex max-w-[1480px] flex-wrap items-center gap-x-6 gap-y-3 px-4 py-3 sm:px-6 lg:flex-nowrap">
         <Link to={hrefFor([], keep)} className="group mr-auto flex items-baseline gap-2.5" aria-label="LocalFlow research journey, opening page">
           <span className="font-serif text-[22px] font-[560] tracking-[-0.01em] text-ink" style={{ fontVariationSettings: "'opsz' 30" }}>
             LocalFlow

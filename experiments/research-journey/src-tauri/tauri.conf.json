@@ -1,0 +1,51 @@
+{
+  "$schema": "https://schema.tauri.app/config/2",
+  "productName": "LocalFlow Research Journey",
+  "version": "0.1.0",
+  "identifier": "ai.localflow.research-journey",
+  "build": {
+    "beforeDevCommand": "npm run dev",
+    "devUrl": "http://127.0.0.1:5181",
+    "frontendDist": "../dist",
+    "beforeBuildCommand": "npm run build"
+  },
+  "app": {
+    "windows": [
+      {
+        "label": "main",
+        "title": "LocalFlow Research Journey",
+        "width": 1320,
+        "height": 900,
+        "minWidth": 380,
+        "minHeight": 560,
+        "titleBarStyle": "Overlay",
+        "hiddenTitle": true,
+        "trafficLightPosition": {
+          "x": 24,
+          "y": 18
+        },
+        "create": false
+      }
+    ],
+    "security": {
+      "csp": null
+    }
+  },
+  "bundle": {
+    "active": true,
+    "targets": [
+      "app"
+    ],
+    "icon": [
+      "icons/32x32.png",
+      "icons/128x128.png",
+      "icons/128x128@2x.png",
+      "icons/icon.icns"
+    ],
+    "category": "Education",
+    "shortDescription": "An interactive account of the LocalFlow cleanup-model research.",
+    "macOS": {
+      "signingIdentity": "-"
+    }
+  }
+}

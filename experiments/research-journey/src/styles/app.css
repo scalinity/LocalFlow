@@ -986,3 +986,20 @@
 ::view-transition-new(root) {
   animation-duration: 220ms;
 }
+
+/* The desktop window has no title bar, and its window buttons sit in the top-left corner.
+   Unlayered, so these win over the utility classes they adjust: the masthead stays pinned as
+   the drag handle, its row starts below the buttons, and the chapter list sits that much lower. */
+:root[data-shell='tauri'] .masthead {
+  position: sticky;
+  top: 0;
+  -webkit-user-select: none;
+  user-select: none;
+}
+:root[data-shell='tauri'] .masthead-row {
+  padding-top: 20px;
+}
+:root[data-shell='tauri'] [data-spine-scroll] {
+  top: 92px;
+  max-height: calc(100vh - 108px);
+}

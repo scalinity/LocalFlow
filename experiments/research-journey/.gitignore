@@ -3,3 +3,5 @@ dist/
 .vite/
 # Real development examples (Claude-written case text): local only, never committed or published.
 src/data/private/
+src-tauri/target/
+src-tauri/gen/

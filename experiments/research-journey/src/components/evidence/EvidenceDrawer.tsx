@@ -34,7 +34,8 @@ export function EvidenceDrawer() {
   const evidence = id ? EVIDENCE[id] : undefined
   const d = params.get('d')
 
-  const onKeyDown = (event: KeyboardEvent) => {
+  // Escape is handled on key up: in the desktop window WebKit consumes its key down.
+  const onKeyUp = (event: KeyboardEvent) => {
     if (event.key === 'Escape') closeEvidence()
   }
 
@@ -46,7 +47,7 @@ export function EvidenceDrawer() {
           role="dialog"
           aria-modal="false"
           aria-labelledby="evidence-title"
-          onKeyDown={onKeyDown}
+          onKeyUp={onKeyUp}
           initial={{ x: 40, opacity: 0 }}
           animate={{ x: 0, opacity: 1 }}
           exit={{ x: 40, opacity: 0 }}

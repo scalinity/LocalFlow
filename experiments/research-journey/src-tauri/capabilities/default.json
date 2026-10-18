@@ -1,0 +1,1 @@
+{"identifier":"default","description":"Window dragging from the masthead only.","windows":["main"],"permissions":["core:window:allow-start-dragging"]}
