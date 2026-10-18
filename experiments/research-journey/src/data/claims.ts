@@ -3,7 +3,8 @@ import type { Claim } from './types'
 /**
  * The questions the study asked. Stage 1 (H1–H5) was tested on the development set;
  * Stage 2 (C1–C5, plus H5 again) was tested once on the sealed final set; its entries
- * follow results/stage2/analysis.json, and a test keeps them in step with it.
+ * follow results/stage2/analysis.json, and tests hold each outcome, estimate and interval
+ * to it.
  */
 export const CLAIMS: Claim[] = [
   {

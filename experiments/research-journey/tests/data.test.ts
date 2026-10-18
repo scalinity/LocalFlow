@@ -12,6 +12,20 @@ import snapshotJson from '../src/data/generated/snapshot.json'
 
 const allText = CHAPTERS.flatMap((c) => c.ideas.flatMap((i) => Object.values(i.levels)))
 
+// The committed result files the snapshot is built from, as text, keyed by their path from the repository root.
+const RESULT_FILES = Object.fromEntries(
+  Object.entries(import.meta.glob('../../../docs/v2/research/paper/**/*.json', { query: '?raw', import: 'default', eager: true }) as Record<string, string>).map(
+    ([path, text]) => [path.replace('../../../', ''), text],
+  ),
+)
+const sha256 = async (text: string) =>
+  [...new Uint8Array(await crypto.subtle.digest('SHA-256', new TextEncoder().encode(text)))].map((b) => b.toString(16).padStart(2, '0')).join('')
+// A share as the text writes it, in points to one decimal: +3.5, −1.6, 0.0.
+const signed = (v: number) => {
+  const p = (v * 100).toFixed(1)
+  return /^-?0\.0$/.test(p) ? '0.0' : `${v > 0 ? '+' : '−'}${Math.abs(v * 100).toFixed(1)}`
+}
+
 describe('every reference resolves', () => {
   it('cites only sources that exist', () => {
     const cited = new Set<string>([
@@ -95,11 +109,35 @@ describe('status is told honestly', () => {
     expect(final('H5')).toBe(both ? 'supported' : 'not-supported')
   })
 
+  it('quotes every final-set estimate and interval as the analysis recorded it', () => {
+    const recorded = snapshotJson.final.stage2 as Record<string, { components: { estimate: number; ci99: number[] }[] }>
+    const closing = Object.values(CHAPTERS.find((c) => c.id === 'next')!.ideas.flatMap((i) => Object.values(i.levels))).join(' ')
+    for (const [key, claim] of Object.entries(recorded)) {
+      const summary = CLAIMS.find((c) => c.id === key.split(' ')[0])!.results.find((r) => r.set === 'final')!.summary
+      for (const c of claim.components) {
+        const interval = `${signed(c.ci99[0]!)} to ${signed(c.ci99[1]!)}`
+        expect(summary, `${key} interval`).toContain(interval)
+        expect(closing, `${key} interval in the closing chapter`).toContain(interval)
+        expect(summary, `${key} estimate`).toContain(Math.abs(c.estimate * 100).toFixed(1))
+      }
+    }
+  })
+
   it('keeps the evening in time order within each lane', () => {
     for (const lane of TONIGHT) {
       for (const span of lane.spans) {
         if (span.end) expect(new Date(span.end) >= new Date(span.start), span.id).toBe(true)
       }
+    }
+  })
+})
+
+describe('the snapshot matches its sources', () => {
+  it('was generated from the committed result files as they stand', async () => {
+    for (const [key, source] of Object.entries(snapshotJson.sources as Record<string, { path: string; sha256: string }>)) {
+      const text = RESULT_FILES[source.path]
+      expect(text, `${key}: ${source.path}`).toBeDefined()
+      expect(await sha256(text!), `${key} is stale: run npm run snapshot`).toBe(source.sha256)
     }
   })
 })
