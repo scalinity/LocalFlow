@@ -110,7 +110,7 @@ describe('status is told honestly', () => {
   })
 
   it('quotes every final-set estimate and interval as the analysis recorded it', () => {
-    const recorded = snapshotJson.final.stage2 as Record<string, { components: { estimate: number; ci99: number[] }[] }>
+    const recorded = snapshotJson.final.stage2 as Record<string, { components: { estimate: number; ci99: number[]; ci99MissingAgainstClaim?: number[] }[] }>
     const closing = Object.values(CHAPTERS.find((c) => c.id === 'next')!.ideas.flatMap((i) => Object.values(i.levels))).join(' ')
     for (const [key, claim] of Object.entries(recorded)) {
       const summary = CLAIMS.find((c) => c.id === key.split(' ')[0])!.results.find((r) => r.set === 'final')!.summary
@@ -119,6 +119,9 @@ describe('status is told honestly', () => {
         expect(summary, `${key} interval`).toContain(interval)
         expect(closing, `${key} interval in the closing chapter`).toContain(interval)
         expect(summary, `${key} estimate`).toContain(Math.abs(c.estimate * 100).toFixed(1))
+        // A refused case is tested again counted against the claim; that interval is quoted too.
+        if (c.ci99MissingAgainstClaim)
+          expect(summary, `${key} interval with the missing case`).toContain(`${signed(c.ci99MissingAgainstClaim[0]!)} to ${signed(c.ci99MissingAgainstClaim[1]!)}`)
       }
     }
   })

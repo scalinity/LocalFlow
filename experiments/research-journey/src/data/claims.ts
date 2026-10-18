@@ -63,7 +63,7 @@ export const CLAIMS: Claim[] = [
         summary: 'Ahead of Opus few-shot under every judge (+8.8, +6.7, +7.0 points; non-inferior). Level with Sonnet few-shot (+1.6, −0.2, −3.3), but the adjusted lower ends (−3.02, −4.64, −8.35) do not clear −3.0, so H5 as a whole is not supported.',
         evidence: ['results-h5', 'findings'],
       },
-      { set: 'final', status: 'not-supported', summary: 'Against Claude Opus with five examples, supported: M2 +1.3 points under Sonnet (99% interval −1.6 to +4.0) and +5.5 under gpt-6.1-sol (+2.4 to +8.5); its one refused case, counted against the claim, changes nothing (−1.5 to +4.1). Against Claude Sonnet, not supported: −1.6 under Sonnet (−4.6 to +1.5), whose lower end misses −3.0, and +0.8 under gpt-6.1-sol (−1.7 to +3.4).', evidence: ['results-stage2'] },
+      { set: 'final', status: 'not-supported', summary: 'Against Claude Opus with five examples, supported: M2 +1.3 points under Sonnet (99% interval −1.6 to +4.0) and +5.5 under gpt-6.1-sol (+2.4 to +8.5); its one refused case, counted against the claim, changes nothing (under Sonnet −1.5 to +4.1, under gpt-6.1-sol +2.5 to +8.6). Against Claude Sonnet, not supported: −1.6 under Sonnet (−4.6 to +1.5), whose lower end misses −3.0, and +0.8 under gpt-6.1-sol (−1.7 to +3.4).', evidence: ['results-stage2'] },
     ],
     evidence: ['prereg', 'amendment-1'],
   },
