@@ -15,11 +15,16 @@ const TITLE: Record<string, string> = {
   'H5 sonnet-5-5-fewshot': 'H5: within 3 points of Claude Sonnet',
 }
 const ORDER = ['C1', 'C2', 'C3', 'C4', 'C5', 'H5 opus-5-5-fewshot', 'H5 sonnet-5-5-fewshot']
+// Spoken names: both H5 claims must stay distinct when read without their headings.
+const NAME: Record<string, string> = { 'H5 opus-5-5-fewshot': 'H5 against Claude Opus', 'H5 sonnet-5-5-fewshot': 'H5 against Claude Sonnet' }
 const LO = -0.06
 const HI = 0.2
 
 const who = (name: string) => (name.endsWith('(anthropic)') ? 'Sonnet' : name.endsWith('(openai)') ? 'GPT' : 'Rule engine')
+const gradedBy = (name: string) => (who(name) === 'Rule engine' ? 'by the rule engine' : `graded by ${who(name)}`)
 const at = (v: number) => `${((v - LO) / (HI - LO)) * 100}%`
+// Marks and interval ends are exact positions, so zero reads as 0.0, not as the formatter's ±0.0 for no difference.
+const exact = (v: number) => pts(v).replace('±', '')
 const span = ([a, b]: [number, number]) => ({ left: at(a), width: `${((b - a) / (HI - LO)) * 100}%` })
 
 export function FinalClaims({ depth }: { depth: number }) {
@@ -27,8 +32,8 @@ export function FinalClaims({ depth }: { depth: number }) {
   const [hot, setHot] = useState<string | null>(null)
   const claims = ORDER.flatMap((id) => (final.stage2?.[id] ? [{ id, ...final.stage2[id]! }] : []))
   const describe = (claim: string, c: Stage2Component) =>
-    `${claim}, ${who(c.name)}: ${pts(c.estimate)}, 99% interval ${pts(c.ci99[0])} to ${pts(c.ci99[1])}; the pass mark is ${pts(c.threshold)}, ${c.outcome === 'pass' ? 'and the whole interval clears it' : 'and the interval reaches past it, so this part does not pass'}.`
-  const active = claims.flatMap((cl) => cl.components.map((c, k) => ({ key: `${cl.id}-${k}`, text: describe(cl.id.replace(/ .*/, ''), c) }))).find((r) => r.key === hot)
+    `${claim}, ${gradedBy(c.name)}: ${pts(c.estimate)}, 99% interval ${exact(c.ci99[0])} to ${exact(c.ci99[1])}; the pass mark is ${exact(c.threshold)}, ${c.outcome === 'pass' ? 'and the whole interval clears it' : 'and the interval reaches past it, so this part does not pass'}.`
+  const active = claims.flatMap((cl) => cl.components.map((c, k) => ({ key: `${cl.id}-${k}`, text: describe(NAME[cl.id] ?? cl.id, c) }))).find((r) => r.key === hot)
 
   return (
     <div>
@@ -47,7 +52,7 @@ export function FinalClaims({ depth }: { depth: number }) {
                   key={key}
                   tabIndex={0}
                   role="img"
-                  aria-label={describe(cl.id.replace(/ .*/, ''), c)}
+                  aria-label={describe(NAME[cl.id] ?? cl.id, c)}
                   onMouseEnter={() => setHot(key)}
                   onMouseLeave={() => setHot(null)}
                   onFocus={() => setHot(key)}
