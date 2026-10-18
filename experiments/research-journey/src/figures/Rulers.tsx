@@ -99,7 +99,8 @@ export default function Rulers({ depth }: InstrumentProps) {
         <>
           <ul className="flex flex-col gap-3">
             {rulers.map((r) => {
-              const passes = r.interval ? r.interval[0] > r.threshold : r.estimate !== null && r.estimate > r.threshold
+              // A pass needs a whole interval clear of the mark; a row with no interval stays neutral.
+              const passes = r.interval !== null && r.interval[0] > r.threshold
               return (
                 <li key={r.id} onMouseEnter={() => setHot(r.id)} onMouseLeave={() => setHot(null)}>
                   <p className="flex flex-wrap items-baseline justify-between gap-x-3 text-[13.5px]">
