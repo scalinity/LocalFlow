@@ -1,0 +1,96 @@
+/*
+ * Design tokens, taken from LocalFlow's own design system (frontend/src/styles/tokens.css)
+ * and extended for a reading publication. Light and dark are separate selections, each
+ * checked against its own surface; nothing is derived by inversion.
+ *
+ * Proof marks are the publication's visual language: the research is about judging edits
+ * to text, so deletions and insertions get LocalFlow's danger red and accent teal.
+ * Model families use a categorical palette checked with the dataviz validator
+ * (lightness band, chroma floor, colour-blind and normal-vision separation, contrast).
+ */
+:root {
+  color-scheme: light;
+  --paper: #f5f4f1; /* LocalFlow shell */
+  --sheet: #fcfcfb; /* LocalFlow canvas */
+  --well: #efebe3; /* LocalFlow stone */
+  --ink: #1a1a1a;
+  --ink-2: #5c5852;
+  --ink-3: #736e67;
+  --rule: #e7e4de; /* hairline */
+  --rule-strong: #d6d1c7; /* divider */
+
+  --del: #a63d2f; /* LocalFlow danger, as the deletion mark */
+  --del-wash: #a63d2f14;
+  --ins: #195c5d; /* LocalFlow accent teal, as the insertion and annotation mark */
+  --ins-wash: #195c5d17;
+
+  /* Claim status, always with a mark and a word. "Not supported" is neutral: a null result is a finding. */
+  --good: #2e6f5e;
+  --bad: #5c5852;
+  --warn: #8a6212;
+  --wait: #736e67;
+
+  /* Model families (validated categorical palette). C and the untuned models are neutral, told apart by labels. */
+  --fam-new: #00907f;
+  --fam-earlier: #b26a22;
+  --fam-frontier: #8a5ab5;
+  --fam-installed: #1a1a1a;
+  --fam-untuned: #a39b91;
+
+  --shadow: 0 1px 0 #0000000a, 0 14px 34px -20px #2a221a3d;
+  --ease: cubic-bezier(0.2, 0.7, 0.2, 1);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme='light']) {
+    color-scheme: dark;
+    --paper: #141311;
+    --sheet: #1e1d1a;
+    --well: #282521;
+    --ink: #f3f0ea;
+    --ink-2: #aaa59d;
+    --ink-3: #908b83;
+    --rule: #34312c;
+    --rule-strong: #454038;
+    --del: #e08a78;
+    --del-wash: #e08a7824;
+    --ins: #55aaa4;
+    --ins-wash: #55aaa424;
+    --good: #74c2a6;
+    --bad: #aaa59d;
+    --warn: #d9ab55;
+    --wait: #908b83;
+    --fam-new: #22a096;
+    --fam-earlier: #c47f33;
+    --fam-frontier: #a979d6;
+    --fam-installed: #f3f0ea;
+    --fam-untuned: #7c766e;
+    --shadow: 0 1px 0 #ffffff08, 0 18px 40px -22px #000000a6;
+  }
+}
+
+:root[data-theme='dark'] {
+  color-scheme: dark;
+  --paper: #141311;
+  --sheet: #1e1d1a;
+  --well: #282521;
+  --ink: #f3f0ea;
+  --ink-2: #aaa59d;
+  --ink-3: #908b83;
+  --rule: #34312c;
+  --rule-strong: #454038;
+  --del: #e08a78;
+  --del-wash: #e08a7824;
+  --ins: #55aaa4;
+  --ins-wash: #55aaa424;
+  --good: #74c2a6;
+  --bad: #aaa59d;
+  --warn: #d9ab55;
+  --wait: #908b83;
+  --fam-new: #22a096;
+  --fam-earlier: #c47f33;
+  --fam-frontier: #a979d6;
+  --fam-installed: #f3f0ea;
+  --fam-untuned: #7c766e;
+  --shadow: 0 1px 0 #ffffff08, 0 18px 40px -22px #000000a6;
+}
