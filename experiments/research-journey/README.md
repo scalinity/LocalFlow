@@ -17,7 +17,7 @@ npm run dev                # http://127.0.0.1:5181
 npm run app       # the journey in its own window, with no title bar
 ```
 
-The window is a [Tauri](https://tauri.app) shell around the dev server, so edits still reload live. It needs the Rust toolchain; the first start compiles the shell, which takes a few minutes. `scripts/tauri-runner.sh` starts it under the name “LocalFlow Research Journey”, because macOS names a program that is not in an app bundle after its file, and a Rust binary’s file name cannot contain spaces. Source links open in the default browser.
+The window is a [Tauri](https://tauri.app) shell around the dev server, so edits still reload live. It needs the Rust toolchain; the first start compiles the shell, which takes a few minutes. `scripts/tauri-runner.sh` starts it under the name “LocalFlow Research Journey”, because macOS names a program that is not in an app bundle after its file, and a Rust binary’s file name cannot contain spaces. Source links open in the default browser. `npm run tauri build` packs `dist/` into the app, so the private-examples rule below applies to it too: an app built while `src/data/private/` exists contains that case text, so keep it on this machine.
 
 ## Build the static site
 
@@ -31,7 +31,7 @@ The build uses relative paths and hash routes, so `dist/` works from any folder 
 ## Update the data
 
 - `npm run snapshot` rebuilds `src/data/generated/snapshot.json` and `meta.json` from the committed result files in `docs/v2/research/paper/results/` and records each source's SHA-256 and the commit. It copies aggregates only.
-- `npm run private-examples` writes `src/data/private/examples.json` from the development artifacts on this machine: a few real practice cases with their recorded answers and verdicts. The case text was written by Claude and is not released, so this folder is git-ignored. A build made while it exists contains that text: do not publish such a `dist/`. Without it, every instrument shows an illustration and says so.
+- `npm run private-examples` writes `src/data/private/examples.json` from the development artifacts on this machine: a few real practice cases with their recorded answers and verdicts. The case text was written by Claude and is not released, so this folder is git-ignored. A build made while it exists contains that text: do not publish such a `dist/`, or a desktop app built from it. Without it, every instrument shows an illustration and says so.
 - The final run's timeline (`src/data/stage2.ts`) comes from run logs that live outside the repository; update its statuses, `RUN_SNAPSHOT_AT` and `RUN_STATE` when the run moves on.
 
 ## How it is built
