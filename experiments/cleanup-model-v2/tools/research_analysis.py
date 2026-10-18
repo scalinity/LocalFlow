@@ -70,7 +70,10 @@ def judged_metrics(verdict):
 def engine_metrics(cases, art, label, prefix="development"):
     from v2 import score
     rows = {r["case_id"]: r for r in read_jsonl(art / "eval" / f"{prefix}-{label}.jsonl")}
-    if set(rows) != set(cases):
+    meta = art / "eval" / f"{prefix}-{label}.meta.json"
+    refused = set(json.loads(meta.read_text()).get("refused", {}).values()) if meta.exists() else set()
+    # A provider refusal leaves that case missing (AMENDMENT-2.md); any other gap leaves the run unscored.
+    if set(rows) | refused != set(cases) or set(rows) & refused:
         return None  # an incomplete evaluation is never scored as if it were whole
     out = {}
     for cid, case in cases.items():
@@ -420,6 +423,9 @@ def main():
     if args.stage2:
         # On the final set the amendment's claims replace the development contrast family.
         results["stage2"] = stage2(vectors, sorted(cases))
+        # Muse grades beside the deciding judges and decides nothing (AMENDMENT-2.md).
+        if any(spec.startswith("openrouter=") for spec in args.judge):
+            results["stage2_reported_openrouter"] = stage2(vectors, sorted(cases), stage2_components(("openrouter",)))
     else:
         results["contrasts"] = {}
         for metric in ([primary] if primary in metrics else []) + [m for m in metrics if m != primary and (m.startswith(("openai:judged_pass", "openrouter:judged_pass", "engine_damage", "engine_repair_success", "engine_noop")))]:

@@ -111,6 +111,17 @@ class AnalysisHelperTests(unittest.TestCase):
         self.assertEqual((stage1[("b", "M")]["judged_pass"], stage2[("b", "M")]["judged_pass"], missing), (0.0, None, 1))
         self.assertEqual(stage2[("a", "M")]["judged_pass"], 1.0)
 
+    def test_only_a_recorded_refusal_leaves_a_run_scoreable(self):
+        from unittest import mock
+        cases = {"a": {}, "b": {}}
+        with tempfile.TemporaryDirectory() as tmp, mock.patch("v2.score.synthetic", return_value={"damage": False}):
+            art = Path(tmp)
+            (art / "eval").mkdir()
+            (art / "eval" / "final-S.jsonl").write_text(json.dumps({"case_id": "a", "delivered": "x"}) + "\n")
+            self.assertIsNone(ra.engine_metrics(cases, art, "S", "final"))
+            (art / "eval" / "final-S.meta.json").write_text(json.dumps({"refused": {"r1": "b"}}))
+            self.assertEqual(ra.engine_metrics(cases, art, "S", "final"), {"a": {"engine_damage": 0.0}})
+
 
 if __name__ == "__main__":
     unittest.main()

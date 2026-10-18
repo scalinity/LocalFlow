@@ -238,6 +238,8 @@ class HarnessTests(unittest.TestCase):
             self.assertTrue(response["limit_hit"])
             self.assertEqual(response["text"], "partial response")
             w.outcomes["r"]["status"] = "refused"
+            self.assertNotIn("r", b.responses_from_wave(w))  # a missing case, never asked again
+            w.outcomes["r"]["status"] = "errored_invalid"
             with self.assertRaisesRegex(RuntimeError, "Missing/failed"):
                 b.responses_from_wave(w)
 

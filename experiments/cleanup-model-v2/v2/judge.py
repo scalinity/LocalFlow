@@ -127,10 +127,13 @@ def run(cases_file,models,prefix='final',name='final-judge',role=None,model=None
     output_dir=ART/'judge' if name=='final-judge' else ART/'judge'/name
     if backend!='anthropic':output_dir=ART/'judge'/backend/name
     outs={k:{r['case_id']:r for r in read_jsonl(ART/'eval'/f'{prefix}-{k}.jsonl')} for k in models}
+    # A case the provider refused has no output; it stays a missing outcome (AMENDMENT-2.md).
+    refused={k:set((read_json(ART/'eval'/f'{prefix}-{k}.meta.json') or {}).get('refused',{}).values()) for k in models}
     for i,c in enumerate(cases):
         records=[]
         for k in models:
             row=outs[k].get(c['case_id'])
+            if row is None and c['case_id'] in refused[k]:continue
             if row is None:raise RuntimeError('Evaluation output missing')
             for stage in ('delivered','model_only'):
                 # Equal outputs are judged once and explicitly share the verdict.

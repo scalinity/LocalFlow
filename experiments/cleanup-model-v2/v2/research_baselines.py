@@ -443,6 +443,8 @@ def responses_from_wave(wave):
             raw[(attempt["batch_id"], result["custom_id"])] = result
     for rid in wave.requests:
         outcome = wave.outcomes.get(rid, {})
+        if outcome.get("status") == "refused":
+            continue  # recorded by batch_run as a missing case (AMENDMENT-2.md); never asked again
         if outcome.get("status") not in ("succeeded", "truncated"):
             raise RuntimeError(f"Missing/failed baseline response: {rid} {outcome.get('status')}")
         result = raw[(outcome["batch_id"], outcome["custom_id"])]
@@ -476,7 +478,7 @@ def batch_run(system, cases_path, plan_paths, *, wave_factory=capped_wave, split
     if current["identity"] != expected:
         raise ValueError("Plan differs from current cases, few-shot examples, or engine")
     path, meta_path, rows, meta = output_state(system, expected, split)
-    done = {r["case_id"] for r in rows}
+    done = {r["case_id"] for r in rows} | set(meta.get("refused", {}).values())
     if done - {c["case_id"] for c in cases}:
         raise RuntimeError("Output contains cases outside this development pool")
     runner = BaselineRunner(system, fewshot=fewshot)
@@ -490,7 +492,7 @@ def batch_run(system, cases_path, plan_paths, *, wave_factory=capped_wave, split
     for round_no in range(64):
         if source_identity() != expected["engine_source_sha256"]:
             raise RuntimeError("Engine changed during batch run")
-        requests, completed = {}, []
+        requests, completed, asked = {}, [], {}
         for case in cases:
             if case["case_id"] in done:
                 continue
@@ -498,6 +500,7 @@ def batch_run(system, cases_path, plan_paths, *, wave_factory=capped_wave, split
                 completed.append(runner.clean(case))
             except NeedCall as missing:
                 requests[missing.request_id] = missing.params
+                asked[missing.request_id] = case["case_id"]
         if completed:
             with path.open("a") as fh:
                 for row in completed:
@@ -515,6 +518,11 @@ def batch_run(system, cases_path, plan_paths, *, wave_factory=capped_wave, split
         wave.run(chunk=200)
         runner.responses.update(responses_from_wave(wave))
         write_json(responses_path, runner.responses)
+        refused = {rid: asked[rid] for rid in requests if wave.outcomes.get(rid, {}).get("status") == "refused"}
+        if refused:
+            meta.setdefault("refused", {}).update(refused)
+            write_json(meta_path, meta)
+            done |= set(refused.values())
     raise RuntimeError("64 adaptive frontiers exhausted; retained calls are resumable")
 
 
