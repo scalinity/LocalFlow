@@ -93,7 +93,7 @@ That is useful to know. Anyone building something similar can skip all three. Th
 The new models failed one test by the slimmest possible margin. C made 2 meaning-changing mistakes in 431 cases; M2 averaged 2.3 across its three training runs. The rule said “no more than C”, so 2.3 lost: by a third of one sentence.`,
         2: `That gap is far inside what chance alone produces: the measurement cannot tell 2 from 2.3. The rule compared raw counts with no allowance for noise, and that flaw sits in the rule, not in M2.
 
-A labelled post-hoc reading, asking “is M2 not worse than C within the noise?”, recommends M2. The final test’s first claim, C1, asks exactly that, with a proper allowance.`,
+A labelled post-hoc reading, asking “is M2 not worse than C within the noise?”, recommends M2. The final test’s first claim, C1, asks a stronger version: M2 better than C under both graders, and no more than 1 point more damage. The final set did not confirm it; the last chapter says how.`,
         3: `Gates against C {ev:selection}: judged semantic damage not above C’s 0.46% (M1 0.70%, M2 0.54%: fail; M3 0.23%: pass); critical-fact changes not above 0.46% (all pass); engine no-op preservation at least 0.97 (all pass); median latency within 1.5 times C’s (M3 fails, 2.88 s); size within 1.5 times (M3 fails, 2.1 times). M2 minus C on Opus semantic damage: 0.08 points worse, 95% interval −0.77 to +0.62.`,
         4: `- Rule: ANALYSIS_PLAN.md lines 89–98 {ev:analysis-plan}; outcome \`KEEP_C\` in results/selection.json.
 - Recommendation (post hoc): M2, seed 0, checkpoint 426: judged pass 3.5 points above C, engine damage 0.9% against 1.6%, same latency and size, consistent across three seeds {ev:selection}.`,

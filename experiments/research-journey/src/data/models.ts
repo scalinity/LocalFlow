@@ -100,7 +100,7 @@ export const MODELS: ModelEntity[] = [
     data: 'v2-merged',
     parents: ['C'],
     size: '4B',
-    plain: 'C, taught further on the new, engine-checked data. The recommended replacement for C.',
+    plain: 'C, taught further on the new, engine-checked data. Recommended over C after the fact, from the practice set; the final set did not confirm that it beats C.',
     detail: 'Three seeds; selected checkpoints 426, 1,065 and 852 of 1,704 updates. Stage 2 uses seed 0, checkpoint 426.',
     evaluated: { development: true, final: 'in-roster' },
     evidence: ['arms-doc', 'paper-manifest', 'selection'],

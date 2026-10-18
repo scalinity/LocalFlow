@@ -51,7 +51,7 @@ export const TONIGHT: Lane[] = [
   },
   {
     id: 'M2',
-    label: 'M2 (recommended)',
+    label: 'M2',
     kind: 'local',
     spans: [{ id: 'gen-M2', label: 'Answers 955 cases', start: '2026-10-17T19:23:09-04:00', end: '2026-10-17T21:21:51-04:00', status: 'done', note: 'Started when C finished, keeping three models running.' }],
   },
