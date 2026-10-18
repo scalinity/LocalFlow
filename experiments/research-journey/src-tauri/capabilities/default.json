@@ -1,1 +1,1 @@
-{"identifier":"default","description":"Window dragging from the masthead only.","windows":["main"],"permissions":["core:window:allow-start-dragging"]}
+{"identifier":"default","description":"Window dragging and double-click zoom from the masthead only.","windows":["main"],"permissions":["core:window:allow-start-dragging","core:window:allow-internal-toggle-maximize"]}
