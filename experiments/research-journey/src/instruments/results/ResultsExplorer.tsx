@@ -4,7 +4,7 @@ import { openEvidence } from '../../app/evidence-nav'
 import { setParams, useRoute } from '../../app/router'
 import { ClaimStatusMark } from '../../components/primitives/Status'
 import { Segmented } from '../../components/primitives/Segmented'
-import { CONTRAST_CLAIM, METRIC_BY_ID, METRICS, type Metric } from '../../data/metrics'
+import { CONTRAST_CLAIM, METRIC_BY_ID, metricForSet, METRICS, type Metric } from '../../data/metrics'
 import { ARM_TO_MODEL, MODEL_BY_ID } from '../../data/models'
 import { useSnapshot, type AnalysisBlock, type ContrastRow, type Snapshot } from '../../data/results'
 import { FAMILY } from '../../data/families'
@@ -23,24 +23,6 @@ const SETS: { key: SetKey; label: string; block: keyof Snapshot; note: string }[
 ]
 
 const ORDER = ['base-4b-prod-prompt', 'base-9b-prod-prompt', 'C', 'M1', 'M2', 'M3', 'A1', 'A3', 'A2', 'A2prime', 'sonnet-5-5-fewshot', 'opus-5-5-fewshot']
-
-// On the final set the Anthropic grader is Sonnet, and the engine's case counts are the final set's.
-function forSet(m: Metric, setKey: SetKey, block: AnalysisBlock): Metric {
-  if (setKey !== 'final') return m
-  const n = block.values.M2?.[m.id]?.n
-  switch (m.id) {
-    case 'anthropic:judged_pass':
-      return { ...m, label: 'Passed, graded by Claude Sonnet', short: 'Sonnet pass', plain: 'Share of answers Claude Sonnet, one of the two final graders, found complete and faithful.' }
-    case 'openai:judged_pass':
-      return { ...m, plain: 'The same verdict from OpenAI’s gpt-6.1-sol, the other final grader.' }
-    case 'engine_correction_success':
-      return { ...m, plain: `Of the ${n} final cases with a spoken correction, the share where the corrected-away words were removed and no fact was lost.` }
-    case 'engine_noop_preserved':
-      return { ...m, plain: `Of the ${n} final cases that need no change, the share returned exactly as they were.` }
-    default:
-      return m
-  }
-}
 
 const nameOf = (arm: string) => MODEL_BY_ID[ARM_TO_MODEL[arm] ?? '']?.label ?? arm
 const colorOf = (arm: string) => {
@@ -174,7 +156,7 @@ export default function ResultsExplorer({ depth }: InstrumentProps) {
   const setKey = (SETS.find((s) => s.key === params.get('set'))?.key ?? 'dev') as SetKey
   const set = SETS.find((s) => s.key === setKey)!
   const block = snapshot[set.block] as AnalysisBlock
-  const available = METRICS.filter((m) => Object.values(block.values).some((v) => v[m.id])).map((m) => forSet(m, setKey, block))
+  const available = METRICS.filter((m) => Object.values(block.values).some((v) => v[m.id])).map((m) => metricForSet(m, setKey, block.values.M2?.[m.id]?.n))
   const metric = available.find((m) => m.id === params.get('metric')) ?? available[0] ?? METRIC_BY_ID['anthropic:judged_pass']!
 
   return (

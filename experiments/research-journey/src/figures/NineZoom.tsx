@@ -1,12 +1,12 @@
 import { useState } from 'react'
 import { scaleTime } from 'd3-scale'
-import { NINE_SEQUENCE } from '../data/stage2'
+import { NINE_MINUTES, NINE_SEQUENCE } from '../data/stage2'
 import type { InstrumentProps } from '../instruments/Instrument'
 import { clock } from '../lib/format'
 import { FigureFrame } from './FigureFrame'
 
 /** The nine minutes, magnified: eight models checked one after another, then the C3 key written. */
-const END = '2026-10-17T22:49:23-04:00'
+const END = NINE_MINUTES.end
 
 export default function NineZoom({ depth }: InstrumentProps) {
   const [hot, setHot] = useState<number | null>(null)

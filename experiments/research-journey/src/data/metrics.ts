@@ -20,6 +20,26 @@ export const METRICS: Metric[] = [
 
 export const METRIC_BY_ID: Record<string, Metric> = Object.fromEntries(METRICS.map((m) => [m.id, m]))
 
+/**
+ * A measure as one results set describes it. On the final set the Anthropic grader is Sonnet,
+ * not Opus, and the engine's case counts are the final set's (`n`, from the data).
+ */
+export function metricForSet(m: Metric, set: string, n: number | undefined): Metric {
+  if (set !== 'final') return m
+  switch (m.id) {
+    case 'anthropic:judged_pass':
+      return { ...m, label: 'Passed, graded by Claude Sonnet', short: 'Sonnet pass', plain: 'Share of answers Claude Sonnet, one of the two final graders, found complete and faithful.' }
+    case 'openai:judged_pass':
+      return { ...m, plain: 'The same verdict from OpenAI’s gpt-6.1-sol, the other final grader.' }
+    case 'engine_correction_success':
+      return { ...m, plain: `Of the ${n} final cases with a spoken correction, the share where the corrected-away words were removed and no fact was lost.` }
+    case 'engine_noop_preserved':
+      return { ...m, plain: `Of the ${n} final cases that need no change, the share returned exactly as they were.` }
+    default:
+      return m
+  }
+}
+
 /** Which pre-registered question each comparison answers. */
 export const CONTRAST_CLAIM: Record<string, string> = {
   'M2 vs A2prime': 'H1',

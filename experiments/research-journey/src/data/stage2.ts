@@ -254,10 +254,17 @@ export interface GradingJob {
   end?: string
 }
 
+// Each job's status and end time are its bar on the evening's timeline, so the two cannot disagree.
+const SPANS = new Map(TONIGHT.flatMap((lane) => lane.spans.map((span) => [span.id, span] as const)))
+const job = (grader: string, name: string, cases: number, distinct: number, judged: number | null, span: string): GradingJob => {
+  const bar = SPANS.get(span)!
+  return { grader, job: name, cases, distinct, judged, status: bar.status, end: bar.end }
+}
+
 /** The four grading jobs started at 10:49 p.m. Counts are each job's final log line, or for GPT's main grading, whose log is empty, its outcome record. */
 export const GRADING_JOBS: GradingJob[] = [
-  { grader: 'GPT (gpt-6.1-sol)', job: 'C3 re-grade', cases: 168, distinct: 1058, judged: 1058, status: 'done', end: '2026-10-17T22:54:59-04:00' },
-  { grader: 'Claude Sonnet', job: 'C3 re-grade', cases: 168, distinct: 1058, judged: 1058, status: 'done', end: '2026-10-17T22:59:17-04:00' },
-  { grader: 'Claude Sonnet', job: 'Main grading', cases: 955, distinct: 3093, judged: 3093, status: 'done', end: '2026-10-17T23:28:52-04:00' },
-  { grader: 'GPT (gpt-6.1-sol)', job: 'Main grading', cases: 955, distinct: 3093, judged: 3093, status: 'done', end: '2026-10-18T01:17:50-04:00' },
+  job('GPT (gpt-6.1-sol)', 'C3 re-grade', 168, 1058, 1058, 'grade-c3-gpt'),
+  job('Claude Sonnet', 'C3 re-grade', 168, 1058, 1058, 'grade-c3-sonnet'),
+  job('Claude Sonnet', 'Main grading', 955, 3093, 3093, 'grade-main-sonnet'),
+  job('GPT (gpt-6.1-sol)', 'Main grading', 955, 3093, 3093, 'grade-main-gpt'),
 ]

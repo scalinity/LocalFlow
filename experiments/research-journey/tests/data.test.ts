@@ -7,7 +7,8 @@ import { claimStatus, type Stage2Outcome } from '../src/data/results'
 import { EVIDENCE, EVIDENCE_LIST } from '../src/data/evidence'
 import { GLOSSARY } from '../src/data/glossary'
 import { DATASETS, MODEL_BY_ID, MODELS } from '../src/data/models'
-import { PIPELINE, TONIGHT } from '../src/data/stage2'
+import { NINE_MINUTES, NINE_SEQUENCE, PIPELINE, RUN_STATE, TONIGHT } from '../src/data/stage2'
+import { METRIC_BY_ID, metricForSet } from '../src/data/metrics'
 import { EVENT_BY_ID, EVENTS } from '../src/data/timeline'
 import snapshotJson from '../src/data/generated/snapshot.json'
 
@@ -124,6 +125,23 @@ describe('status is told honestly', () => {
           expect(summary, `${key} interval with the missing case`).toContain(`${signed(c.ci99MissingAgainstClaim[0]!)} to ${signed(c.ci99MissingAgainstClaim[1]!)}`)
       }
     }
+  })
+
+  it('covers the nine minutes model after model, with no gap', () => {
+    expect(NINE_SEQUENCE[0]!.start).toBe(NINE_MINUTES.start)
+    expect(NINE_SEQUENCE.at(-1)!.end).toBe(NINE_MINUTES.end)
+    NINE_SEQUENCE.slice(1).forEach((step, i) => expect(step.start, step.label).toBe(NINE_SEQUENCE[i]!.end))
+  })
+
+  it('describes the run as finished exactly when every stage is done', () => {
+    const finished = PIPELINE.every((s) => s.status === 'done')
+    expect(/under way|running|grading/i.test(RUN_STATE), RUN_STATE).toBe(!finished)
+  })
+
+  it('names the final set’s grader and case counts in its measures', () => {
+    expect(metricForSet(METRIC_BY_ID['anthropic:judged_pass']!, 'final', 955).label).toContain('Sonnet')
+    expect(metricForSet(METRIC_BY_ID['anthropic:judged_pass']!, 'dev', 431).label).toContain('Opus')
+    expect(metricForSet(METRIC_BY_ID['engine_noop_preserved']!, 'final', 559).plain).toContain('559 final cases')
   })
 
   it('keeps the evening in time order within each lane', () => {
