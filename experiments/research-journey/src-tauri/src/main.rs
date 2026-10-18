@@ -9,12 +9,14 @@ fn main() {
         .plugin(tauri_plugin_opener::init())
         .setup(|app| {
             let handle = app.handle().clone();
-            let config = app.config().app.windows[0].clone();
+            let config = app.config().app.windows.first().cloned().ok_or("tauri.conf.json defines no window")?;
             WebviewWindowBuilder::from_config(app, &config)?
                 // Source links open in a new tab; send them to the default browser instead.
                 .on_new_window(move |url, _| {
                     if url.scheme() == "https" {
-                        let _ = handle.opener().open_url(url.as_str(), None::<&str>);
+                        if let Err(error) = handle.opener().open_url(url.as_str(), None::<&str>) {
+                            eprintln!("could not open {url} in the default browser: {error}");
+                        }
                     }
                     NewWindowResponse::Deny
                 })
