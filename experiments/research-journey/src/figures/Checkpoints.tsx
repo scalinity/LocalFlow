@@ -30,7 +30,7 @@ export default function Checkpoints({ depth }: InstrumentProps) {
     <FigureFrame
       title="Eight saved copies per run, and the one the rule kept"
       sources={['paper-manifest', 'findings']}
-      note={view === 'loss' ? 'Lower loss is what the rule looked for. A ring marks the copy it kept; the minimum often came early.' : 'Engine damage at the kept copy and at the last copy. Lower is better.'}
+      note={view === 'loss' ? 'Lower loss is what the rule looked for. A ring marks the copy it kept; the minimum often came early.' : 'Practice set (431 cases), post hoc: engine damage at the kept copy and at the last copy. Lower is better.'}
       controls={
         <Segmented<View>
           label="What to show"
