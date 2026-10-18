@@ -29,7 +29,7 @@ export default function ShiftCalc({ depth }: InstrumentProps) {
   const shift = (g.M2.after - g.A2prime.after - (g.M2.before - g.A2prime.before) + (g.M1.after - g.A2.after - (g.M1.before - g.A2.before))) / 2
   const pass = (v: 0 | 1) => (v ? 'pass' : 'fail')
   return (
-    <FigureFrame title="Work out C3 for one case" note="Click any verdict to change it. The shift averages the two new-versus-earlier pairs; C3 then averages it over every case.">
+    <FigureFrame title="Work out C3 for one case" illustration note="Click any verdict to change it. The shift averages the two new-versus-earlier pairs; C3 then averages it over every case.">
       <div className="flex flex-wrap gap-2">
         {PRESETS.map((p) => (
           <button key={p.label} type="button" onClick={() => setGrid(p.grid)} className="source-chip">
