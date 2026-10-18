@@ -495,7 +495,7 @@ def batch_run(system, cases_path, plan_paths, *, wave_factory=capped_wave, split
     runner = BaselineRunner(system, fewshot=fewshot)
     run_dir = RESEARCH / system if split == "development" else RESEARCH / split / system
     run_dir.mkdir(parents=True, exist_ok=True)
-    immutable_json(run_dir / "identity.json", expected)
+    immutable_json(run_dir / "identity.json", current["identity"])  # as planned; same_identity checked it
     responses_path = run_dir / "responses.json"
     runner.responses.update(read_json(responses_path, {}))
     meta["runs"].append({"started": utc_now(), "pid": os.getpid(), "backend": "anthropic-message-batches"})
