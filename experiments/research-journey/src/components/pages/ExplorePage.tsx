@@ -37,7 +37,8 @@ export function ExplorePage({ name }: { name?: string }) {
       </p>
       <h1 className="display mt-3 text-[44px] text-ink sm:text-[54px]">{INSTRUMENTS[key].title}</h1>
       <div className="mt-10">
-        <Instrument name={key} depth={depth} standalone />
+        {/* Keyed by instrument, so moving to another one gives it a fresh error boundary. */}
+        <Instrument key={key} name={key} depth={depth} standalone />
       </div>
     </div>
   )
