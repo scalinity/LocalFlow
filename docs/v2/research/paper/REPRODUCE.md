@@ -45,9 +45,19 @@ $PY experiments/cleanup-model-v2/tools/research_analysis.py docs/v2/research/pap
 ```
 
 Stage 2 on the locked final set (AMENDMENT-1.md, with AMENDMENT-2.md's missing-outcome rule; Sonnet 5.5 and
-gpt-6.1-sol decide):
+gpt-6.1-sol decide). The engine scores, the C3 rewritten key and the four grading runs come first; Opus few-shot is
+scored case by case inside the analysis, because its refused case leaves a gap `v2.score` does not accept:
 
 ```sh
+FINAL=$A/refinement/dataset/test.jsonl
+NINE="C-merged M2s0-ck426 A2prime-ck199 M1s0-ck426 A2-ck199 M3-ck426 base-9b-prod-prompt sonnet-5-5-fewshot opus-5-5-fewshot"
+for R in ${NINE% opus-5-5-fewshot}; do $PY -m v2.score $FINAL final-$R; done
+$PY experiments/cleanup-model-v2/tools/research_normalize_dev.py $A/refinement/final-rewritten.jsonl \
+    --input $FINAL --changed $A/refinement/final-rewritten-changed.jsonl
+$PY -m v2.judge $FINAL $NINE --prefix final --role final --backend anthropic --name final-main-anthropic
+$PY -m v2.judge $FINAL $NINE --prefix final --role final --backend openai --confirm-final-eval --name final-main-openai
+$PY -m v2.judge $A/refinement/final-rewritten-changed.jsonl $NINE --prefix final --role final --backend anthropic --name final-c3-anthropic
+$PY -m v2.judge $A/refinement/final-rewritten-changed.jsonl $NINE --prefix final --role final --backend openai --confirm-final-eval --name final-c3-openai
 $PY experiments/cleanup-model-v2/tools/research_analysis.py docs/v2/research/paper/data/arms_stage2.json \
     --out-dir docs/v2/research/paper/results/stage2 --stage2 --prefix final --cases $A/refinement/dataset/test.jsonl \
     --judge anthropic=$A/judge/final-main-anthropic/verdicts.jsonl \
@@ -66,7 +76,7 @@ $PY experiments/cleanup-model-v2/tools/research_categories.py docs/v2/research/p
 $PY experiments/cleanup-model-v2/tools/research_checkpoints.py docs/v2/research/paper/results/checkpoints.json
 ```
 
-Judge runs used (names under `$A/judge`): `dev-main-*`, `dev-swap-*`, `dev-final-*`, `dev-h5-*`, `dev-norm-sel-anthropic`, `dev-norm-final-anthropic`; commands are `python -m v2.judge CASES SYSTEMS --prefix development --role development --backend B --name NAME [--swap-order]`; a rerun of the same command resumes.
+Judge runs used (names under `$A/judge`): `dev-main-*`, `dev-swap-*`, `dev-final-*`, `dev-h5-*`, `dev-norm-sel-anthropic`, `dev-norm-final-anthropic`, with commands `python -m v2.judge CASES SYSTEMS --prefix development --role development --backend B --name NAME [--swap-order]`; and on the final set `final-main-*` and `final-c3-*`, with the commands in the Stage 2 block above. A rerun of the same command resumes.
 Every judge run is complete. A run whose collecting process stopped is resumed by rerunning its identical command; check the provider's batch status first, since a batch can finish while its collector is down.
 
 The analysis uses `random.Random(20261015)` and 10,000 resamples; both are fixed by the pre-registration.
