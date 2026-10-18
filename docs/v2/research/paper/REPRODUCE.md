@@ -44,6 +44,18 @@ $PY experiments/cleanup-model-v2/tools/research_analysis.py docs/v2/research/pap
     --judge openrouter=$A/judge/openrouter/dev-h5-openrouter/verdicts.jsonl
 ```
 
+Stage 2 on the locked final set (AMENDMENT-1.md, with AMENDMENT-2.md's missing-outcome rule; Sonnet 5.5 and
+gpt-6.1-sol decide):
+
+```sh
+$PY experiments/cleanup-model-v2/tools/research_analysis.py docs/v2/research/paper/data/arms_stage2.json \
+    --out-dir docs/v2/research/paper/results/stage2 --stage2 --prefix final --cases $A/refinement/dataset/test.jsonl \
+    --judge anthropic=$A/judge/final-main-anthropic/verdicts.jsonl \
+    --judge openai=$A/judge/openai/final-main-openai/verdicts.jsonl \
+    --rewritten-judge anthropic=$A/judge/final-c3-anthropic/verdicts.jsonl \
+    --rewritten-judge openai=$A/judge/openai/final-c3-openai/verdicts.jsonl
+```
+
 Supplementary analyses (post hoc; see DEVIATIONS):
 
 ```sh

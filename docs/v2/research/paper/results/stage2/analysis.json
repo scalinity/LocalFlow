@@ -1,0 +1,2377 @@
+{
+ "arm_values": {
+  "A2": {
+   "anthropic:judged_clean": {
+    "mean": 0.9706806282722513,
+    "n": 955,
+    "seed_sd": null,
+    "seeds": [
+     0.9706806282722513
+    ]
+   },
+   "anthropic:judged_cleanup_complete": {
+    "mean": 0.3267015706806283,
+    "n": 955,
+    "seed_sd": null,
+    "seeds": [
+     0.3267015706806283
+    ]
+   },
+   "anthropic:judged_fact_changed": {
+    "mean": 0.007329842931937173,
+    "n": 955,
+    "seed_sd": null,
+    "seeds": [
+     0.007329842931937173
+    ]
+   },
+   "anthropic:judged_hallucination": {
+    "mean": 0.0,
+    "n": 955,
+    "seed_sd": null,
+    "seeds": [
+     0.0
+    ]
+   },
+   "anthropic:judged_pass": {
+    "mean": 0.9204188481675393,
+    "n": 955,
+    "seed_sd": null,
+    "seeds": [
+     0.9204188481675393
+    ]
+   },
+   "anthropic:judged_semantic_damage": {
+    "mean": 0.007329842931937173,
+    "n": 955,
+    "seed_sd": null,
+    "seeds": [
+     0.007329842931937173
+    ]
+   },
+   "anthropic:judged_unwanted_edit": {
+    "mean": 0.025130890052356022,
+    "n": 955,
+    "seed_sd": null,
+    "seeds": [
+     0.025130890052356022
+    ]
+   },
+   "anthropic:rewritten_judged_pass": {
+    "mean": 0.930890052356021,
+    "n": 955,
+    "seed_sd": null,
+    "seeds": [
+     0.930890052356021
+    ]
+   },
+   "engine_correction_success": {
+    "mean": 0.83125,
+    "n": 160,
+    "seed_sd": null,
+    "seeds": [
+     0.83125
+    ]
+   },
+   "engine_damage": {
+    "mean": 0.016753926701570682,
+    "n": 955,
+    "seed_sd": null,
+    "seeds": [
+     0.016753926701570682
+    ]
+   },
+   "engine_facts_changed": {
+    "mean": 0.0010471204188481676,
+    "n": 955,
+    "seed_sd": null,
+    "seeds": [
+     0.0010471204188481676
+    ]
+   },
+   "engine_hallucination": {
+    "mean": 0.013612565445026177,
+    "n": 955,
+    "seed_sd": null,
+    "seeds": [
+     0.013612565445026177
+    ]
+   },
+   "engine_negation_changed": {
+    "mean": 0.0010471204188481676,
+    "n": 955,
+    "seed_sd": null,
+    "seeds": [
+     0.0010471204188481676
+    ]
+   },
+   "engine_noop_preserved": {
+    "mean": 0.9427549194991055,
+    "n": 559,
+    "seed_sd": null,
+    "seeds": [
+     0.9427549194991055
+    ]
+   },
+   "engine_omission": {
+    "mean": 0.007329842931937173,
+    "n": 955,
+    "seed_sd": null,
+    "seeds": [
+     0.007329842931937173
+    ]
+   },
+   "engine_punctuation_exact": {
+    "mean": 0.7455497382198953,
+    "n": 955,
+    "seed_sd": null,
+    "seeds": [
+     0.7455497382198953
+    ]
+   },
+   "engine_punctuation_repaired": {
+    "mean": 0.455012853470437,
+    "n": 389,
+    "seed_sd": null,
+    "seeds": [
+     0.455012853470437
+    ]
+   },
+   "engine_reference_complete": {
+    "mean": 0.7413612565445026,
+    "n": 955,
+    "seed_sd": null,
+    "seeds": [
+     0.7413612565445026
+    ]
+   },
+   "engine_reference_repair": {
+    "mean": 0.45707070707070707,
+    "n": 396,
+    "seed_sd": null,
+    "seeds": [
+     0.45707070707070707
+    ]
+   },
+   "engine_repair_success": {
+    "mean": 0.34659685863874345,
+    "n": 955,
+    "seed_sd": null,
+    "seeds": [
+     0.34659685863874345
+    ]
+   },
+   "engine_unnecessary_edit": {
+    "mean": 0.057245080500894455,
+    "n": 559,
+    "seed_sd": null,
+    "seeds": [
+     0.057245080500894455
+    ]
+   },
+   "openai:judged_clean": {
+    "mean": 0.9905759162303664,
+    "n": 955,
+    "seed_sd": null,
+    "seeds": [
+     0.9905759162303664
+    ]
+   },
+   "openai:judged_cleanup_complete": {
+    "mean": 0.3308900523560209,
+    "n": 955,
+    "seed_sd": null,
+    "seeds": [
+     0.3308900523560209
+    ]
+   },
+   "openai:judged_fact_changed": {
+    "mean": 0.0062827225130890054,
+    "n": 955,
+    "seed_sd": null,
+    "seeds": [
+     0.0062827225130890054
+    ]
+   },
+   "openai:judged_hallucination": {
+    "mean": 0.0,
+    "n": 955,
+    "seed_sd": null,
+    "seeds": [
+     0.0
+    ]
+   },
+   "openai:judged_pass": {
+    "mean": 0.9141361256544502,
+    "n": 955,
+    "seed_sd": null,
+    "seeds": [
+     0.9141361256544502
+    ]
+   },
+   "openai:judged_semantic_damage": {
+    "mean": 0.008376963350785341,
+    "n": 955,
+    "seed_sd": null,
+    "seeds": [
+     0.008376963350785341
+    ]
+   },
+   "openai:judged_unwanted_edit": {
+    "mean": 0.009424083769633508,
+    "n": 955,
+    "seed_sd": null,
+    "seeds": [
+     0.009424083769633508
+    ]
+   },
+   "openai:rewritten_judged_pass": {
+    "mean": 0.9151832460732985,
+    "n": 955,
+    "seed_sd": null,
+    "seeds": [
+     0.9151832460732985
+    ]
+   }
+  },
+  "A2prime": {
+   "anthropic:judged_clean": {
+    "mean": 0.9455497382198953,
+    "n": 955,
+    "seed_sd": null,
+    "seeds": [
+     0.9455497382198953
+    ]
+   },
+   "anthropic:judged_cleanup_complete": {
+    "mean": 0.30157068062827225,
+    "n": 955,
+    "seed_sd": null,
+    "seeds": [
+     0.30157068062827225
+    ]
+   },
+   "anthropic:judged_fact_changed": {
+    "mean": 0.0062827225130890054,
+    "n": 955,
+    "seed_sd": null,
+    "seeds": [
+     0.0062827225130890054
+    ]
+   },
+   "anthropic:judged_hallucination": {
+    "mean": 0.0,
+    "n": 955,
+    "seed_sd": null,
+    "seeds": [
+     0.0
+    ]
+   },
+   "anthropic:judged_pass": {
+    "mean": 0.8795811518324608,
+    "n": 955,
+    "seed_sd": null,
+    "seeds": [
+     0.8795811518324608
+    ]
+   },
+   "anthropic:judged_semantic_damage": {
+    "mean": 0.009424083769633508,
+    "n": 955,
+    "seed_sd": null,
+    "seeds": [
+     0.009424083769633508
+    ]
+   },
+   "anthropic:judged_unwanted_edit": {
+    "mean": 0.050261780104712044,
+    "n": 955,
+    "seed_sd": null,
+    "seeds": [
+     0.050261780104712044
+    ]
+   },
+   "anthropic:rewritten_judged_pass": {
+    "mean": 0.8900523560209425,
+    "n": 955,
+    "seed_sd": null,
+    "seeds": [
+     0.8900523560209425
+    ]
+   },
+   "engine_correction_success": {
+    "mean": 0.79375,
+    "n": 160,
+    "seed_sd": null,
+    "seeds": [
+     0.79375
+    ]
+   },
+   "engine_damage": {
+    "mean": 0.05654450261780105,
+    "n": 955,
+    "seed_sd": null,
+    "seeds": [
+     0.05654450261780105
+    ]
+   },
+   "engine_facts_changed": {
+    "mean": 0.0,
+    "n": 955,
+    "seed_sd": null,
+    "seeds": [
+     0.0
+    ]
+   },
+   "engine_hallucination": {
+    "mean": 0.04607329842931937,
+    "n": 955,
+    "seed_sd": null,
+    "seeds": [
+     0.04607329842931937
+    ]
+   },
+   "engine_negation_changed": {
+    "mean": 0.005235602094240838,
+    "n": 955,
+    "seed_sd": null,
+    "seeds": [
+     0.005235602094240838
+    ]
+   },
+   "engine_noop_preserved": {
+    "mean": 0.9212880143112702,
+    "n": 559,
+    "seed_sd": null,
+    "seeds": [
+     0.9212880143112702
+    ]
+   },
+   "engine_omission": {
+    "mean": 0.04293193717277487,
+    "n": 955,
+    "seed_sd": null,
+    "seeds": [
+     0.04293193717277487
+    ]
+   },
+   "engine_punctuation_exact": {
+    "mean": 0.7382198952879581,
+    "n": 955,
+    "seed_sd": null,
+    "seeds": [
+     0.7382198952879581
+    ]
+   },
+   "engine_punctuation_repaired": {
+    "mean": 0.4704370179948586,
+    "n": 389,
+    "seed_sd": null,
+    "seeds": [
+     0.4704370179948586
+    ]
+   },
+   "engine_reference_complete": {
+    "mean": 0.7287958115183246,
+    "n": 955,
+    "seed_sd": null,
+    "seeds": [
+     0.7287958115183246
+    ]
+   },
+   "engine_reference_repair": {
+    "mean": 0.45707070707070707,
+    "n": 396,
+    "seed_sd": null,
+    "seeds": [
+     0.45707070707070707
+    ]
+   },
+   "engine_repair_success": {
+    "mean": 0.3308900523560209,
+    "n": 955,
+    "seed_sd": null,
+    "seeds": [
+     0.3308900523560209
+    ]
+   },
+   "engine_unnecessary_edit": {
+    "mean": 0.07871198568872988,
+    "n": 559,
+    "seed_sd": null,
+    "seeds": [
+     0.07871198568872988
+    ]
+   },
+   "openai:judged_clean": {
+    "mean": 0.9947643979057592,
+    "n": 955,
+    "seed_sd": null,
+    "seeds": [
+     0.9947643979057592
+    ]
+   },
+   "openai:judged_cleanup_complete": {
+    "mean": 0.3099476439790576,
+    "n": 955,
+    "seed_sd": null,
+    "seeds": [
+     0.3099476439790576
+    ]
+   },
+   "openai:judged_fact_changed": {
+    "mean": 0.0031413612565445027,
+    "n": 955,
+    "seed_sd": null,
+    "seeds": [
+     0.0031413612565445027
+    ]
+   },
+   "openai:judged_hallucination": {
+    "mean": 0.0,
+    "n": 955,
+    "seed_sd": null,
+    "seeds": [
+     0.0
+    ]
+   },
+   "openai:judged_pass": {
+    "mean": 0.8921465968586387,
+    "n": 955,
+    "seed_sd": null,
+    "seeds": [
+     0.8921465968586387
+    ]
+   },
+   "openai:judged_semantic_damage": {
+    "mean": 0.005235602094240838,
+    "n": 955,
+    "seed_sd": null,
+    "seeds": [
+     0.005235602094240838
+    ]
+   },
+   "openai:judged_unwanted_edit": {
+    "mean": 0.005235602094240838,
+    "n": 955,
+    "seed_sd": null,
+    "seeds": [
+     0.005235602094240838
+    ]
+   },
+   "openai:rewritten_judged_pass": {
+    "mean": 0.8921465968586387,
+    "n": 955,
+    "seed_sd": null,
+    "seeds": [
+     0.8921465968586387
+    ]
+   }
+  },
+  "C": {
+   "anthropic:judged_clean": {
+    "mean": 0.9853403141361257,
+    "n": 955,
+    "seed_sd": null,
+    "seeds": [
+     0.9853403141361257
+    ]
+   },
+   "anthropic:judged_cleanup_complete": {
+    "mean": 0.2628272251308901,
+    "n": 955,
+    "seed_sd": null,
+    "seeds": [
+     0.2628272251308901
+    ]
+   },
+   "anthropic:judged_fact_changed": {
+    "mean": 0.008376963350785341,
+    "n": 955,
+    "seed_sd": null,
+    "seeds": [
+     0.008376963350785341
+    ]
+   },
+   "anthropic:judged_hallucination": {
+    "mean": 0.0010471204188481676,
+    "n": 955,
+    "seed_sd": null,
+    "seeds": [
+     0.0010471204188481676
+    ]
+   },
+   "anthropic:judged_pass": {
+    "mean": 0.8837696335078534,
+    "n": 955,
+    "seed_sd": null,
+    "seeds": [
+     0.8837696335078534
+    ]
+   },
+   "anthropic:judged_semantic_damage": {
+    "mean": 0.009424083769633508,
+    "n": 955,
+    "seed_sd": null,
+    "seeds": [
+     0.009424083769633508
+    ]
+   },
+   "anthropic:judged_unwanted_edit": {
+    "mean": 0.0062827225130890054,
+    "n": 955,
+    "seed_sd": null,
+    "seeds": [
+     0.0062827225130890054
+    ]
+   },
+   "anthropic:rewritten_judged_pass": {
+    "mean": 0.9078534031413612,
+    "n": 955,
+    "seed_sd": null,
+    "seeds": [
+     0.9078534031413612
+    ]
+   },
+   "engine_correction_success": {
+    "mean": 0.76875,
+    "n": 160,
+    "seed_sd": null,
+    "seeds": [
+     0.76875
+    ]
+   },
+   "engine_damage": {
+    "mean": 0.014659685863874346,
+    "n": 955,
+    "seed_sd": null,
+    "seeds": [
+     0.014659685863874346
+    ]
+   },
+   "engine_facts_changed": {
+    "mean": 0.0020942408376963353,
+    "n": 955,
+    "seed_sd": null,
+    "seeds": [
+     0.0020942408376963353
+    ]
+   },
+   "engine_hallucination": {
+    "mean": 0.007329842931937173,
+    "n": 955,
+    "seed_sd": null,
+    "seeds": [
+     0.007329842931937173
+    ]
+   },
+   "engine_negation_changed": {
+    "mean": 0.005235602094240838,
+    "n": 955,
+    "seed_sd": null,
+    "seeds": [
+     0.005235602094240838
+    ]
+   },
+   "engine_noop_preserved": {
+    "mean": 0.9964221824686941,
+    "n": 559,
+    "seed_sd": null,
+    "seeds": [
+     0.9964221824686941
+    ]
+   },
+   "engine_omission": {
+    "mean": 0.004188481675392671,
+    "n": 955,
+    "seed_sd": null,
+    "seeds": [
+     0.004188481675392671
+    ]
+   },
+   "engine_punctuation_exact": {
+    "mean": 0.7486910994764397,
+    "n": 955,
+    "seed_sd": null,
+    "seeds": [
+     0.7486910994764397
+    ]
+   },
+   "engine_punctuation_repaired": {
+    "mean": 0.38817480719794345,
+    "n": 389,
+    "seed_sd": null,
+    "seeds": [
+     0.38817480719794345
+    ]
+   },
+   "engine_reference_complete": {
+    "mean": 0.7445026178010471,
+    "n": 955,
+    "seed_sd": null,
+    "seeds": [
+     0.7445026178010471
+    ]
+   },
+   "engine_reference_repair": {
+    "mean": 0.3888888888888889,
+    "n": 396,
+    "seed_sd": null,
+    "seeds": [
+     0.3888888888888889
+    ]
+   },
+   "engine_repair_success": {
+    "mean": 0.34345549738219894,
+    "n": 955,
+    "seed_sd": null,
+    "seeds": [
+     0.34345549738219894
+    ]
+   },
+   "engine_unnecessary_edit": {
+    "mean": 0.0035778175313059034,
+    "n": 559,
+    "seed_sd": null,
+    "seeds": [
+     0.0035778175313059034
+    ]
+   },
+   "openai:judged_clean": {
+    "mean": 0.9947643979057592,
+    "n": 955,
+    "seed_sd": null,
+    "seeds": [
+     0.9947643979057592
+    ]
+   },
+   "openai:judged_cleanup_complete": {
+    "mean": 0.2513089005235602,
+    "n": 955,
+    "seed_sd": null,
+    "seeds": [
+     0.2513089005235602
+    ]
+   },
+   "openai:judged_fact_changed": {
+    "mean": 0.004188481675392671,
+    "n": 955,
+    "seed_sd": null,
+    "seeds": [
+     0.004188481675392671
+    ]
+   },
+   "openai:judged_hallucination": {
+    "mean": 0.0,
+    "n": 955,
+    "seed_sd": null,
+    "seeds": [
+     0.0
+    ]
+   },
+   "openai:judged_pass": {
+    "mean": 0.8366492146596859,
+    "n": 955,
+    "seed_sd": null,
+    "seeds": [
+     0.8366492146596859
+    ]
+   },
+   "openai:judged_semantic_damage": {
+    "mean": 0.005235602094240838,
+    "n": 955,
+    "seed_sd": null,
+    "seeds": [
+     0.005235602094240838
+    ]
+   },
+   "openai:judged_unwanted_edit": {
+    "mean": 0.005235602094240838,
+    "n": 955,
+    "seed_sd": null,
+    "seeds": [
+     0.005235602094240838
+    ]
+   },
+   "openai:rewritten_judged_pass": {
+    "mean": 0.8502617801047121,
+    "n": 955,
+    "seed_sd": null,
+    "seeds": [
+     0.8502617801047121
+    ]
+   }
+  },
+  "M1": {
+   "anthropic:judged_clean": {
+    "mean": 0.9643979057591623,
+    "n": 955,
+    "seed_sd": null,
+    "seeds": [
+     0.9643979057591623
+    ]
+   },
+   "anthropic:judged_cleanup_complete": {
+    "mean": 0.2973821989528796,
+    "n": 955,
+    "seed_sd": null,
+    "seeds": [
+     0.2973821989528796
+    ]
+   },
+   "anthropic:judged_fact_changed": {
+    "mean": 0.004188481675392671,
+    "n": 955,
+    "seed_sd": null,
+    "seeds": [
+     0.004188481675392671
+    ]
+   },
+   "anthropic:judged_hallucination": {
+    "mean": 0.0,
+    "n": 955,
+    "seed_sd": null,
+    "seeds": [
+     0.0
+    ]
+   },
+   "anthropic:judged_pass": {
+    "mean": 0.8743455497382199,
+    "n": 955,
+    "seed_sd": null,
+    "seeds": [
+     0.8743455497382199
+    ]
+   },
+   "anthropic:judged_semantic_damage": {
+    "mean": 0.008376963350785341,
+    "n": 955,
+    "seed_sd": null,
+    "seeds": [
+     0.008376963350785341
+    ]
+   },
+   "anthropic:judged_unwanted_edit": {
+    "mean": 0.031413612565445025,
+    "n": 955,
+    "seed_sd": null,
+    "seeds": [
+     0.031413612565445025
+    ]
+   },
+   "anthropic:rewritten_judged_pass": {
+    "mean": 0.9183246073298429,
+    "n": 955,
+    "seed_sd": null,
+    "seeds": [
+     0.9183246073298429
+    ]
+   },
+   "engine_correction_success": {
+    "mean": 0.89375,
+    "n": 160,
+    "seed_sd": null,
+    "seeds": [
+     0.89375
+    ]
+   },
+   "engine_damage": {
+    "mean": 0.005235602094240838,
+    "n": 955,
+    "seed_sd": null,
+    "seeds": [
+     0.005235602094240838
+    ]
+   },
+   "engine_facts_changed": {
+    "mean": 0.0010471204188481676,
+    "n": 955,
+    "seed_sd": null,
+    "seeds": [
+     0.0010471204188481676
+    ]
+   },
+   "engine_hallucination": {
+    "mean": 0.0020942408376963353,
+    "n": 955,
+    "seed_sd": null,
+    "seeds": [
+     0.0020942408376963353
+    ]
+   },
+   "engine_negation_changed": {
+    "mean": 0.0,
+    "n": 955,
+    "seed_sd": null,
+    "seeds": [
+     0.0
+    ]
+   },
+   "engine_noop_preserved": {
+    "mean": 0.9552772808586762,
+    "n": 559,
+    "seed_sd": null,
+    "seeds": [
+     0.9552772808586762
+    ]
+   },
+   "engine_omission": {
+    "mean": 0.0031413612565445027,
+    "n": 955,
+    "seed_sd": null,
+    "seeds": [
+     0.0031413612565445027
+    ]
+   },
+   "engine_punctuation_exact": {
+    "mean": 0.7340314136125654,
+    "n": 955,
+    "seed_sd": null,
+    "seeds": [
+     0.7340314136125654
+    ]
+   },
+   "engine_punctuation_repaired": {
+    "mean": 0.4087403598971722,
+    "n": 389,
+    "seed_sd": null,
+    "seeds": [
+     0.4087403598971722
+    ]
+   },
+   "engine_reference_complete": {
+    "mean": 0.7267015706806282,
+    "n": 955,
+    "seed_sd": null,
+    "seeds": [
+     0.7267015706806282
+    ]
+   },
+   "engine_reference_repair": {
+    "mean": 0.40404040404040403,
+    "n": 396,
+    "seed_sd": null,
+    "seeds": [
+     0.40404040404040403
+    ]
+   },
+   "engine_repair_success": {
+    "mean": 0.36649214659685864,
+    "n": 955,
+    "seed_sd": null,
+    "seeds": [
+     0.36649214659685864
+    ]
+   },
+   "engine_unnecessary_edit": {
+    "mean": 0.044722719141323794,
+    "n": 559,
+    "seed_sd": null,
+    "seeds": [
+     0.044722719141323794
+    ]
+   },
+   "openai:judged_clean": {
+    "mean": 0.9842931937172775,
+    "n": 955,
+    "seed_sd": null,
+    "seeds": [
+     0.9842931937172775
+    ]
+   },
+   "openai:judged_cleanup_complete": {
+    "mean": 0.31204188481675393,
+    "n": 955,
+    "seed_sd": null,
+    "seeds": [
+     0.31204188481675393
+    ]
+   },
+   "openai:judged_fact_changed": {
+    "mean": 0.004188481675392671,
+    "n": 955,
+    "seed_sd": null,
+    "seeds": [
+     0.004188481675392671
+    ]
+   },
+   "openai:judged_hallucination": {
+    "mean": 0.0,
+    "n": 955,
+    "seed_sd": null,
+    "seeds": [
+     0.0
+    ]
+   },
+   "openai:judged_pass": {
+    "mean": 0.8910994764397906,
+    "n": 955,
+    "seed_sd": null,
+    "seeds": [
+     0.8910994764397906
+    ]
+   },
+   "openai:judged_semantic_damage": {
+    "mean": 0.010471204188481676,
+    "n": 955,
+    "seed_sd": null,
+    "seeds": [
+     0.010471204188481676
+    ]
+   },
+   "openai:judged_unwanted_edit": {
+    "mean": 0.015706806282722512,
+    "n": 955,
+    "seed_sd": null,
+    "seeds": [
+     0.015706806282722512
+    ]
+   },
+   "openai:rewritten_judged_pass": {
+    "mean": 0.912041884816754,
+    "n": 955,
+    "seed_sd": null,
+    "seeds": [
+     0.912041884816754
+    ]
+   }
+  },
+  "M2": {
+   "anthropic:judged_clean": {
+    "mean": 0.9821989528795811,
+    "n": 955,
+    "seed_sd": null,
+    "seeds": [
+     0.9821989528795811
+    ]
+   },
+   "anthropic:judged_cleanup_complete": {
+    "mean": 0.29109947643979056,
+    "n": 955,
+    "seed_sd": null,
+    "seeds": [
+     0.29109947643979056
+    ]
+   },
+   "anthropic:judged_fact_changed": {
+    "mean": 0.004188481675392671,
+    "n": 955,
+    "seed_sd": null,
+    "seeds": [
+     0.004188481675392671
+    ]
+   },
+   "anthropic:judged_hallucination": {
+    "mean": 0.0,
+    "n": 955,
+    "seed_sd": null,
+    "seeds": [
+     0.0
+    ]
+   },
+   "anthropic:judged_pass": {
+    "mean": 0.8890052356020942,
+    "n": 955,
+    "seed_sd": null,
+    "seeds": [
+     0.8890052356020942
+    ]
+   },
+   "anthropic:judged_semantic_damage": {
+    "mean": 0.005235602094240838,
+    "n": 955,
+    "seed_sd": null,
+    "seeds": [
+     0.005235602094240838
+    ]
+   },
+   "anthropic:judged_unwanted_edit": {
+    "mean": 0.015706806282722512,
+    "n": 955,
+    "seed_sd": null,
+    "seeds": [
+     0.015706806282722512
+    ]
+   },
+   "anthropic:rewritten_judged_pass": {
+    "mean": 0.9424083769633508,
+    "n": 955,
+    "seed_sd": null,
+    "seeds": [
+     0.9424083769633508
+    ]
+   },
+   "engine_correction_success": {
+    "mean": 0.8625,
+    "n": 160,
+    "seed_sd": null,
+    "seeds": [
+     0.8625
+    ]
+   },
+   "engine_damage": {
+    "mean": 0.005235602094240838,
+    "n": 955,
+    "seed_sd": null,
+    "seeds": [
+     0.005235602094240838
+    ]
+   },
+   "engine_facts_changed": {
+    "mean": 0.0,
+    "n": 955,
+    "seed_sd": null,
+    "seeds": [
+     0.0
+    ]
+   },
+   "engine_hallucination": {
+    "mean": 0.0010471204188481676,
+    "n": 955,
+    "seed_sd": null,
+    "seeds": [
+     0.0010471204188481676
+    ]
+   },
+   "engine_negation_changed": {
+    "mean": 0.0031413612565445027,
+    "n": 955,
+    "seed_sd": null,
+    "seeds": [
+     0.0031413612565445027
+    ]
+   },
+   "engine_noop_preserved": {
+    "mean": 0.9803220035778175,
+    "n": 559,
+    "seed_sd": null,
+    "seeds": [
+     0.9803220035778175
+    ]
+   },
+   "engine_omission": {
+    "mean": 0.0010471204188481676,
+    "n": 955,
+    "seed_sd": null,
+    "seeds": [
+     0.0010471204188481676
+    ]
+   },
+   "engine_punctuation_exact": {
+    "mean": 0.749738219895288,
+    "n": 955,
+    "seed_sd": null,
+    "seeds": [
+     0.749738219895288
+    ]
+   },
+   "engine_punctuation_repaired": {
+    "mean": 0.41131105398457585,
+    "n": 389,
+    "seed_sd": null,
+    "seeds": [
+     0.41131105398457585
+    ]
+   },
+   "engine_reference_complete": {
+    "mean": 0.7424083769633508,
+    "n": 955,
+    "seed_sd": null,
+    "seeds": [
+     0.7424083769633508
+    ]
+   },
+   "engine_reference_repair": {
+    "mean": 0.4065656565656566,
+    "n": 396,
+    "seed_sd": null,
+    "seeds": [
+     0.4065656565656566
+    ]
+   },
+   "engine_repair_success": {
+    "mean": 0.3633507853403141,
+    "n": 955,
+    "seed_sd": null,
+    "seeds": [
+     0.3633507853403141
+    ]
+   },
+   "engine_unnecessary_edit": {
+    "mean": 0.01967799642218247,
+    "n": 559,
+    "seed_sd": null,
+    "seeds": [
+     0.01967799642218247
+    ]
+   },
+   "openai:judged_clean": {
+    "mean": 0.993717277486911,
+    "n": 955,
+    "seed_sd": null,
+    "seeds": [
+     0.993717277486911
+    ]
+   },
+   "openai:judged_cleanup_complete": {
+    "mean": 0.3099476439790576,
+    "n": 955,
+    "seed_sd": null,
+    "seeds": [
+     0.3099476439790576
+    ]
+   },
+   "openai:judged_fact_changed": {
+    "mean": 0.004188481675392671,
+    "n": 955,
+    "seed_sd": null,
+    "seeds": [
+     0.004188481675392671
+    ]
+   },
+   "openai:judged_hallucination": {
+    "mean": 0.0,
+    "n": 955,
+    "seed_sd": null,
+    "seeds": [
+     0.0
+    ]
+   },
+   "openai:judged_pass": {
+    "mean": 0.8921465968586387,
+    "n": 955,
+    "seed_sd": null,
+    "seeds": [
+     0.8921465968586387
+    ]
+   },
+   "openai:judged_semantic_damage": {
+    "mean": 0.004188481675392671,
+    "n": 955,
+    "seed_sd": null,
+    "seeds": [
+     0.004188481675392671
+    ]
+   },
+   "openai:judged_unwanted_edit": {
+    "mean": 0.0062827225130890054,
+    "n": 955,
+    "seed_sd": null,
+    "seeds": [
+     0.0062827225130890054
+    ]
+   },
+   "openai:rewritten_judged_pass": {
+    "mean": 0.9183246073298429,
+    "n": 955,
+    "seed_sd": null,
+    "seeds": [
+     0.9183246073298429
+    ]
+   }
+  },
+  "M3": {
+   "anthropic:judged_clean": {
+    "mean": 0.974869109947644,
+    "n": 955,
+    "seed_sd": null,
+    "seeds": [
+     0.974869109947644
+    ]
+   },
+   "anthropic:judged_cleanup_complete": {
+    "mean": 0.29528795811518327,
+    "n": 955,
+    "seed_sd": null,
+    "seeds": [
+     0.29528795811518327
+    ]
+   },
+   "anthropic:judged_fact_changed": {
+    "mean": 0.005235602094240838,
+    "n": 955,
+    "seed_sd": null,
+    "seeds": [
+     0.005235602094240838
+    ]
+   },
+   "anthropic:judged_hallucination": {
+    "mean": 0.0,
+    "n": 955,
+    "seed_sd": null,
+    "seeds": [
+     0.0
+    ]
+   },
+   "anthropic:judged_pass": {
+    "mean": 0.8931937172774869,
+    "n": 955,
+    "seed_sd": null,
+    "seeds": [
+     0.8931937172774869
+    ]
+   },
+   "anthropic:judged_semantic_damage": {
+    "mean": 0.005235602094240838,
+    "n": 955,
+    "seed_sd": null,
+    "seeds": [
+     0.005235602094240838
+    ]
+   },
+   "anthropic:judged_unwanted_edit": {
+    "mean": 0.01780104712041885,
+    "n": 955,
+    "seed_sd": null,
+    "seeds": [
+     0.01780104712041885
+    ]
+   },
+   "anthropic:rewritten_judged_pass": {
+    "mean": 0.9392670157068063,
+    "n": 955,
+    "seed_sd": null,
+    "seeds": [
+     0.9392670157068063
+    ]
+   },
+   "engine_correction_success": {
+    "mean": 0.85,
+    "n": 160,
+    "seed_sd": null,
+    "seeds": [
+     0.85
+    ]
+   },
+   "engine_damage": {
+    "mean": 0.007329842931937173,
+    "n": 955,
+    "seed_sd": null,
+    "seeds": [
+     0.007329842931937173
+    ]
+   },
+   "engine_facts_changed": {
+    "mean": 0.0,
+    "n": 955,
+    "seed_sd": null,
+    "seeds": [
+     0.0
+    ]
+   },
+   "engine_hallucination": {
+    "mean": 0.0020942408376963353,
+    "n": 955,
+    "seed_sd": null,
+    "seeds": [
+     0.0020942408376963353
+    ]
+   },
+   "engine_negation_changed": {
+    "mean": 0.0020942408376963353,
+    "n": 955,
+    "seed_sd": null,
+    "seeds": [
+     0.0020942408376963353
+    ]
+   },
+   "engine_noop_preserved": {
+    "mean": 0.9660107334525939,
+    "n": 559,
+    "seed_sd": null,
+    "seeds": [
+     0.9660107334525939
+    ]
+   },
+   "engine_omission": {
+    "mean": 0.004188481675392671,
+    "n": 955,
+    "seed_sd": null,
+    "seeds": [
+     0.004188481675392671
+    ]
+   },
+   "engine_punctuation_exact": {
+    "mean": 0.7455497382198953,
+    "n": 955,
+    "seed_sd": null,
+    "seeds": [
+     0.7455497382198953
+    ]
+   },
+   "engine_punctuation_repaired": {
+    "mean": 0.4241645244215938,
+    "n": 389,
+    "seed_sd": null,
+    "seeds": [
+     0.4241645244215938
+    ]
+   },
+   "engine_reference_complete": {
+    "mean": 0.7382198952879581,
+    "n": 955,
+    "seed_sd": null,
+    "seeds": [
+     0.7382198952879581
+    ]
+   },
+   "engine_reference_repair": {
+    "mean": 0.4166666666666667,
+    "n": 396,
+    "seed_sd": null,
+    "seeds": [
+     0.4166666666666667
+    ]
+   },
+   "engine_repair_success": {
+    "mean": 0.3612565445026178,
+    "n": 955,
+    "seed_sd": null,
+    "seeds": [
+     0.3612565445026178
+    ]
+   },
+   "engine_unnecessary_edit": {
+    "mean": 0.03398926654740608,
+    "n": 559,
+    "seed_sd": null,
+    "seeds": [
+     0.03398926654740608
+    ]
+   },
+   "openai:judged_clean": {
+    "mean": 0.9905759162303664,
+    "n": 955,
+    "seed_sd": null,
+    "seeds": [
+     0.9905759162303664
+    ]
+   },
+   "openai:judged_cleanup_complete": {
+    "mean": 0.3089005235602094,
+    "n": 955,
+    "seed_sd": null,
+    "seeds": [
+     0.3089005235602094
+    ]
+   },
+   "openai:judged_fact_changed": {
+    "mean": 0.0031413612565445027,
+    "n": 955,
+    "seed_sd": null,
+    "seeds": [
+     0.0031413612565445027
+    ]
+   },
+   "openai:judged_hallucination": {
+    "mean": 0.0,
+    "n": 955,
+    "seed_sd": null,
+    "seeds": [
+     0.0
+    ]
+   },
+   "openai:judged_pass": {
+    "mean": 0.8910994764397906,
+    "n": 955,
+    "seed_sd": null,
+    "seeds": [
+     0.8910994764397906
+    ]
+   },
+   "openai:judged_semantic_damage": {
+    "mean": 0.0062827225130890054,
+    "n": 955,
+    "seed_sd": null,
+    "seeds": [
+     0.0062827225130890054
+    ]
+   },
+   "openai:judged_unwanted_edit": {
+    "mean": 0.009424083769633508,
+    "n": 955,
+    "seed_sd": null,
+    "seeds": [
+     0.009424083769633508
+    ]
+   },
+   "openai:rewritten_judged_pass": {
+    "mean": 0.9172774869109948,
+    "n": 955,
+    "seed_sd": null,
+    "seeds": [
+     0.9172774869109948
+    ]
+   }
+  },
+  "base-9b-prod-prompt": {
+   "anthropic:judged_clean": {
+    "mean": 0.7947643979057591,
+    "n": 955,
+    "seed_sd": null,
+    "seeds": [
+     0.7947643979057591
+    ]
+   },
+   "anthropic:judged_cleanup_complete": {
+    "mean": 0.16753926701570682,
+    "n": 955,
+    "seed_sd": null,
+    "seeds": [
+     0.16753926701570682
+    ]
+   },
+   "anthropic:judged_fact_changed": {
+    "mean": 0.024083769633507852,
+    "n": 955,
+    "seed_sd": null,
+    "seeds": [
+     0.024083769633507852
+    ]
+   },
+   "anthropic:judged_hallucination": {
+    "mean": 0.005235602094240838,
+    "n": 955,
+    "seed_sd": null,
+    "seeds": [
+     0.005235602094240838
+    ]
+   },
+   "anthropic:judged_pass": {
+    "mean": 0.7413612565445026,
+    "n": 955,
+    "seed_sd": null,
+    "seeds": [
+     0.7413612565445026
+    ]
+   },
+   "anthropic:judged_semantic_damage": {
+    "mean": 0.025130890052356022,
+    "n": 955,
+    "seed_sd": null,
+    "seeds": [
+     0.025130890052356022
+    ]
+   },
+   "anthropic:judged_unwanted_edit": {
+    "mean": 0.187434554973822,
+    "n": 955,
+    "seed_sd": null,
+    "seeds": [
+     0.187434554973822
+    ]
+   },
+   "anthropic:rewritten_judged_pass": {
+    "mean": 0.7455497382198953,
+    "n": 955,
+    "seed_sd": null,
+    "seeds": [
+     0.7455497382198953
+    ]
+   },
+   "engine_correction_success": {
+    "mean": 0.20625,
+    "n": 160,
+    "seed_sd": null,
+    "seeds": [
+     0.20625
+    ]
+   },
+   "engine_damage": {
+    "mean": 0.060732984293193716,
+    "n": 955,
+    "seed_sd": null,
+    "seeds": [
+     0.060732984293193716
+    ]
+   },
+   "engine_facts_changed": {
+    "mean": 0.005235602094240838,
+    "n": 955,
+    "seed_sd": null,
+    "seeds": [
+     0.005235602094240838
+    ]
+   },
+   "engine_hallucination": {
+    "mean": 0.05235602094240838,
+    "n": 955,
+    "seed_sd": null,
+    "seeds": [
+     0.05235602094240838
+    ]
+   },
+   "engine_negation_changed": {
+    "mean": 0.0,
+    "n": 955,
+    "seed_sd": null,
+    "seeds": [
+     0.0
+    ]
+   },
+   "engine_noop_preserved": {
+    "mean": 0.6010733452593918,
+    "n": 559,
+    "seed_sd": null,
+    "seeds": [
+     0.6010733452593918
+    ]
+   },
+   "engine_omission": {
+    "mean": 0.049214659685863874,
+    "n": 955,
+    "seed_sd": null,
+    "seeds": [
+     0.049214659685863874
+    ]
+   },
+   "engine_punctuation_exact": {
+    "mean": 0.46701570680628274,
+    "n": 955,
+    "seed_sd": null,
+    "seeds": [
+     0.46701570680628274
+    ]
+   },
+   "engine_punctuation_repaired": {
+    "mean": 0.15681233933161953,
+    "n": 389,
+    "seed_sd": null,
+    "seeds": [
+     0.15681233933161953
+    ]
+   },
+   "engine_reference_complete": {
+    "mean": 0.4073298429319372,
+    "n": 955,
+    "seed_sd": null,
+    "seeds": [
+     0.4073298429319372
+    ]
+   },
+   "engine_reference_repair": {
+    "mean": 0.13383838383838384,
+    "n": 396,
+    "seed_sd": null,
+    "seeds": [
+     0.13383838383838384
+    ]
+   },
+   "engine_repair_success": {
+    "mean": 0.2094240837696335,
+    "n": 955,
+    "seed_sd": null,
+    "seeds": [
+     0.2094240837696335
+    ]
+   },
+   "engine_unnecessary_edit": {
+    "mean": 0.39892665474060823,
+    "n": 559,
+    "seed_sd": null,
+    "seeds": [
+     0.39892665474060823
+    ]
+   },
+   "openai:judged_clean": {
+    "mean": 0.962303664921466,
+    "n": 955,
+    "seed_sd": null,
+    "seeds": [
+     0.962303664921466
+    ]
+   },
+   "openai:judged_cleanup_complete": {
+    "mean": 0.1769633507853403,
+    "n": 955,
+    "seed_sd": null,
+    "seeds": [
+     0.1769633507853403
+    ]
+   },
+   "openai:judged_fact_changed": {
+    "mean": 0.0020942408376963353,
+    "n": 955,
+    "seed_sd": null,
+    "seeds": [
+     0.0020942408376963353
+    ]
+   },
+   "openai:judged_hallucination": {
+    "mean": 0.0,
+    "n": 955,
+    "seed_sd": null,
+    "seeds": [
+     0.0
+    ]
+   },
+   "openai:judged_pass": {
+    "mean": 0.7382198952879581,
+    "n": 955,
+    "seed_sd": null,
+    "seeds": [
+     0.7382198952879581
+    ]
+   },
+   "openai:judged_semantic_damage": {
+    "mean": 0.014659685863874346,
+    "n": 955,
+    "seed_sd": null,
+    "seeds": [
+     0.014659685863874346
+    ]
+   },
+   "openai:judged_unwanted_edit": {
+    "mean": 0.03769633507853403,
+    "n": 955,
+    "seed_sd": null,
+    "seeds": [
+     0.03769633507853403
+    ]
+   },
+   "openai:rewritten_judged_pass": {
+    "mean": 0.7392670157068063,
+    "n": 955,
+    "seed_sd": null,
+    "seeds": [
+     0.7392670157068063
+    ]
+   }
+  },
+  "opus-5-5-fewshot": {
+   "anthropic:judged_clean": {
+    "mean": 0.9350104821802935,
+    "n": 954,
+    "seed_sd": null,
+    "seeds": [
+     0.9350104821802935
+    ]
+   },
+   "anthropic:judged_cleanup_complete": {
+    "mean": 0.2379454926624738,
+    "n": 954,
+    "seed_sd": null,
+    "seeds": [
+     0.2379454926624738
+    ]
+   },
+   "anthropic:judged_fact_changed": {
+    "mean": 0.013626834381551363,
+    "n": 954,
+    "seed_sd": null,
+    "seeds": [
+     0.013626834381551363
+    ]
+   },
+   "anthropic:judged_hallucination": {
+    "mean": 0.0,
+    "n": 954,
+    "seed_sd": null,
+    "seeds": [
+     0.0
+    ]
+   },
+   "anthropic:judged_pass": {
+    "mean": 0.8763102725366876,
+    "n": 954,
+    "seed_sd": null,
+    "seeds": [
+     0.8763102725366876
+    ]
+   },
+   "anthropic:judged_semantic_damage": {
+    "mean": 0.009433962264150943,
+    "n": 954,
+    "seed_sd": null,
+    "seeds": [
+     0.009433962264150943
+    ]
+   },
+   "anthropic:judged_unwanted_edit": {
+    "mean": 0.05345911949685535,
+    "n": 954,
+    "seed_sd": null,
+    "seeds": [
+     0.05345911949685535
+    ]
+   },
+   "anthropic:rewritten_judged_pass": {
+    "mean": 0.8846960167714885,
+    "n": 954,
+    "seed_sd": null,
+    "seeds": [
+     0.8846960167714885
+    ]
+   },
+   "engine_correction_success": {
+    "mean": 0.44654088050314467,
+    "n": 159,
+    "seed_sd": null,
+    "seeds": [
+     0.44654088050314467
+    ]
+   },
+   "engine_damage": {
+    "mean": 0.006289308176100629,
+    "n": 954,
+    "seed_sd": null,
+    "seeds": [
+     0.006289308176100629
+    ]
+   },
+   "engine_facts_changed": {
+    "mean": 0.0,
+    "n": 954,
+    "seed_sd": null,
+    "seeds": [
+     0.0
+    ]
+   },
+   "engine_hallucination": {
+    "mean": 0.0031446540880503146,
+    "n": 954,
+    "seed_sd": null,
+    "seeds": [
+     0.0031446540880503146
+    ]
+   },
+   "engine_negation_changed": {
+    "mean": 0.0020964360587002098,
+    "n": 954,
+    "seed_sd": null,
+    "seeds": [
+     0.0020964360587002098
+    ]
+   },
+   "engine_noop_preserved": {
+    "mean": 0.9481216457960644,
+    "n": 559,
+    "seed_sd": null,
+    "seeds": [
+     0.9481216457960644
+    ]
+   },
+   "engine_omission": {
+    "mean": 0.005241090146750524,
+    "n": 954,
+    "seed_sd": null,
+    "seeds": [
+     0.005241090146750524
+    ]
+   },
+   "engine_punctuation_exact": {
+    "mean": 0.7023060796645703,
+    "n": 954,
+    "seed_sd": null,
+    "seeds": [
+     0.7023060796645703
+    ]
+   },
+   "engine_punctuation_repaired": {
+    "mean": 0.33762886597938147,
+    "n": 388,
+    "seed_sd": null,
+    "seeds": [
+     0.33762886597938147
+    ]
+   },
+   "engine_reference_complete": {
+    "mean": 0.6960167714884696,
+    "n": 954,
+    "seed_sd": null,
+    "seeds": [
+     0.6960167714884696
+    ]
+   },
+   "engine_reference_repair": {
+    "mean": 0.3392405063291139,
+    "n": 395,
+    "seed_sd": null,
+    "seeds": [
+     0.3392405063291139
+    ]
+   },
+   "engine_repair_success": {
+    "mean": 0.2851153039832285,
+    "n": 954,
+    "seed_sd": null,
+    "seeds": [
+     0.2851153039832285
+    ]
+   },
+   "engine_unnecessary_edit": {
+    "mean": 0.0518783542039356,
+    "n": 559,
+    "seed_sd": null,
+    "seeds": [
+     0.0518783542039356
+    ]
+   },
+   "openai:judged_clean": {
+    "mean": 0.9958071278825996,
+    "n": 954,
+    "seed_sd": null,
+    "seeds": [
+     0.9958071278825996
+    ]
+   },
+   "openai:judged_cleanup_complete": {
+    "mean": 0.25471698113207547,
+    "n": 954,
+    "seed_sd": null,
+    "seeds": [
+     0.25471698113207547
+    ]
+   },
+   "openai:judged_fact_changed": {
+    "mean": 0.0020964360587002098,
+    "n": 954,
+    "seed_sd": null,
+    "seeds": [
+     0.0020964360587002098
+    ]
+   },
+   "openai:judged_hallucination": {
+    "mean": 0.0,
+    "n": 954,
+    "seed_sd": null,
+    "seeds": [
+     0.0
+    ]
+   },
+   "openai:judged_pass": {
+    "mean": 0.8375262054507338,
+    "n": 954,
+    "seed_sd": null,
+    "seeds": [
+     0.8375262054507338
+    ]
+   },
+   "openai:judged_semantic_damage": {
+    "mean": 0.0031446540880503146,
+    "n": 954,
+    "seed_sd": null,
+    "seeds": [
+     0.0031446540880503146
+    ]
+   },
+   "openai:judged_unwanted_edit": {
+    "mean": 0.0041928721174004195,
+    "n": 954,
+    "seed_sd": null,
+    "seeds": [
+     0.0041928721174004195
+    ]
+   },
+   "openai:rewritten_judged_pass": {
+    "mean": 0.8459119496855346,
+    "n": 954,
+    "seed_sd": null,
+    "seeds": [
+     0.8459119496855346
+    ]
+   }
+  },
+  "sonnet-5-5-fewshot": {
+   "anthropic:judged_clean": {
+    "mean": 0.949738219895288,
+    "n": 955,
+    "seed_sd": null,
+    "seeds": [
+     0.949738219895288
+    ]
+   },
+   "anthropic:judged_cleanup_complete": {
+    "mean": 0.31204188481675393,
+    "n": 955,
+    "seed_sd": null,
+    "seeds": [
+     0.31204188481675393
+    ]
+   },
+   "anthropic:judged_fact_changed": {
+    "mean": 0.008376963350785341,
+    "n": 955,
+    "seed_sd": null,
+    "seeds": [
+     0.008376963350785341
+    ]
+   },
+   "anthropic:judged_hallucination": {
+    "mean": 0.0,
+    "n": 955,
+    "seed_sd": null,
+    "seeds": [
+     0.0
+    ]
+   },
+   "anthropic:judged_pass": {
+    "mean": 0.9047120418848168,
+    "n": 955,
+    "seed_sd": null,
+    "seeds": [
+     0.9047120418848168
+    ]
+   },
+   "anthropic:judged_semantic_damage": {
+    "mean": 0.010471204188481676,
+    "n": 955,
+    "seed_sd": null,
+    "seeds": [
+     0.010471204188481676
+    ]
+   },
+   "anthropic:judged_unwanted_edit": {
+    "mean": 0.04397905759162304,
+    "n": 955,
+    "seed_sd": null,
+    "seeds": [
+     0.04397905759162304
+    ]
+   },
+   "anthropic:rewritten_judged_pass": {
+    "mean": 0.9109947643979057,
+    "n": 955,
+    "seed_sd": null,
+    "seeds": [
+     0.9109947643979057
+    ]
+   },
+   "engine_correction_success": {
+    "mean": 0.675,
+    "n": 160,
+    "seed_sd": null,
+    "seeds": [
+     0.675
+    ]
+   },
+   "engine_damage": {
+    "mean": 0.02931937172774869,
+    "n": 955,
+    "seed_sd": null,
+    "seeds": [
+     0.02931937172774869
+    ]
+   },
+   "engine_facts_changed": {
+    "mean": 0.0010471204188481676,
+    "n": 955,
+    "seed_sd": null,
+    "seeds": [
+     0.0010471204188481676
+    ]
+   },
+   "engine_hallucination": {
+    "mean": 0.02198952879581152,
+    "n": 955,
+    "seed_sd": null,
+    "seeds": [
+     0.02198952879581152
+    ]
+   },
+   "engine_negation_changed": {
+    "mean": 0.0010471204188481676,
+    "n": 955,
+    "seed_sd": null,
+    "seeds": [
+     0.0010471204188481676
+    ]
+   },
+   "engine_noop_preserved": {
+    "mean": 0.8407871198568873,
+    "n": 559,
+    "seed_sd": null,
+    "seeds": [
+     0.8407871198568873
+    ]
+   },
+   "engine_omission": {
+    "mean": 0.015706806282722512,
+    "n": 955,
+    "seed_sd": null,
+    "seeds": [
+     0.015706806282722512
+    ]
+   },
+   "engine_punctuation_exact": {
+    "mean": 0.7413612565445026,
+    "n": 955,
+    "seed_sd": null,
+    "seeds": [
+     0.7413612565445026
+    ]
+   },
+   "engine_punctuation_repaired": {
+    "mean": 0.455012853470437,
+    "n": 389,
+    "seed_sd": null,
+    "seeds": [
+     0.455012853470437
+    ]
+   },
+   "engine_reference_complete": {
+    "mean": 0.6743455497382199,
+    "n": 955,
+    "seed_sd": null,
+    "seeds": [
+     0.6743455497382199
+    ]
+   },
+   "engine_reference_repair": {
+    "mean": 0.4393939393939394,
+    "n": 396,
+    "seed_sd": null,
+    "seeds": [
+     0.4393939393939394
+    ]
+   },
+   "engine_repair_success": {
+    "mean": 0.3204188481675393,
+    "n": 955,
+    "seed_sd": null,
+    "seeds": [
+     0.3204188481675393
+    ]
+   },
+   "engine_unnecessary_edit": {
+    "mean": 0.1592128801431127,
+    "n": 559,
+    "seed_sd": null,
+    "seeds": [
+     0.1592128801431127
+    ]
+   },
+   "openai:judged_clean": {
+    "mean": 0.9926701570680628,
+    "n": 955,
+    "seed_sd": null,
+    "seeds": [
+     0.9926701570680628
+    ]
+   },
+   "openai:judged_cleanup_complete": {
+    "mean": 0.30157068062827225,
+    "n": 955,
+    "seed_sd": null,
+    "seeds": [
+     0.30157068062827225
+    ]
+   },
+   "openai:judged_fact_changed": {
+    "mean": 0.0020942408376963353,
+    "n": 955,
+    "seed_sd": null,
+    "seeds": [
+     0.0020942408376963353
+    ]
+   },
+   "openai:judged_hallucination": {
+    "mean": 0.0010471204188481676,
+    "n": 955,
+    "seed_sd": null,
+    "seeds": [
+     0.0010471204188481676
+    ]
+   },
+   "openai:judged_pass": {
+    "mean": 0.8837696335078534,
+    "n": 955,
+    "seed_sd": null,
+    "seeds": [
+     0.8837696335078534
+    ]
+   },
+   "openai:judged_semantic_damage": {
+    "mean": 0.005235602094240838,
+    "n": 955,
+    "seed_sd": null,
+    "seeds": [
+     0.005235602094240838
+    ]
+   },
+   "openai:judged_unwanted_edit": {
+    "mean": 0.007329842931937173,
+    "n": 955,
+    "seed_sd": null,
+    "seeds": [
+     0.007329842931937173
+    ]
+   },
+   "openai:rewritten_judged_pass": {
+    "mean": 0.8879581151832461,
+    "n": 955,
+    "seed_sd": null,
+    "seeds": [
+     0.8879581151832461
+    ]
+   }
+  }
+ },
+ "arms": {
+  "A2": [
+   "A2-ck199"
+  ],
+  "A2prime": [
+   "A2prime-ck199"
+  ],
+  "C": [
+   "C-merged"
+  ],
+  "M1": [
+   "M1s0-ck426"
+  ],
+  "M2": [
+   "M2s0-ck426"
+  ],
+  "M3": [
+   "M3-ck426"
+  ],
+  "base-9b-prod-prompt": [
+   "base-9b-prod-prompt"
+  ],
+  "opus-5-5-fewshot": [
+   "opus-5-5-fewshot"
+  ],
+  "sonnet-5-5-fewshot": [
+   "sonnet-5-5-fewshot"
+  ]
+ },
+ "available_arms": [
+  "C",
+  "M2",
+  "A2prime",
+  "M1",
+  "A2",
+  "M3",
+  "base-9b-prod-prompt",
+  "sonnet-5-5-fewshot",
+  "opus-5-5-fewshot"
+ ],
+ "judge_runs": {
+  "anthropic": "final-main-anthropic",
+  "anthropic:rewritten": "final-c3-anthropic",
+  "openai": "final-main-openai",
+  "openai:rewritten": "final-c3-openai"
+ },
+ "judge_unjudged_rows": {
+  "anthropic": 0,
+  "anthropic:rewritten": 0,
+  "openai": 0,
+  "openai:rewritten": 0
+ },
+ "resamples": 10000,
+ "seed": 20261015,
+ "stage2": {
+  "C1": {
+   "components": [
+    {
+     "ci99": [
+      -0.014659685863874346,
+      0.02617801047120419
+     ],
+     "component": "M2 - C judged pass (anthropic)",
+     "estimate": 0.005235602094240838,
+     "n_cases": 955,
+     "n_complete": 955,
+     "outcome": "fail",
+     "threshold": 0.0
+    },
+    {
+     "ci99": [
+      0.03455497382198953,
+      0.07853403141361257
+     ],
+     "component": "M2 - C judged pass (openai)",
+     "estimate": 0.05549738219895288,
+     "n_cases": 955,
+     "n_complete": 955,
+     "outcome": "pass",
+     "threshold": 0.0
+    },
+    {
+     "ci99": [
+      0.0,
+      0.019895287958115182
+     ],
+     "component": "C - M2 engine damage",
+     "estimate": 0.009424083769633508,
+     "n_cases": 955,
+     "n_complete": 955,
+     "outcome": "pass",
+     "threshold": -0.01
+    }
+   ],
+   "outcome": "not supported"
+  },
+  "C2": {
+   "components": [
+    {
+     "ci99": [
+      0.032460732984293195,
+      0.0712041884816754
+     ],
+     "component": "A2prime - M2 engine damage",
+     "estimate": 0.05130890052356021,
+     "n_cases": 955,
+     "n_complete": 955,
+     "outcome": "pass",
+     "threshold": 0.0
+    }
+   ],
+   "outcome": "supported"
+  },
+  "C3": {
+   "components": [
+    {
+     "ci99": [
+      0.021465968586387434,
+      0.05654450261780105
+     ],
+     "component": "rewritten-key shift, new minus earlier data (anthropic)",
+     "estimate": 0.03821989528795811,
+     "n_cases": 955,
+     "n_complete": 955,
+     "outcome": "pass",
+     "threshold": 0.0
+    },
+    {
+     "ci99": [
+      0.01099476439790576,
+      0.03717277486910995
+     ],
+     "component": "rewritten-key shift, new minus earlier data (openai)",
+     "estimate": 0.023036649214659685,
+     "n_cases": 955,
+     "n_complete": 955,
+     "outcome": "pass",
+     "threshold": 0.0
+    }
+   ],
+   "outcome": "supported"
+  },
+  "C4": {
+   "components": [
+    {
+     "ci99": [
+      0.10785340314136126,
+      0.18952879581151832
+     ],
+     "component": "M2 - base-9b-prod-prompt judged pass (anthropic)",
+     "estimate": 0.14764397905759163,
+     "n_cases": 955,
+     "n_complete": 955,
+     "outcome": "pass",
+     "threshold": 0.05
+    },
+    {
+     "ci99": [
+      0.11832460732984293,
+      0.1905759162303665
+     ],
+     "component": "M2 - base-9b-prod-prompt judged pass (openai)",
+     "estimate": 0.15392670157068064,
+     "n_cases": 955,
+     "n_complete": 955,
+     "outcome": "pass",
+     "threshold": 0.05
+    }
+   ],
+   "outcome": "supported"
+  },
+  "C5": {
+   "components": [
+    {
+     "ci99": [
+      -0.03769633507853403,
+      -0.0010471204188481676
+     ],
+     "component": "M1 - M3 judged pass (anthropic)",
+     "estimate": -0.018848167539267015,
+     "n_cases": 955,
+     "n_complete": 955,
+     "outcome": "fail",
+     "threshold": -0.02
+    },
+    {
+     "ci99": [
+      -0.015706806282722512,
+      0.015706806282722512
+     ],
+     "component": "M1 - M3 judged pass (openai)",
+     "estimate": 0.0,
+     "n_cases": 955,
+     "n_complete": 955,
+     "outcome": "pass",
+     "threshold": -0.02
+    }
+   ],
+   "outcome": "not supported"
+  },
+  "H5 opus-5-5-fewshot": {
+   "components": [
+    {
+     "ci99": [
+      -0.015723270440251572,
+      0.039832285115303984
+     ],
+     "ci99_missing_against_claim": [
+      -0.014659685863874346,
+      0.040837696335078534
+     ],
+     "component": "M2 - opus-5-5-fewshot judged pass (anthropic)",
+     "estimate": 0.012578616352201259,
+     "n_cases": 955,
+     "n_complete": 954,
+     "outcome": "pass",
+     "threshold": -0.03
+    },
+    {
+     "ci99": [
+      0.02410901467505241,
+      0.08490566037735849
+     ],
+     "ci99_missing_against_claim": [
+      0.025125654450261832,
+      0.08586387434554973
+     ],
+     "component": "M2 - opus-5-5-fewshot judged pass (openai)",
+     "estimate": 0.05450733752620545,
+     "n_cases": 955,
+     "n_complete": 954,
+     "outcome": "pass",
+     "threshold": -0.03
+    }
+   ],
+   "outcome": "supported"
+  },
+  "H5 sonnet-5-5-fewshot": {
+   "components": [
+    {
+     "ci99": [
+      -0.04607329842931937,
+      0.014664921465967748
+     ],
+     "component": "M2 - sonnet-5-5-fewshot judged pass (anthropic)",
+     "estimate": -0.015706806282722512,
+     "n_cases": 955,
+     "n_complete": 955,
+     "outcome": "fail",
+     "threshold": -0.03
+    },
+    {
+     "ci99": [
+      -0.016753926701570682,
+      0.033507853403141365
+     ],
+     "component": "M2 - sonnet-5-5-fewshot judged pass (openai)",
+     "estimate": 0.008376963350785341,
+     "n_cases": 955,
+     "n_complete": 955,
+     "outcome": "pass",
+     "threshold": -0.03
+    }
+   ],
+   "outcome": "not supported"
+  }
+ }
+}
