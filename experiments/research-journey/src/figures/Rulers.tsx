@@ -22,13 +22,32 @@ interface Ruler {
 }
 
 const flip = (r: ContrastRow): [number, number] => [-r.ci95[1], -r.ci95[0]]
-const FINAL: Record<string, string> = { C1a: 'C1', C1b: 'C1', C2: 'C2', C3: 'C3', C4: 'C4', C5: 'C5', H5a: 'H5 sonnet-5-5-fewshot', H5b: 'H5 opus-5-5-fewshot' }
+// What each practice row stands for on the final set: a whole claim, or one part of C1.
+const FINAL: Record<string, { claim: string; parts?: string[] }> = {
+  C1a: { claim: 'C1', parts: ['M2 - C judged pass (anthropic)', 'M2 - C judged pass (openai)'] },
+  C1b: { claim: 'C1', parts: ['C - M2 engine damage'] },
+  C2: { claim: 'C2' },
+  C3: { claim: 'C3' },
+  C4: { claim: 'C4' },
+  C5: { claim: 'C5' },
+  H5a: { claim: 'H5 sonnet-5-5-fewshot' },
+  H5b: { claim: 'H5 opus-5-5-fewshot' },
+}
 type View = 'final' | 'practice'
 
 export default function Rulers({ depth }: InstrumentProps) {
   const { development, h5Development, final } = useSnapshot()
   const [hot, setHot] = useState<string | null>(null)
   const [view, setView] = useState<View>('final')
+  const finalOf = (id: string) => {
+    const f = FINAL[id]
+    const claim = f ? final.stage2?.[f.claim] : undefined
+    if (!f || !claim) return 'pending'
+    if (!f.parts) return claim.outcome
+    const parts = claim.components.filter((c) => f.parts!.includes(c.name))
+    if (parts.length !== f.parts.length) return 'pending'
+    return `this part ${parts.every((c) => c.outcome === 'pass') ? 'passed' : 'fell short'}; ${f.claim} ${claim.outcome}`
+  }
   const exp = (metric: string, contrast: string) => development.exploratory?.[metric]?.find((r) => r.contrast === contrast)
   const fam = (block: typeof development, metric: string, contrast: string) => block.contrasts[metric]?.find((r) => r.contrast === contrast)
   const m2c = exp('anthropic:judged_pass', 'M2 vs C')
@@ -87,10 +106,10 @@ export default function Rulers({ depth }: InstrumentProps) {
                     <span className="font-medium text-ink">{r.label}</span>
                     <span className="text-[12.5px] text-ink-3">
                       Practice {r.estimate !== null ? pts(r.estimate) : '—'}
-                      {depth >= 3 ? `, ${r.practice}` : ''}; final: {final.stage2?.[FINAL[r.id]!]?.outcome ?? 'pending'}
+                      {depth >= 3 ? `, ${r.practice}` : ''}; final: {finalOf(r.id)}
                     </span>
                   </p>
-                  <svg viewBox={`0 0 ${W} 34`} width="100%" role="img" aria-label={`${r.label}. Pass mark ${pts(r.threshold)}. Practice estimate ${r.estimate !== null ? pts(r.estimate) : 'none'}. Final: ${final.stage2?.[FINAL[r.id]!]?.outcome ?? 'pending'}.`}>
+                  <svg viewBox={`0 0 ${W} 34`} width="100%" role="img" aria-label={`${r.label}. Pass mark ${pts(r.threshold)}. Practice estimate ${r.estimate !== null ? pts(r.estimate) : 'none'}. Final: ${finalOf(r.id)}.`}>
                     <rect x={x(r.threshold)} y={8} width={W - 16 - x(r.threshold)} height={18} rx={4} fill="var(--good)" opacity={hot === r.id ? 0.16 : 0.09} />
                     <line x1={16} x2={W - 16} y1={17} y2={17} stroke="var(--rule-strong)" />
                     <line x1={x(r.threshold)} x2={x(r.threshold)} y1={4} y2={30} stroke="var(--ink)" strokeWidth={1.6} />
