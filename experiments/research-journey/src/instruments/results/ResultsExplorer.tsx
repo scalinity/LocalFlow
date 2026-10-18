@@ -265,7 +265,8 @@ export default function ResultsExplorer({ depth }: InstrumentProps) {
         </div>
       ) : null}
       <p className="mt-3 min-h-[2.6rem] rounded-xl bg-paper px-4 py-2.5 text-[13.5px] leading-snug text-ink-2" aria-live="polite">
-        {hover ?? 'Point at a row, or move to it with Tab, for its exact figures.'}
+        {/* On the final set the claims chart has its own readout, so this one names the models' chart. */}
+        {hover ?? (setKey === 'final' ? 'Point at a model in the first chart, or move to it with Tab, for its exact figure.' : 'Point at a row, or move to it with Tab, for its exact figures.')}
       </p>
       {depth >= 4 ? (
         <p className="caption mt-3 text-[12.5px]">
