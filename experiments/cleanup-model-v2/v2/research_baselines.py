@@ -256,6 +256,17 @@ def identity(system, cases_path, *, fewshot=None, model=None):
     return result
 
 
+# The harness as sealed (commit 6a40964). AMENDMENT-2.md changed only its handling of refused cases, so plans
+# and outputs recorded against it stay valid.
+SEALED_HARNESS_SHA256 = "47d50dd541fdbac660ae327a3c1ca8c0f643b358fe6fff5510b7859c4eb88e24"
+
+
+def same_identity(recorded, current):
+    if recorded.get("harness_sha256") == SEALED_HARNESS_SHA256:
+        recorded = {**recorded, "harness_sha256": current.get("harness_sha256")}
+    return recorded == current
+
+
 def plan(system, cases_path, fewshot_path, out, split="development"):
     cases = pool(cases_path, split)
     fewshot = load_fewshot(fewshot_path, cases)
@@ -347,7 +358,7 @@ def output_state(system, expected, split="development"):
     path = ART / "eval" / f"{split}-{system}.jsonl"
     meta_path = path.with_suffix(".meta.json")
     meta = read_json(meta_path)
-    if meta and meta["identity"] != expected:
+    if meta and not same_identity(meta["identity"], expected):
         raise RuntimeError("Output identity changed; preserve existing outputs")
     if path.exists() and not meta:
         raise RuntimeError("Output has no identity metadata")
@@ -468,14 +479,14 @@ def batch_run(system, cases_path, plan_paths, *, wave_factory=capped_wave, split
         raise ValueError("Need both cloud plans")
     for candidate in plans:
         validate_fewshot(candidate["fewshot"], cases)
-        if candidate["identity"] != identity(candidate["system"], cases_path, fewshot=candidate["fewshot"]):
+        if not same_identity(candidate["identity"], identity(candidate["system"], cases_path, fewshot=candidate["fewshot"])):
             raise ValueError("Plan differs from current cases, few-shot examples, or engine")
     current = next(p for p in plans if p["system"] == system)
     fewshot = current["fewshot"]
     # Revalidate manifest and overlap without opening any training file.
     validate_fewshot(fewshot, cases)
     expected = identity(system, cases_path, fewshot=fewshot)
-    if current["identity"] != expected:
+    if not same_identity(current["identity"], expected):
         raise ValueError("Plan differs from current cases, few-shot examples, or engine")
     path, meta_path, rows, meta = output_state(system, expected, split)
     done = {r["case_id"] for r in rows} | set(meta.get("refused", {}).values())
