@@ -14,12 +14,12 @@ import type { InstrumentProps } from '../Instrument'
 
 type SetKey = 'dev' | 'h5' | 'rewritten' | 'finalckpt' | 'final'
 
-const SETS: { key: SetKey; label: string; block: keyof Snapshot; note: string }[] = [
-  { key: 'dev', label: 'Practice set', block: 'development', note: '431 practice cases, each run’s selected checkpoint, the original answer key. Pre-registered.' },
-  { key: 'h5', label: 'M2 beside Claude', block: 'h5Development', note: 'The same 431 cases, judged in a separate pass that shows M2 (seed 0) beside the two Claude few-shot systems. Pre-registered (H5).' },
-  { key: 'rewritten', label: 'Rewritten key', block: 'rewrittenKeyDevelopment', note: 'The practice set with its answer key rewritten in the minimal-edit style and re-judged by Opus only. Post hoc.' },
-  { key: 'finalckpt', label: 'Last checkpoints', block: 'finalCheckpointsDevelopment', note: 'Each run at its last checkpoint instead of the selected one. Post hoc.' },
-  { key: 'final', label: 'Final set', block: 'final', note: 'The 955 locked final cases, one run per system, graded by Claude Sonnet and GPT. Pre-registered (C1 to C5, H5). Claude Opus few-shot has 954: one case was refused.' },
+const SETS: { key: SetKey; label: string; block: keyof Snapshot; evidence: string; note: string }[] = [
+  { key: 'dev', label: 'Practice set', block: 'development', evidence: 'results-dev', note: '431 practice cases, each run’s selected checkpoint, the original answer key. Pre-registered.' },
+  { key: 'h5', label: 'M2 beside Claude', block: 'h5Development', evidence: 'results-h5', note: 'The same 431 cases, judged in a separate pass that shows M2 (seed 0) beside the two Claude few-shot systems. Pre-registered (H5).' },
+  { key: 'rewritten', label: 'Rewritten key', block: 'rewrittenKeyDevelopment', evidence: 'results-rewritten', note: 'The practice set with its answer key rewritten in the minimal-edit style and re-judged by Opus only. Post hoc.' },
+  { key: 'finalckpt', label: 'Last checkpoints', block: 'finalCheckpointsDevelopment', evidence: 'results-final-ckpt', note: 'Each run at its last checkpoint instead of the selected one. Post hoc.' },
+  { key: 'final', label: 'Final set', block: 'final', evidence: 'results-stage2', note: 'The 955 locked final cases, one run per system, graded by Claude Sonnet and GPT. Pre-registered (C1 to C5, H5). Claude Opus few-shot has 954: one case was refused.' },
 ]
 
 const ORDER = ['base-4b-prod-prompt', 'base-9b-prod-prompt', 'C', 'M1', 'M2', 'M3', 'A1', 'A3', 'A2', 'A2prime', 'sonnet-5-5-fewshot', 'opus-5-5-fewshot']
@@ -257,7 +257,7 @@ export default function ResultsExplorer({ depth }: InstrumentProps) {
             .map(([k, v]) => `${k} ${v}`)
             .join(', ')}
           ; unjudged rows {Object.values(block.unjudgedRows).reduce((a, b) => a + b, 0)}.{' '}
-          <button type="button" className="text-ins underline underline-offset-2" onClick={() => openEvidence(setKey === 'h5' ? 'results-h5' : setKey === 'rewritten' ? 'results-rewritten' : setKey === 'finalckpt' ? 'results-final-ckpt' : setKey === 'final' ? 'results-stage2' : 'results-dev')}>
+          <button type="button" className="text-ins underline underline-offset-2" onClick={() => openEvidence(set.evidence)}>
             Open the source
           </button>
         </p>
