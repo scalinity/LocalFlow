@@ -52,7 +52,7 @@ export default function Vault({ depth }: InstrumentProps) {
               </button>
             ) : (
               <p className="mt-3 rounded-xl bg-ins/10 px-3 py-2 text-[13.5px] text-ink-2">
-                The models read these cases once, from 4:50 p.m. on October 17, after the plan was sealed. Their answers are saved; nobody has read the results yet.
+                The models read these cases once, from 4:50 p.m. on October 17, after the plan was sealed. Their answers were saved unchanged, graded, and read once by the sealed analysis, from 1:21 a.m. on October 18.
               </p>
             )}
           </div>
