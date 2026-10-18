@@ -88,7 +88,7 @@ const ROW = 30
 const LABEL_W = 190
 const WIDTH = 900
 const START = '2026-10-17T16:30:00-04:00'
-const END = '2026-10-18T00:15:00-04:00'
+const END = '2026-10-18T01:45:00-04:00'
 
 function Clock() {
   const [hover, setHover] = useState<{ lane: Lane; span: Span } | null>(null)
@@ -116,7 +116,7 @@ function Clock() {
   return (
     <div>
       <div className="overflow-x-auto">
-        <svg viewBox={`0 0 ${WIDTH} ${height}`} className="min-w-[740px] lg:min-w-0" role="img" aria-label="The final run on a clock, from 4:30 p.m. to past midnight, one row per job">
+        <svg viewBox={`0 0 ${WIDTH} ${height}`} className="min-w-[740px] lg:min-w-0" role="img" aria-label="The final run on a clock, from 4:30 p.m. to 1:45 a.m., one row per job">
           <rect x={x(new Date(NINE_MINUTES.start))} width={Math.max(3, x(new Date(NINE_MINUTES.end)) - x(new Date(NINE_MINUTES.start)))} y={20} height={height - 26} fill="var(--ins-wash)" />
           {ticks.map((t) => (
             <g key={t.toISOString()}>

@@ -47,7 +47,7 @@ And the harder half: how do you *prove* it, rather than just believe it? Most of
         2: `Proving it takes three things: models to compare, a fair test, and a trustworthy way to grade the answers. The models come first (chapters 1 to 3). Then the study builds the test and the grading (chapters 4 to 8), locks the plan (chapter 9), and runs the final test once (chapter 10).
 
 Along the way, some assumptions turned out to be wrong, including one about the test’s own answer key. Those turns are part of the story, not footnotes to it.`,
-        3: `The study compares cleanup models on synthetic dictation cases, each with a written answer key, and grades every answer two ways: a deterministic check by the rule engine, and AI graders from different companies. Development results on 431 cases shaped five claims; a final set of 955 cases, sealed until the claims were fixed, tests them once {ev:prereg} {ev:amendment-1}.`,
+        3: `The study compares cleanup models on synthetic dictation cases, each with a written answer key, and grades every answer two ways: a deterministic check by the rule engine, and AI graders from different companies. Development results on 431 cases shaped five claims; a final set of 955 cases, sealed until the claims were fixed, tested them once {ev:prereg} {ev:amendment-1}.`,
         4: `- Pre-registration (written before training): docs/v2/research/PREREGISTRATION.md {ev:prereg}.
 - Confirmatory claims and their tests: docs/v2/research/AMENDMENT-1.md {ev:amendment-1}.
 - Everything in this publication is drawn from the repository at the snapshot commit shown at the bottom of the page, plus a few local records that are named but not published.`,

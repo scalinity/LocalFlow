@@ -1,9 +1,9 @@
 import { GRADING_JOBS, RUN_SNAPSHOT_AT } from '../data/stage2'
 import type { InstrumentProps } from '../instruments/Instrument'
-import { clock } from '../lib/format'
+import { clock, shortDay } from '../lib/format'
 import { FigureFrame } from './FigureFrame'
 
-/** The four grading jobs started at 10:49 p.m.: three finished, one running at the snapshot. */
+/** The four grading jobs started at 10:49 p.m., as they stood at the snapshot. */
 function Ring({ done, running }: { done: boolean; running: boolean }) {
   const r = 26
   const c = 2 * Math.PI * r
@@ -18,8 +18,12 @@ function Ring({ done, running }: { done: boolean; running: boolean }) {
 }
 
 export default function GradingJobs({ depth }: InstrumentProps) {
+  const last = GRADING_JOBS.map((j) => j.end ?? '').sort().at(-1)!
+  const note = GRADING_JOBS.some((j) => j.status === 'running')
+    ? `As of ${shortDay(RUN_SNAPSHOT_AT)} at ${clock(RUN_SNAPSHOT_AT)} ET. A dashed ring is still running; it shows no progress figure because none is recorded.`
+    : `All four finished, the last on ${shortDay(last)} at ${clock(last)} ET.`
   return (
-    <FigureFrame title="The four grading jobs" sources={['stage2-logs']} note={`As of ${clock(RUN_SNAPSHOT_AT)} ET on October 17. A dashed ring is still running; it shows no progress figure because none is recorded.`}>
+    <FigureFrame title="The four grading jobs" sources={['stage2-logs']} note={note}>
       <ul className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         {GRADING_JOBS.map((j) => (
           <li key={`${j.grader}-${j.job}`} className="flex items-center gap-3 rounded-xl bg-paper px-3 py-3">

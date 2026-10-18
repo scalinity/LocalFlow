@@ -1,7 +1,7 @@
 import { Link } from '../../app/Link'
 import { hrefFor, useRoute } from '../../app/router'
 import { CHAPTERS, CURRENT_CHAPTER } from '../../content/chapters'
-import { RUN_SNAPSHOT_AT } from '../../data/stage2'
+import { RUN_SNAPSHOT_AT, RUN_STATE } from '../../data/stage2'
 import { clock, shortDay } from '../../lib/format'
 import { STEP_STATUS, StepGlyph } from '../primitives/Status'
 
@@ -16,7 +16,7 @@ export function YouAreHere({ compact = false }: { compact?: boolean }) {
         <span className="block font-semibold text-ins">You are here</span>
         {compact ? null : (
           <span className="block text-ink-3">
-            Final grading under way, {shortDay(RUN_SNAPSHOT_AT)} at {clock(RUN_SNAPSHOT_AT)} ET
+            {RUN_STATE}, {shortDay(RUN_SNAPSHOT_AT)} at {clock(RUN_SNAPSHOT_AT)} ET
           </span>
         )}
       </span>

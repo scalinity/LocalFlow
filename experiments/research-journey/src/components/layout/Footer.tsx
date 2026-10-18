@@ -15,7 +15,7 @@ export function Footer() {
           ({formatWhen({ iso: meta.commitDate, precision: 'minute' })}); final-run status as of {formatWhen({ iso: RUN_SNAPSHOT_AT, precision: 'minute' })}.
         </p>
         <p className="sm:text-right">
-          Development results come from the 431-case practice set and are labelled as such. No final-set result appears here until the registered analysis has run.
+          Development results come from the 431-case practice set and are labelled as such. Final-set results come only from the registered analysis on the locked set.
         </p>
       </div>
     </footer>

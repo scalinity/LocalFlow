@@ -19,7 +19,7 @@ export default function HundredPractice({ depth }: InstrumentProps) {
       depth={depth}
       title="Out of every 100 practice cases"
       sources={['results-dev']}
-      note="Practice set, 431 cases. M2 is the average of its three training runs. Development results: they guided the study, the final test confirms."
+      note="Practice set, 431 cases. M2 is the average of its three training runs. Development results: they guided the study; the final test confirmed or rejected each claim."
       systems={SYSTEMS}
       measures={[
         { id: 'pass', label: 'Passed the grader', unit: 'practice case', cases: 431, values: of('anthropic:judged_pass') },

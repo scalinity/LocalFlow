@@ -8,20 +8,39 @@ import { CONTRAST_CLAIM, METRIC_BY_ID, METRICS, type Metric } from '../../data/m
 import { ARM_TO_MODEL, MODEL_BY_ID } from '../../data/models'
 import { useSnapshot, type AnalysisBlock, type ContrastRow, type Snapshot } from '../../data/results'
 import { FAMILY } from '../../data/families'
+import { FinalClaims } from '../../figures/FinalClaims'
 import { pct, pts } from '../../lib/format'
 import type { InstrumentProps } from '../Instrument'
 
 type SetKey = 'dev' | 'h5' | 'rewritten' | 'finalckpt' | 'final'
 
-const SETS: { key: SetKey; label: string; block?: keyof Snapshot; note: string }[] = [
+const SETS: { key: SetKey; label: string; block: keyof Snapshot; note: string }[] = [
   { key: 'dev', label: 'Practice set', block: 'development', note: '431 practice cases, each run’s selected checkpoint, the original answer key. Pre-registered.' },
   { key: 'h5', label: 'M2 beside Claude', block: 'h5Development', note: 'The same 431 cases, judged in a separate pass that shows M2 (seed 0) beside the two Claude few-shot systems. Pre-registered (H5).' },
   { key: 'rewritten', label: 'Rewritten key', block: 'rewrittenKeyDevelopment', note: 'The practice set with its answer key rewritten in the minimal-edit style and re-judged by Opus only. Post hoc.' },
   { key: 'finalckpt', label: 'Last checkpoints', block: 'finalCheckpointsDevelopment', note: 'Each run at its last checkpoint instead of the selected one. Post hoc.' },
-  { key: 'final', label: 'Final set', note: 'Pending: the 955 final cases are decided only by the registered analysis, which has not run.' },
+  { key: 'final', label: 'Final set', block: 'final', note: 'The 955 locked final cases, one run per system, graded by Claude Sonnet and GPT. Pre-registered (C1 to C5, H5). Claude Opus few-shot has 954: one case was refused.' },
 ]
 
 const ORDER = ['base-4b-prod-prompt', 'base-9b-prod-prompt', 'C', 'M1', 'M2', 'M3', 'A1', 'A3', 'A2', 'A2prime', 'sonnet-5-5-fewshot', 'opus-5-5-fewshot']
+
+// On the final set the Anthropic grader is Sonnet, and the engine's case counts are the final set's.
+function forSet(m: Metric, setKey: SetKey, block: AnalysisBlock): Metric {
+  if (setKey !== 'final') return m
+  const n = block.values.M2?.[m.id]?.n
+  switch (m.id) {
+    case 'anthropic:judged_pass':
+      return { ...m, label: 'Passed, graded by Claude Sonnet', short: 'Sonnet pass', plain: 'Share of answers Claude Sonnet, one of the two final graders, found complete and faithful.' }
+    case 'openai:judged_pass':
+      return { ...m, plain: 'The same verdict from OpenAI’s gpt-6.1-sol, the other final grader.' }
+    case 'engine_correction_success':
+      return { ...m, plain: `Of the ${n} final cases with a spoken correction, the share where the corrected-away words were removed and no fact was lost.` }
+    case 'engine_noop_preserved':
+      return { ...m, plain: `Of the ${n} final cases that need no change, the share returned exactly as they were.` }
+    default:
+      return m
+  }
+}
 
 const nameOf = (arm: string) => MODEL_BY_ID[ARM_TO_MODEL[arm] ?? '']?.label ?? arm
 const colorOf = (arm: string) => {
@@ -154,8 +173,8 @@ export default function ResultsExplorer({ depth }: InstrumentProps) {
   const [table, setTable] = useState(false)
   const setKey = (SETS.find((s) => s.key === params.get('set'))?.key ?? 'dev') as SetKey
   const set = SETS.find((s) => s.key === setKey)!
-  const block = set.block ? (snapshot[set.block] as AnalysisBlock) : undefined
-  const available = METRICS.filter((m) => block && Object.values(block.values).some((v) => v[m.id]))
+  const block = snapshot[set.block] as AnalysisBlock
+  const available = METRICS.filter((m) => Object.values(block.values).some((v) => v[m.id])).map((m) => forSet(m, setKey, block))
   const metric = available.find((m) => m.id === params.get('metric')) ?? available[0] ?? METRIC_BY_ID['anthropic:judged_pass']!
 
   return (
@@ -169,7 +188,7 @@ export default function ResultsExplorer({ depth }: InstrumentProps) {
               size="sm"
               value={setKey}
               onChange={(v) => setParams({ set: v === 'dev' ? null : v })}
-              options={SETS.map((s) => ({ value: s.key, label: s.label, disabled: s.key === 'final', title: s.key === 'final' ? s.note : undefined }))}
+              options={SETS.map((s) => ({ value: s.key, label: s.label }))}
             />
           </div>
         ) : null}
@@ -191,72 +210,75 @@ export default function ResultsExplorer({ depth }: InstrumentProps) {
       <p className="mt-4 text-[14px] leading-snug text-ink-2">{metric.plain}</p>
       <p className="caption mt-1 text-[13px]">{set.note}</p>
 
-      {block ? (
-        <>
-          <div className="mt-5">
-            {table ? (
-              <table className="w-full text-left text-[13.5px] tabular">
-                <thead>
-                  <tr className="text-ink-3">
-                    <th className="py-1.5 font-medium">Model</th>
-                    <th className="py-1.5 font-medium">{metric.short}</th>
-                    <th className="py-1.5 font-medium">Cases</th>
-                    <th className="py-1.5 font-medium">Seed spread</th>
+      <div className="mt-5">
+        {table ? (
+          <table className="w-full text-left text-[13.5px] tabular">
+            <thead>
+              <tr className="text-ink-3">
+                <th className="py-1.5 font-medium">Model</th>
+                <th className="py-1.5 font-medium">{metric.short}</th>
+                <th className="py-1.5 font-medium">Cases</th>
+                <th className="py-1.5 font-medium">Seed spread</th>
+              </tr>
+            </thead>
+            <tbody>
+              {ORDER.filter((a) => block.values[a]?.[metric.id]).map((a) => {
+                const v = block.values[a]![metric.id]!
+                return (
+                  <tr key={a} className="border-t border-rule">
+                    <td className="py-1.5">{nameOf(a)}</td>
+                    <td className="py-1.5">{pct(v.mean)}</td>
+                    <td className="py-1.5">{v.n}</td>
+                    <td className="py-1.5">{v.seedSd != null ? `${(v.seedSd * 100).toFixed(1)} pts` : '—'}</td>
                   </tr>
-                </thead>
-                <tbody>
-                  {ORDER.filter((a) => block.values[a]?.[metric.id]).map((a) => {
-                    const v = block.values[a]![metric.id]!
-                    return (
-                      <tr key={a} className="border-t border-rule">
-                        <td className="py-1.5">{nameOf(a)}</td>
-                        <td className="py-1.5">{pct(v.mean)}</td>
-                        <td className="py-1.5">{v.n}</td>
-                        <td className="py-1.5">{v.seedSd != null ? `${(v.seedSd * 100).toFixed(1)} pts` : '—'}</td>
-                      </tr>
-                    )
-                  })}
-                </tbody>
-              </table>
-            ) : (
-              <Scores block={block} metric={metric} onHover={setHover} />
-            )}
+                )
+              })}
+            </tbody>
+          </table>
+        ) : (
+          <Scores block={block} metric={metric} onHover={setHover} />
+        )}
+      </div>
+      {depth >= 2 && !table && setKey === 'final' ? (
+        <div className="mt-8">
+          <h4 className="label">The claims, in percentage points</h4>
+          <p className="caption mt-1 text-[13px]">Each part of each claim against its own pass mark, with its 99% interval. Every part must clear its mark.</p>
+          <div className="mt-3">
+            <FinalClaims depth={depth} />
           </div>
-          {depth >= 2 && !table ? (
-            <div className="mt-8">
-              <h4 className="label">Comparisons, in percentage points (positive: the first model does better)</h4>
-              <p className="caption mt-1 text-[13px]">
-                Thick line: 95% interval. {depth >= 3 ? 'Thin line: the interval adjusted for testing several questions at once. ' : ''}A filled dot is a pre-registered comparison; a hollow one is exploratory.
-              </p>
-              <div className="mt-3">
-                <Comparisons block={block} metric={metric} onHover={setHover} depth={depth} />
-              </div>
-              {setKey === 'h5' ? (
-                <p className="mt-2 text-[13.5px] leading-snug text-ink-2">
-                  H5 needs M2 to be non-inferior to both Claude systems (within 3 points, on the adjusted interval). It holds against Opus few-shot but is not shown against Sonnet few-shot, so H5 as a whole is not supported on the practice set.
-                </p>
-              ) : null}
-            </div>
-          ) : null}
-          <p className="mt-3 min-h-[2.6rem] rounded-xl bg-paper px-4 py-2.5 text-[13.5px] leading-snug text-ink-2" aria-live="polite">
-            {hover ?? 'Point at a row, or move to it with Tab, for its exact figures.'}
+        </div>
+      ) : null}
+      {depth >= 2 && !table && setKey !== 'final' ? (
+        <div className="mt-8">
+          <h4 className="label">Comparisons, in percentage points (positive: the first model does better)</h4>
+          <p className="caption mt-1 text-[13px]">
+            Thick line: 95% interval. {depth >= 3 ? 'Thin line: the interval adjusted for testing several questions at once. ' : ''}A filled dot is a pre-registered comparison; a hollow one is exploratory.
           </p>
-          {depth >= 4 ? (
-            <p className="caption mt-3 text-[12.5px]">
-              Source <code className="code">{snapshot.sources[set.block as string]?.path}</code> (SHA-256 {snapshot.sources[set.block as string]?.sha256.slice(0, 12)}…); {block.resamples.toLocaleString()} bootstrap resamples, seed {block.seed}; judge runs{' '}
-              {Object.entries(block.judgeRuns)
-                .map(([k, v]) => `${k} ${v}`)
-                .join(', ')}
-              ; unjudged rows {Object.values(block.unjudgedRows).reduce((a, b) => a + b, 0)}.{' '}
-              <button type="button" className="text-ins underline underline-offset-2" onClick={() => openEvidence(setKey === 'h5' ? 'results-h5' : setKey === 'rewritten' ? 'results-rewritten' : setKey === 'finalckpt' ? 'results-final-ckpt' : 'results-dev')}>
-                Open the source
-              </button>
+          <div className="mt-3">
+            <Comparisons block={block} metric={metric} onHover={setHover} depth={depth} />
+          </div>
+          {setKey === 'h5' ? (
+            <p className="mt-2 text-[13.5px] leading-snug text-ink-2">
+              H5 needs M2 to be non-inferior to both Claude systems (within 3 points, on the adjusted interval). It holds against Opus few-shot but is not shown against Sonnet few-shot, so H5 as a whole is not supported on the practice set.
             </p>
           ) : null}
-        </>
-      ) : (
-        <p className="mt-6 rounded-xl bg-paper px-4 py-6 text-center text-[14.5px] text-ink-2">The final-set results do not exist yet: the registered analysis decides them once grading is complete.</p>
-      )}
+        </div>
+      ) : null}
+      <p className="mt-3 min-h-[2.6rem] rounded-xl bg-paper px-4 py-2.5 text-[13.5px] leading-snug text-ink-2" aria-live="polite">
+        {hover ?? 'Point at a row, or move to it with Tab, for its exact figures.'}
+      </p>
+      {depth >= 4 ? (
+        <p className="caption mt-3 text-[12.5px]">
+          Source <code className="code">{snapshot.sources[set.block]?.path}</code> (SHA-256 {snapshot.sources[set.block]?.sha256.slice(0, 12)}…); {block.resamples.toLocaleString()} bootstrap resamples, seed {block.seed}; judge runs{' '}
+          {Object.entries(block.judgeRuns)
+            .map(([k, v]) => `${k} ${v}`)
+            .join(', ')}
+          ; unjudged rows {Object.values(block.unjudgedRows).reduce((a, b) => a + b, 0)}.{' '}
+          <button type="button" className="text-ins underline underline-offset-2" onClick={() => openEvidence(setKey === 'h5' ? 'results-h5' : setKey === 'rewritten' ? 'results-rewritten' : setKey === 'finalckpt' ? 'results-final-ckpt' : setKey === 'final' ? 'results-stage2' : 'results-dev')}>
+            Open the source
+          </button>
+        </p>
+      ) : null}
     </div>
   )
 }

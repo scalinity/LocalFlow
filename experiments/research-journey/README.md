@@ -32,7 +32,7 @@ The build uses relative paths and hash routes, so `dist/` works from any folder 
 
 - `npm run snapshot` rebuilds `src/data/generated/snapshot.json` and `meta.json` from the committed result files in `docs/v2/research/paper/results/` and records each source's SHA-256 and the commit. It copies aggregates only.
 - `npm run private-examples` writes `src/data/private/examples.json` from the development artifacts on this machine: a few real practice cases with their recorded answers and verdicts. The case text was written by Claude and is not released, so this folder is git-ignored. A build made while it exists contains that text: do not publish such a `dist/`. Without it, every instrument shows an illustration and says so.
-- The final run's timeline (`src/data/stage2.ts`) comes from run logs that live outside the repository; update its statuses and `RUN_SNAPSHOT_AT` when the run moves on.
+- The final run's timeline (`src/data/stage2.ts`) comes from run logs that live outside the repository; update its statuses, `RUN_SNAPSHOT_AT` and `RUN_STATE` when the run moves on.
 
 ## How it is built
 
@@ -41,6 +41,6 @@ The build uses relative paths and hash routes, so `dist/` works from any folder 
 - `src/components/`: the shell (masthead, timeline spine, chapter view, evidence drawer) and conceptual zoom (`zoom/`: the page-wide depth dial and each idea's own lens).
 - `src/instruments/` and `src/figures/`: the explorers and the smaller figures, each loaded on first use and contained, so one failing figure never blanks the page.
 - `src/app/`: a small hash router on `useSyncExternalStore` (deep links and history without effects), depth state and evidence navigation.
-- `tests/`: integrity checks (every citation and glossary term resolves, lineage has no cycles, no final-set outcome is stated before the analysis runs, the public snapshot holds no case text) and unit tests for the markup, diff and formatting.
+- `tests/`: integrity checks (every citation and glossary term resolves, lineage has no cycles, no final-set outcome is stated before the analysis runs, and each one stated matches the analysis output; the public snapshot holds no case text) and unit tests for the markup, diff and formatting.
 
 `npm test` runs the tests.

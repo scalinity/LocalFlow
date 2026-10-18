@@ -2,7 +2,8 @@ import type { StepStatus } from './types'
 
 /**
  * The final-set run of October 17–18, 2026, reconstructed from the run logs (created and
- * last-written times of each step's log), the batch manifests and the commit history.
+ * last-written times of each step's log), the batch manifests and outcome records, and the
+ * commit history.
  * The logs live on the research machine, not in the repository: evidence id `stage2-logs`.
  */
 
@@ -100,6 +101,7 @@ export const TONIGHT: Lane[] = [
     spans: [
       { id: 'score', label: 'Scoring, 8 models', start: '2026-10-17T22:39:28-04:00', end: '2026-10-17T22:49:23-04:00', status: 'done', note: 'The rule engine compared each saved answer with the original answer key. About 73 seconds per model, on the Mac, no AI involved.' },
       { id: 'rewrite', label: 'C3 answer key written', start: '2026-10-17T22:49:23-04:00', end: '2026-10-17T22:49:23-04:00', status: 'done', note: 'A rule-based tool rewrote the answer key in the minimal-edit style; 168 of the 955 reference answers changed.' },
+      { id: 'analyze', label: 'Registered analysis', start: '2026-10-18T01:21:18-04:00', end: '2026-10-18T01:27:20-04:00', status: 'done', note: 'The sealed analysis code on the Mac, no AI: 10,000 resamples (seed 20261015), 99% intervals, both graders required. Committed at 1:29 a.m.' },
     ],
   },
   {
@@ -117,13 +119,14 @@ export const TONIGHT: Lane[] = [
     kind: 'judge',
     spans: [
       { id: 'grade-c3-gpt', label: 'C3 re-grade', start: '2026-10-17T22:49:23-04:00', end: '2026-10-17T22:54:59-04:00', status: 'done', note: '168 cases with a changed answer key; every distinct answer graded.' },
-      { id: 'grade-main-gpt', label: 'Main grading', start: '2026-10-17T22:49:23-04:00', status: 'running', note: 'All 955 cases against the original answer key. Still with OpenAI’s batch service at the snapshot time.' },
+      { id: 'grade-main-gpt', label: 'Main grading', start: '2026-10-17T22:49:23-04:00', end: '2026-10-18T01:17:50-04:00', status: 'done', note: 'All 955 cases, nine answers each, against the original answer key; every distinct answer graded.' },
     ],
   },
 ]
 
-/** When this picture of the run was taken. */
-export const RUN_SNAPSHOT_AT = '2026-10-17T23:46:38-04:00'
+/** When this picture of the run was taken, and where things stood then. */
+export const RUN_SNAPSHOT_AT = '2026-10-18T01:29:21-04:00'
+export const RUN_STATE = 'Final results in'
 
 /** "The nine minutes": the automatic checks between the end of answering and the start of grading. */
 export const NINE_MINUTES = { start: '2026-10-17T22:39:28-04:00', end: '2026-10-17T22:49:23-04:00' }
@@ -200,8 +203,8 @@ export const PIPELINE: PipelineStage[] = [
     input: 'Each case, its answer key and its nine answers, in a shuffled order',
     output: 'A verdict for every answer, from each grader',
     who: 'Claude Sonnet and GPT (gpt-6.1-sol)',
-    status: 'running',
-    detail: 'Four jobs from 10:49 p.m.: each grader grades all 955 cases against the original key, and the 168 changed cases against the rewritten key. Three jobs had finished at the snapshot time; GPT’s main grading was still running.',
+    status: 'done',
+    detail: 'Four jobs from 10:49 p.m. to 1:17 a.m.: each grader graded all 955 cases against the original key (3,093 distinct answers) and the 168 changed cases against the rewritten key (1,058). Every distinct answer has a verdict from both.',
     evidence: ['stage2-logs', 'judge-code'],
   },
   {
@@ -211,9 +214,9 @@ export const PIPELINE: PipelineStage[] = [
     input: 'Engine scores and both graders’ verdicts',
     output: 'For each claim: an estimate, a 99 percent interval and a pass or fail',
     who: 'No AI: the sealed analysis code',
-    status: 'pending',
-    detail: 'tools/research_analysis.py --stage2: paired bootstrap with 10,000 resamples (seed 20261015), 99 percent intervals, and both graders required to agree for every judged component.',
-    evidence: ['analysis-code', 'amendment-1'],
+    status: 'done',
+    detail: 'tools/research_analysis.py --stage2, 1:21 to 1:27 a.m. ET on October 18: paired bootstrap with 10,000 resamples (seed 20261015), 99 percent intervals, and both graders required to agree for every judged component. Output: results/stage2/analysis.json.',
+    evidence: ['analysis-code', 'results-stage2', 'amendment-1'],
   },
   {
     id: 'decide',
@@ -222,9 +225,9 @@ export const PIPELINE: PipelineStage[] = [
     input: 'The analysis output',
     output: 'The confirmed findings',
     who: 'The sealed rules',
-    status: 'pending',
-    detail: 'C1 to C5 and the final H5 are decided together; nothing on the final set has been read yet.',
-    evidence: ['amendment-1', 'amendment-2'],
+    status: 'done',
+    detail: 'Supported: C2, C3, C4 and H5 against Claude Opus few-shot. Not supported: C1, C5 and H5 against Claude Sonnet few-shot; each passed under gpt-6.1-sol and fell short only under Sonnet, and every judged claim needs both.',
+    evidence: ['results-stage2', 'amendment-1', 'amendment-2'],
   },
 ]
 
@@ -251,10 +254,10 @@ export interface GradingJob {
   end?: string
 }
 
-/** The four grading jobs started at 10:49 p.m. Counts are the jobs' own final log lines. */
+/** The four grading jobs started at 10:49 p.m. Counts are each job's final log line, or for GPT's main grading, whose log is empty, its outcome record. */
 export const GRADING_JOBS: GradingJob[] = [
   { grader: 'GPT (gpt-6.1-sol)', job: 'C3 re-grade', cases: 168, distinct: 1058, judged: 1058, status: 'done', end: '2026-10-17T22:54:59-04:00' },
   { grader: 'Claude Sonnet', job: 'C3 re-grade', cases: 168, distinct: 1058, judged: 1058, status: 'done', end: '2026-10-17T22:59:17-04:00' },
   { grader: 'Claude Sonnet', job: 'Main grading', cases: 955, distinct: 3093, judged: 3093, status: 'done', end: '2026-10-17T23:28:52-04:00' },
-  { grader: 'GPT (gpt-6.1-sol)', job: 'Main grading', cases: 955, distinct: 3093, judged: null, status: 'running' },
+  { grader: 'GPT (gpt-6.1-sol)', job: 'Main grading', cases: 955, distinct: 3093, judged: 3093, status: 'done', end: '2026-10-18T01:17:50-04:00' },
 ]

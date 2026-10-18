@@ -18,7 +18,7 @@ export default function Frontier({ depth }: InstrumentProps) {
       depth={depth}
       title="The small model beside two cloud models"
       sources={['results-h5']}
-      note="Practice set, 431 cases. M2 is one training run, graded in the same pass as the two Claude systems. Development results: the final test uses Sonnet and GPT as graders."
+      note="Practice set, 431 cases. M2 is one training run, graded in the same pass as the two Claude systems. Development results: the final test used Sonnet and GPT as graders."
       systems={SYSTEMS}
       measures={[
         { id: 'opus', label: 'Graded by Opus', unit: 'practice case', cases: 431, values: of('anthropic:judged_pass') },

@@ -74,7 +74,29 @@ function values(analysis) {
   return out
 }
 
-function analysisBlock(key, path, extra = {}, { withExploratory = false } = {}) {
+// Each Stage 2 claim and its components, oriented as the registered analysis tests them.
+function stage2(analysis) {
+  return Object.fromEntries(
+    Object.entries(analysis.stage2).map(([id, c]) => [
+      id,
+      {
+        outcome: c.outcome,
+        components: c.components.map((x) => ({
+          name: x.component,
+          threshold: x.threshold,
+          estimate: x.estimate,
+          ci99: x.ci99,
+          ...(x.ci99_missing_against_claim ? { ci99MissingAgainstClaim: x.ci99_missing_against_claim } : {}),
+          cases: x.n_cases,
+          complete: x.n_complete,
+          outcome: x.outcome,
+        })),
+      },
+    ]),
+  )
+}
+
+function analysisBlock(key, path, extra = {}, { withExploratory = false, withStage2 = false } = {}) {
   const a = load(key, path)
   return {
     arms: a.arms,
@@ -85,6 +107,7 @@ function analysisBlock(key, path, extra = {}, { withExploratory = false } = {}) 
     values: values(a),
     contrasts: contrasts(a),
     ...(withExploratory ? { exploratory: exploratory(a) } : {}),
+    ...(withStage2 ? { stage2: stage2(a) } : {}),
     ...extra,
   }
 }
@@ -105,6 +128,9 @@ const snapshot = {
   h5Development: analysisBlock('h5Development', join(results, 'h5_development/analysis.json'), {
     description: 'H5 on the development set: M2 seed 0 judged beside the two few-shot systems in its own pass.',
   }),
+  final: analysisBlock('final', join(results, 'stage2/analysis.json'), {
+    description: 'Locked final set, 955 cases, one run per system; Sonnet 5.5 (anthropic) and gpt-6.1-sol (openai) decide.',
+  }, { withStage2: true }),
   rewrittenKeyDevelopment: analysisBlock(
     'rewrittenKeyDevelopment',
     join(results, 'supplementary/normalized_references_selected/analysis.json'),

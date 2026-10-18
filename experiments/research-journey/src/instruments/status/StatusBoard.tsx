@@ -13,28 +13,27 @@ interface Item {
 }
 
 const ESTABLISHED: Item[] = [
+  { text: 'Teaching beats size', detail: 'The taught 4B beat the untaught 9B, twice its size, by about 15 points under both graders (C4).', mark: { claim: 'supported' }, set: 'Final set, confirmed', to: { path: ['chapter', 'next'], at: 'established' } },
+  { text: 'The engine-checked data cuts meaning damage', detail: 'M2 changed meaning 5.1 points less often than A2prime, taught the same way on the earlier data (C2).', mark: { claim: 'supported' }, set: 'Final set, confirmed', to: { path: ['chapter', 'results'], at: 'h1-other-way' } },
+  { text: 'The answer key’s style moves the comparison', detail: 'Rewritten in the minimal-edit style, the key moved the new-versus-earlier comparison toward the new data under both graders (C3).', mark: { claim: 'supported' }, set: 'Final set, confirmed', to: { path: ['chapter', 'answer-key'], at: 'what-c3-is' } },
+  { text: 'The small model keeps up with Claude Opus', detail: 'M2 within 3 points of Claude Opus given five examples under both graders, and ahead in both estimates (H5).', mark: { claim: 'supported' }, set: 'Final set, confirmed', to: { path: ['chapter', 'graders'], at: 'against-frontier' } },
   { text: 'Teaching works', detail: 'The taught model C beat the original model and the untaught Qwen3.5 on a test frozen before any of them answered, including on real recorded speech.', mark: { claim: 'supported' }, set: 'First experiment, frozen test', to: { path: ['chapter', 'teaching'], at: 'three-models' } },
-  { text: 'The new data makes fewer meaning-changing mistakes', detail: 'H1 on engine damage: M2 4.25 points better than A2prime, M1 1.47 points better than A2.', mark: { claim: 'supported' }, set: 'Practice set, pre-registered', to: { path: ['chapter', 'results'], at: 'h1-other-way' } },
-  { text: 'The new data does not score higher with the graders', detail: 'H1 on judged pass: the earlier data scored as well or slightly better.', mark: { claim: 'not-supported' }, set: 'Practice set, pre-registered', to: { path: ['chapter', 'results'], at: 'h1-other-way' } },
+  { text: 'The new data does not score higher with the practice graders', detail: 'H1 on judged pass: the earlier data scored as well or slightly better, while making more meaning-changing mistakes.', mark: { claim: 'not-supported' }, set: 'Practice set, pre-registered', to: { path: ['chapter', 'results'], at: 'h1-other-way' } },
   { text: 'Three ideas did not measurably help', detail: '“When not to edit” pairs (H2, exploratory), filtering rejected rows (H3), a model twice the size (H4).', mark: { claim: 'not-supported' }, set: 'Practice set, pre-registered', to: { path: ['chapter', 'results'], at: 'what-did-not-help' } },
-  { text: 'The small model’s lead over Claude is not proven on practice cases', detail: 'H5: not worse than Claude Opus few-shot, but not shown within 3 points of Claude Sonnet few-shot.', mark: { claim: 'not-supported' }, set: 'Practice set, pre-registered', to: { path: ['chapter', 'graders'], at: 'against-frontier' } },
   { text: 'The graders agree', detail: 'Kappa 0.75 to 0.80 between three vendors; 91% to 98.5% agreement with a human where the grader picked a side.', mark: { claim: 'observed' }, set: 'Practice set, measured', to: { path: ['chapter', 'graders'], at: 'three-companies' } },
 ]
 
 const PRELIMINARY: Item[] = [
-  { text: 'M2 beats C, the installed model', detail: '+3.5 points on judged pass, interval +1.2 to +5.8; less engine damage. Confirmed or not by C1.', mark: { claim: 'observed' }, set: 'Practice set, exploratory', to: { path: ['chapter', 'results'], at: 'beats-c' } },
-  { text: 'The taught 4B beats the untaught 9B', detail: '88.9% against 71.7% under Opus. Confirmed or not by C4, which needs more than 5 points.', mark: { claim: 'observed' }, set: 'Practice set, exploratory', to: { path: ['chapter', 'results'], at: 'day-and-night' } },
-  { text: 'The answer key’s style explains much of the gap', detail: 'Rewritten key: M2 minus A2prime turns from −1.2 to +1.8 points. Confirmed or not by C3.', mark: { claim: 'observed' }, set: 'Practice set, post hoc', to: { path: ['chapter', 'answer-key'], at: 'the-discovery' } },
-  { text: 'M2 keeps pace with Claude', detail: 'Ahead of Opus few-shot, level with Sonnet few-shot. Retested on the final set as H5.', mark: { claim: 'observed' }, set: 'Practice set', to: { path: ['chapter', 'graders'], at: 'against-frontier' } },
-  { text: 'Replace C with M2', detail: 'The pre-registered rule says keep C, by a third of a case; a labelled post-hoc reading recommends M2.', mark: { claim: 'observed' }, set: 'Recommendation, post hoc', to: { path: ['chapter', 'results'], at: 'keep-c' } },
+  { text: 'M2 beats C, the installed model', detail: 'GPT: 5.5 points ahead, clearly; Sonnet: 0.5 ahead, a near tie. C1 needs both, so it is not supported. Its safety half passed.', mark: { claim: 'not-supported' }, set: 'Final set, C1', to: { path: ['chapter', 'next'], at: 'preliminary' } },
+  { text: 'The 4B is as good as the 9B', detail: 'GPT: level; Sonnet: 1.9 points behind, its interval reaching past the 2-point margin (C5).', mark: { claim: 'not-supported' }, set: 'Final set, C5', to: { path: ['chapter', 'next'], at: 'preliminary' } },
+  { text: 'M2 keeps pace with Claude Sonnet', detail: 'GPT: 0.8 ahead, within the margin; Sonnet: 1.6 behind, its interval reaching past −3 points (H5).', mark: { claim: 'not-supported' }, set: 'Final set, H5', to: { path: ['chapter', 'next'], at: 'preliminary' } },
+  { text: 'Replace C with M2', detail: 'The practice-set rule said keep C, by a third of a case, and the final set did not confirm that M2 beats C. The choice is the author’s.', mark: { claim: 'observed' }, set: 'Recommendation', to: { path: ['chapter', 'results'], at: 'keep-c' } },
 ]
 
 const UNFINISHED: Item[] = [
-  { text: 'GPT grades the final set', detail: 'The last of four grading jobs; running at the snapshot time.', mark: { step: 'running' }, set: 'Final set', to: { path: ['chapter', 'tonight'], at: 'grading-now' } },
-  { text: 'The registered analysis runs', detail: 'Paired bootstrap, 99% intervals, both graders required, the refused case tested both ways.', mark: { step: 'pending' }, set: 'Final set', to: { path: ['chapter', 'next'], at: 'unfinished' } },
-  { text: 'Claims C1 to C5 and H5 are decided', detail: 'Supported, not supported or not evaluable, by rules written before any final answer existed.', mark: { claim: 'pending' }, set: 'Final set', to: { path: ['explore', 'claims'] } },
-  { text: 'Sonnet is compared with the human check', detail: 'Sonnet has graded the 150 annotated practice cases; the agreement analysis has not run.', mark: { step: 'pending' }, set: 'Practice set', to: { path: ['chapter', 'graders'], at: 'human-check' } },
-  { text: 'The paper, and the decision to ship', detail: 'Written around what the final set confirms; whether to move LocalFlow from C to M2.', mark: { step: 'pending' }, set: 'After the final results', to: { path: ['chapter', 'next'], at: 'unfinished' } },
+  { text: 'Sonnet is compared with the human check', detail: 'Sonnet has graded the 150 annotated practice cases; the agreement analysis has not run. It bears on how far to trust Sonnet’s stricter verdicts.', mark: { step: 'pending' }, set: 'Practice set', to: { path: ['chapter', 'graders'], at: 'human-check' } },
+  { text: 'The paper', detail: 'Written around what the final set confirmed, and what it did not.', mark: { step: 'pending' }, set: 'After the final results', to: { path: ['chapter', 'next'], at: 'unfinished' } },
+  { text: 'The decision to ship', detail: 'Whether this Mac, and LocalFlow, move from C to M2.', mark: { step: 'pending' }, set: 'After the final results', to: { path: ['chapter', 'next'], at: 'unfinished' } },
 ]
 
 function Column({ title, intro, items }: { title: string; intro: string; items: Item[] }) {
@@ -75,7 +74,7 @@ export default function StatusBoard(_props: InstrumentProps) {
   return (
     <div className="panel instrument grid gap-8 p-5 sm:p-7 lg:grid-cols-3">
       <Column title="Established" intro="Decided by tests planned in advance." items={ESTABLISHED} />
-      <Column title="Preliminary" intro="Real practice-set results, not yet confirmed." items={PRELIMINARY} />
+      <Column title="Preliminary" intro="Pointing one way, but not confirmed by the planned test." items={PRELIMINARY} />
       <Column title="Unfinished" intro="In order, from where things stand." items={UNFINISHED} />
     </div>
   )

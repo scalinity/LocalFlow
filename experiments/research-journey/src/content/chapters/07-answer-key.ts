@@ -75,9 +75,9 @@ Which style is *right* is a product decision, not a statistical one. What the st
       evidence: ['amendment-1', 'amendment-1-known', 'analysis-code'],
       figures: [{ key: 'shift-calc', from: 2 }, { key: 'claims', from: 3 }],
       levels: {
-        1: `C3 is the third of the five claims the final test checks. It is not a model: “C” is the installed model, while C1 to C5 are the final test’s five claims.
+        1: `C3 is the third of the five claims the final test checked. It is not a model: “C” is the installed model, while C1 to C5 are the final test’s five claims.
 
-C3 asks: if the answer key is rewritten in the new style, does the comparison between new-data and earlier-data models move toward the new data? Practice results said yes. The final set decides.`,
+C3 asks: if the answer key is rewritten in the new style, does the comparison between new-data and earlier-data models move toward the new data? Practice results said yes, and so did the final set, under both graders.`,
         2: `For each case, C3 measures how much the gap between a new-data model and its earlier-data twin changes when the key changes. Two pairs share the work: M2 against A2prime, and M1 against A2. If the average change is reliably above zero under both graders, C3 is supported.
 
 Only C3 uses the rewritten key. Every other claim uses the original key, the one written down in the plan before the rewrite existed.`,

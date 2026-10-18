@@ -24,6 +24,18 @@ export interface ContrastRow {
   noninferiority?: boolean | null
 }
 
+export interface Stage2Component {
+  name: string
+  threshold: number
+  estimate: number
+  ci99: [number, number]
+  /** Present when a case is missing: the interval with each missing outcome set against the claim. */
+  ci99MissingAgainstClaim?: [number, number]
+  cases: number
+  complete: number
+  outcome: 'pass' | 'fail'
+}
+
 export interface AnalysisBlock {
   description: string
   arms: Record<string, string[]>
@@ -34,6 +46,8 @@ export interface AnalysisBlock {
   values: Record<string, Record<string, ArmValue>>
   contrasts: Record<string, ContrastRow[]>
   exploratory?: Record<string, ContrastRow[]>
+  /** Final set only: each claim's registered outcome and its components. */
+  stage2?: Record<string, { outcome: 'supported' | 'not supported' | 'not evaluable'; components: Stage2Component[] }>
 }
 
 export interface Snapshot {
@@ -43,6 +57,7 @@ export interface Snapshot {
   repository: string
   development: AnalysisBlock
   h5Development: AnalysisBlock
+  final: AnalysisBlock
   rewrittenKeyDevelopment: AnalysisBlock
   finalCheckpointsDevelopment: AnalysisBlock
   runs: Record<string, { updates: number; freshAdapter: boolean; selected: number; checkpoints: { update: number; valLoss: number }[] }>

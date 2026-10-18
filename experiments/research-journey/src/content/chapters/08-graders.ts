@@ -54,7 +54,7 @@ One honest wrinkle: the graders often called a pair a tie, while the person alwa
       levels: {
         1: `The last question asked whether the small model on the Mac can keep up with the large cloud models. On the practice set, M2 beat Claude Opus (given five examples) under all three graders, and came out about level with Claude Sonnet.
 
-“About level” was not quite enough for the pre-set test, which demanded proof that M2 is no more than 3 points behind each. Against Sonnet, that proof fell short.`,
+“About level” was not quite enough for the pre-set test, which demanded proof that M2 is no more than 3 points behind each. Against Sonnet, that proof fell short. The final test came out the same way: within the margin against Opus under both final graders, short of it against Sonnet.`,
         2: `Proving “not worse” is a [[non-inferiority]] test: the whole uncertainty range must stay above the allowance. With 431 cases the range is about ±4.5 points wide, so a near-tie cannot clear a 3-point allowance. The final set’s 955 cases narrow it.
 
 On the engine’s checks M2 is ahead of both Claude systems: it handles far more spoken corrections, and leaves alone text that needs no change, where Sonnet edits about 15 in 100.`,

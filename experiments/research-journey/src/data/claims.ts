@@ -2,8 +2,8 @@ import type { Claim } from './types'
 
 /**
  * The questions the study asked. Stage 1 (H1–H5) was tested on the development set;
- * Stage 2 (C1–C5, plus H5 again) is tested once on the sealed final set. Final-set
- * entries stay `pending` until the registered analysis has run.
+ * Stage 2 (C1–C5, plus H5 again) was tested once on the sealed final set; its entries
+ * follow results/stage2/analysis.json, and a test keeps them in step with it.
  */
 export const CLAIMS: Claim[] = [
   {
@@ -62,7 +62,7 @@ export const CLAIMS: Claim[] = [
         summary: 'Ahead of Opus few-shot under every judge (+8.8, +6.7, +7.0 points; non-inferior). Level with Sonnet few-shot (+1.6, −0.2, −3.3), but the adjusted lower ends (−3.02, −4.64, −8.35) do not clear −3.0, so H5 as a whole is not supported.',
         evidence: ['results-h5', 'findings'],
       },
-      { set: 'final', status: 'pending', summary: 'Tested again on the final set with both final judges.', evidence: ['amendment-1'] },
+      { set: 'final', status: 'not-supported', summary: 'Against Claude Opus with five examples, supported: M2 +1.3 points under Sonnet (99% interval −1.6 to +4.0) and +5.5 under gpt-6.1-sol (+2.4 to +8.5); its one refused case, counted against the claim, changes nothing (−1.5 to +4.1). Against Claude Sonnet, not supported: −1.6 under Sonnet (−4.6 to +1.5), whose lower end misses −3.0, and +0.8 under gpt-6.1-sol (−1.7 to +3.4).', evidence: ['results-stage2'] },
     ],
     evidence: ['prereg', 'amendment-1'],
   },
@@ -74,7 +74,7 @@ export const CLAIMS: Claim[] = [
     formal: 'M2 − C judged pass above 0 under Sonnet and under gpt-6.1-sol; and C − M2 engine damage above −1.0 point (M2 at most 1 point more damage). Each component on the lower end of its 99% interval.',
     results: [
       { set: 'development', status: 'observed', summary: 'Not the test, which needs the final set: M2 − C judged pass +3.5 points under Opus (95% interval +1.2 to +5.8; exploratory); gpt-6.1-sol 88.3% against 83.8%; engine damage 0.9% against C’s 1.6%.', evidence: ['results-dev'] },
-      { set: 'final', status: 'pending', summary: 'Waiting for both final judges and the registered analysis.', evidence: ['amendment-1'] },
+      { set: 'final', status: 'not-supported', summary: 'Under gpt-6.1-sol M2 beats C by 5.5 points (99% interval +3.5 to +7.9); under Sonnet by only +0.5 (−1.5 to +2.6), so the quality half fails there. The safety half passes: M2 changed meaning 0.9 points less often than C (0.0 to +2.0). Both graders must pass, so C1 is not supported.', evidence: ['results-stage2'] },
     ],
     evidence: ['amendment-1'],
   },
@@ -86,7 +86,7 @@ export const CLAIMS: Claim[] = [
     formal: 'A2prime − M2 engine damage above 0 (lower end of the 99% interval). Deterministic: no judge involved.',
     results: [
       { set: 'development', status: 'supported', summary: 'Stage 1 found M2 with 4.25 points less engine damage than A2prime (Holm p 0.0014).', evidence: ['results-dev'] },
-      { set: 'final', status: 'pending', summary: 'The engine scores exist; the registered analysis has not run.', evidence: ['amendment-1'] },
+      { set: 'final', status: 'supported', summary: 'M2 changed meaning 5.1 points less often than A2prime (99% interval +3.2 to +7.1), by the rule engine’s check alone.', evidence: ['results-stage2'] },
     ],
     evidence: ['amendment-1'],
   },
@@ -98,7 +98,7 @@ export const CLAIMS: Claim[] = [
     formal: 'Per case: ((p′M2 − p′A2prime) − (pM2 − pA2prime) + (p′M1 − p′A2) − (pM1 − pA2)) / 2, where p is judged pass on the original key and p′ on the rewritten one. The mean shift must be above 0 under each final judge (lower end of the 99% interval). Only cases whose reference changed are re-judged; the others reuse their main-pass verdicts and add exactly 0.',
     results: [
       { set: 'development', status: 'observed', summary: 'Evidence that shaped the claim: gpt-6.1-sol +1.97 points (99% interval +0.35 to +4.06); Opus +3.13. On the 69 changed development cases, every verdict that changed moved from fail to pass.', evidence: ['amendment-1-known', 'dev-rewritten-verdicts'] },
-      { set: 'final', status: 'pending', summary: '168 of the 955 final references changed; both judges have re-graded them. The analysis has not run.', evidence: ['amendment-1', 'stage2-logs'] },
+      { set: 'final', status: 'supported', summary: 'Rewriting the key moved the comparison toward the new data by +3.8 points under Sonnet (99% interval +2.1 to +5.7) and +2.3 under gpt-6.1-sol (+1.1 to +3.7). 168 of the 955 references changed; the rest kept their verdicts.', evidence: ['results-stage2', 'stage2-logs'] },
     ],
     evidence: ['amendment-1', 'normalize-code', 'analysis-code'],
   },
@@ -110,7 +110,7 @@ export const CLAIMS: Claim[] = [
     formal: 'M2 − base-9b-prod-prompt judged pass above +5.0 points under each final judge (lower end of the 99% interval).',
     results: [
       { set: 'development', status: 'observed', summary: 'Exploratory: 88.9% against 71.7% under Opus (+17.2 points); 88.3% against 77.0% under gpt-6.1-sol (+11.3).', evidence: ['results-dev'] },
-      { set: 'final', status: 'pending', summary: 'Waiting for both final judges and the registered analysis.', evidence: ['amendment-1'] },
+      { set: 'final', status: 'supported', summary: 'M2 beat the untaught 9B by 14.8 points under Sonnet (99% interval +10.8 to +19.0) and 15.4 under gpt-6.1-sol (+11.8 to +19.1), far past the 5-point mark.', evidence: ['results-stage2'] },
     ],
     evidence: ['amendment-1'],
   },
@@ -122,7 +122,7 @@ export const CLAIMS: Claim[] = [
     formal: 'M1 − M3 judged pass above −2.0 points under each final judge (lower end of the 99% interval). Latency and size ratios are reported, not tested.',
     results: [
       { set: 'development', status: 'observed', summary: 'Stage 1: M1 89.2% against M3 89.1% under Opus; the 9B takes 1.6 times as long and is 2.1 times the size.', evidence: ['results-dev', 'latency'] },
-      { set: 'final', status: 'pending', summary: 'Waiting for both final judges and the registered analysis.', evidence: ['amendment-1'] },
+      { set: 'final', status: 'not-supported', summary: 'Under gpt-6.1-sol the 4B and the 9B are level (0.0 points, 99% interval −1.6 to +1.6); under Sonnet the 4B is 1.9 points behind (−3.8 to −0.1), and that lower end misses the −2.0 mark.', evidence: ['results-stage2'] },
     ],
     evidence: ['amendment-1'],
   },

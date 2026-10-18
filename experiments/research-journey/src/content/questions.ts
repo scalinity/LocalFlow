@@ -18,7 +18,7 @@ export const QUESTIONS: Question[] = [
   },
   {
     q: 'Did it produce the final benchmark scores?',
-    a: 'No. It produced the automatic checks, one ingredient. The scores that decide the claims also need both graders’ verdicts and the planned statistics. At the snapshot, three of the four grading jobs had finished and the statistics had not run.',
+    a: 'No. It produced the automatic checks, one ingredient. The results that decide the claims also needed both graders’ verdicts, which finished at 1:17 a.m., and the planned statistics, which ran from 1:21 to 1:27 a.m.',
     chapter: 'tonight',
     at: 'grading-now',
   },
@@ -48,7 +48,7 @@ export const QUESTIONS: Question[] = [
   },
   {
     q: 'What is established, what is preliminary, what is unfinished?',
-    a: 'Established: teaching works, the new data makes fewer meaning-changing mistakes, three ideas did not help, the graders agree. Preliminary: M2 beats C, beats the untaught 9B and keeps pace with Claude. Unfinished: the last grading job, the statistics and the five claims.',
+    a: 'Established by the final test: teaching beats size, the engine-checked data cuts meaning damage, the answer key’s style matters, and M2 keeps up with Claude Opus. Preliminary: M2 beating C, the 4B matching the 9B and M2 matching Claude Sonnet, each passed by one grader but not both. Unfinished: Sonnet’s human check, the paper and the decision to ship.',
     chapter: 'next',
     at: 'established',
   },

@@ -72,8 +72,8 @@ describe('model lineage', () => {
 
 describe('status is told honestly', () => {
   it('marks the chapter with running work as the current one', () => {
-    expect(CURRENT_CHAPTER).toBe('tonight')
-    expect(PIPELINE.some((s) => s.status === 'running')).toBe(true)
+    expect(CHAPTERS.filter((c) => c.status === 'running').map((c) => c.id)).toEqual(['next'])
+    expect(CURRENT_CHAPTER).toBe('next')
   })
 
   it('never states a final-set claim outcome before the analysis has run', () => {
@@ -83,6 +83,16 @@ describe('status is told honestly', () => {
         if (!analysisDone) expect(r.status, claim.id).toBe('pending')
       }
     }
+  })
+
+  it('states each final-set outcome as the analysis recorded it', () => {
+    const recorded = snapshotJson.final.stage2 as Record<string, { outcome: string }>
+    const status = (outcome: string) => outcome.replace(' ', '-')
+    const final = (id: string) => CLAIMS.find((c) => c.id === id)?.results.find((r) => r.set === 'final')?.status
+    for (const id of ['C1', 'C2', 'C3', 'C4', 'C5']) expect(final(id), id).toBe(status(recorded[id]!.outcome))
+    // H5 as a whole needs both comparators, as on the practice set.
+    const both = ['H5 opus-5-5-fewshot', 'H5 sonnet-5-5-fewshot'].every((k) => recorded[k]!.outcome === 'supported')
+    expect(final('H5')).toBe(both ? 'supported' : 'not-supported')
   })
 
   it('keeps the evening in time order within each lane', () => {
