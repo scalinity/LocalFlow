@@ -43,36 +43,38 @@ function Scores({ block, metric, onHover }: { block: AnalysisBlock; metric: Metr
   const x = scaleLinear().domain([lo, hi]).range([LABEL, W - 70])
   const H = arms.length * ROW + 34
   return (
-    <svg viewBox={`0 0 ${W} ${H}`} className="w-full" role="img" aria-label={`${metric.label}, by model`}>
-      {x.ticks(6).map((t) => (
-        <g key={t}>
-          <line x1={x(t)} x2={x(t)} y1={4} y2={H - 26} stroke="var(--rule)" />
-          <text x={x(t)} y={H - 10} fontSize={11.5} fill="var(--ink-3)" textAnchor="middle">
-            {Math.round(t * 100)}%
-          </text>
-        </g>
-      ))}
-      {arms.map((arm, i) => {
-        const v = block.values[arm]![metric.id]!
-        const y = 6 + i * ROW + ROW / 2
-        const seeds = v.seeds.filter((s): s is number => s !== null)
-        const text = `${nameOf(arm)}: ${pct(v.mean)} of ${v.n} cases${seeds.length > 1 ? `, mean of ${seeds.length} seeds (${seeds.map((s) => pct(s)).join(', ')}), seed spread ${((v.seedSd ?? 0) * 100).toFixed(1)} points` : ''}.`
-        return (
-          <g key={arm} tabIndex={0} role="img" aria-label={text} onMouseEnter={() => onHover(text)} onMouseLeave={() => onHover(null)} onFocus={() => onHover(text)} onBlur={() => onHover(null)} className="outline-none">
-            <rect x={0} y={y - ROW / 2} width={W} height={ROW} fill="transparent" />
-            <text x={0} y={y + 4.5} fontSize={13} fill="var(--ink)">
-              {nameOf(arm)}
-            </text>
-            <line x1={LABEL} x2={W - 70} y1={y} y2={y} stroke="var(--rule)" strokeDasharray="1 4" />
-            {seeds.length > 1 ? seeds.map((s, k) => <circle key={k} cx={x(s)} cy={y} r={3.2} fill="var(--sheet)" stroke={colorOf(arm)} strokeWidth={1.2} />) : null}
-            <circle cx={x(v.mean)} cy={y} r={6} fill={colorOf(arm)} stroke="var(--sheet)" strokeWidth={2} />
-            <text x={W - 62} y={y + 4.5} fontSize={12.5} fill="var(--ink-2)" className="tabular">
-              {pct(v.mean)}
+    <div className="overflow-x-auto">
+      <svg viewBox={`0 0 ${W} ${H}`} className="w-full min-w-[620px]" role="img" aria-label={`${metric.label}, by model`}>
+        {x.ticks(6).map((t) => (
+          <g key={t}>
+            <line x1={x(t)} x2={x(t)} y1={4} y2={H - 26} stroke="var(--rule)" />
+            <text x={x(t)} y={H - 10} fontSize={11.5} fill="var(--ink-3)" textAnchor="middle">
+              {Math.round(t * 100)}%
             </text>
           </g>
-        )
-      })}
-    </svg>
+        ))}
+        {arms.map((arm, i) => {
+          const v = block.values[arm]![metric.id]!
+          const y = 6 + i * ROW + ROW / 2
+          const seeds = v.seeds.filter((s): s is number => s !== null)
+          const text = `${nameOf(arm)}: ${pct(v.mean)} of ${v.n} cases${seeds.length > 1 ? `, mean of ${seeds.length} seeds (${seeds.map((s) => pct(s)).join(', ')}), seed spread ${((v.seedSd ?? 0) * 100).toFixed(1)} points` : ''}.`
+          return (
+            <g key={arm} tabIndex={0} role="img" aria-label={text} onMouseEnter={() => onHover(text)} onMouseLeave={() => onHover(null)} onFocus={() => onHover(text)} onBlur={() => onHover(null)} className="outline-none">
+              <rect x={0} y={y - ROW / 2} width={W} height={ROW} fill="transparent" />
+              <text x={0} y={y + 4.5} fontSize={13} fill="var(--ink)">
+                {nameOf(arm)}
+              </text>
+              <line x1={LABEL} x2={W - 70} y1={y} y2={y} stroke="var(--rule)" strokeDasharray="1 4" />
+              {seeds.length > 1 ? seeds.map((s, k) => <circle key={k} cx={x(s)} cy={y} r={3.2} fill="var(--sheet)" stroke={colorOf(arm)} strokeWidth={1.2} />) : null}
+              <circle cx={x(v.mean)} cy={y} r={6} fill={colorOf(arm)} stroke="var(--sheet)" strokeWidth={2} />
+              <text x={W - 62} y={y + 4.5} fontSize={12.5} fill="var(--ink-2)" className="tabular">
+                {pct(v.mean)}
+              </text>
+            </g>
+          )
+        })}
+      </svg>
+    </div>
   )
 }
 
@@ -96,50 +98,52 @@ function Comparisons({ block, metric, onHover, depth }: { block: AnalysisBlock; 
   const H = rows.length * ROW + 40
   const margin = rows.find(({ r }) => r.margin != null)?.r.margin
   return (
-    <svg viewBox={`0 0 ${W} ${H}`} className="w-full" role="img" aria-label={`Differences in ${metric.label}, first model minus second`}>
-      {x.ticks(6).map((t) => (
-        <g key={t}>
-          <line x1={x(t)} x2={x(t)} y1={4} y2={H - 28} stroke={t === 0 ? 'var(--ink-3)' : 'var(--rule)'} strokeWidth={t === 0 ? 1.2 : 1} />
-          <text x={x(t)} y={H - 12} fontSize={11.5} fill="var(--ink-3)" textAnchor="middle">
-            {t > 0 ? '+' : ''}
-            {Math.round(t * 100)}
-          </text>
-        </g>
-      ))}
-      {margin != null ? (
-        <g>
-          <line x1={x(-margin)} x2={x(-margin)} y1={4} y2={H - 28} stroke="var(--del)" strokeDasharray="4 3" />
-          <text x={x(-margin) - 4} y={14} fontSize={11} fill="var(--del)" textAnchor="end">
-            −3-point allowance
-          </text>
-        </g>
-      ) : null}
-      {rows.map(({ r, exploratory }, i) => {
-        const y = 8 + i * ROW + ROW / 2
-        const claim = CONTRAST_CLAIM[r.contrast]
-        const status = statusOf(r, exploratory)
-        const label = `${nameOf(r.first)} vs ${nameOf(r.second)}`
-        const text = `${label}${claim ? ` (${claim})` : ' (exploratory)'}: ${pts(r.difference)} for ${nameOf(r.first)}, 95% interval ${pts(r.ci95[0])} to ${pts(r.ci95[1])}${r.ciAdjusted && depth >= 3 ? `; adjusted ${pts(r.ciAdjusted[0])} to ${pts(r.ciAdjusted[1])}` : ''}${depth >= 3 ? `; p ${r.p.toFixed(4)}${r.pHolm != null ? `, Holm ${r.pHolm.toFixed(4)}` : ''}` : ''}.`
-        return (
-          <g key={r.contrast + i} tabIndex={0} role="img" aria-label={text} onMouseEnter={() => onHover(text)} onMouseLeave={() => onHover(null)} onFocus={() => onHover(text)} onBlur={() => onHover(null)} className="outline-none">
-            <rect x={0} y={y - ROW / 2} width={W} height={ROW} fill="transparent" />
-            <text x={0} y={y + 1} fontSize={13} fill="var(--ink)">
-              {label}
+    <div className="overflow-x-auto">
+      <svg viewBox={`0 0 ${W} ${H}`} className="w-full min-w-[620px]" role="img" aria-label={`Differences in ${metric.label}, first model minus second`}>
+        {x.ticks(6).map((t) => (
+          <g key={t}>
+            <line x1={x(t)} x2={x(t)} y1={4} y2={H - 28} stroke={t === 0 ? 'var(--ink-3)' : 'var(--rule)'} strokeWidth={t === 0 ? 1.2 : 1} />
+            <text x={x(t)} y={H - 12} fontSize={11.5} fill="var(--ink-3)" textAnchor="middle">
+              {t > 0 ? '+' : ''}
+              {Math.round(t * 100)}
             </text>
-            <text x={0} y={y + 14} fontSize={11} fill="var(--ink-3)">
-              {claim ? `${claim}, pre-registered` : 'Exploratory'}
-            </text>
-            {r.ciAdjusted && depth >= 3 ? <line x1={x(r.ciAdjusted[0])} x2={x(r.ciAdjusted[1])} y1={y} y2={y} stroke="var(--ink-3)" strokeWidth={1} /> : null}
-            <line x1={x(r.ci95[0])} x2={x(r.ci95[1])} y1={y} y2={y} stroke="var(--ink)" strokeWidth={2.2} strokeLinecap="round" />
-            <circle cx={x(r.difference)} cy={y} r={5} fill={exploratory ? 'var(--sheet)' : 'var(--ink)'} stroke="var(--ink)" strokeWidth={1.6} />
-            <foreignObject x={W - 118} y={y - 10} width={118} height={22}>
-              {/* A margin test passing for one comparison is not the whole claim passing: say which. */}
-              <ClaimStatusMark status={status} label={r.margin != null ? (status === 'supported' ? 'Non-inferior' : 'Not shown') : undefined} />
-            </foreignObject>
           </g>
-        )
-      })}
-    </svg>
+        ))}
+        {margin != null ? (
+          <g>
+            <line x1={x(-margin)} x2={x(-margin)} y1={4} y2={H - 28} stroke="var(--del)" strokeDasharray="4 3" />
+            <text x={x(-margin) - 4} y={14} fontSize={11} fill="var(--del)" textAnchor="end">
+              −3-point allowance
+            </text>
+          </g>
+        ) : null}
+        {rows.map(({ r, exploratory }, i) => {
+          const y = 8 + i * ROW + ROW / 2
+          const claim = CONTRAST_CLAIM[r.contrast]
+          const status = statusOf(r, exploratory)
+          const label = `${nameOf(r.first)} vs ${nameOf(r.second)}`
+          const text = `${label}${claim ? ` (${claim})` : ' (exploratory)'}: ${pts(r.difference)} for ${nameOf(r.first)}, 95% interval ${pts(r.ci95[0])} to ${pts(r.ci95[1])}${r.ciAdjusted && depth >= 3 ? `; adjusted ${pts(r.ciAdjusted[0])} to ${pts(r.ciAdjusted[1])}` : ''}${depth >= 3 ? `; p ${r.p.toFixed(4)}${r.pHolm != null ? `, Holm ${r.pHolm.toFixed(4)}` : ''}` : ''}.`
+          return (
+            <g key={r.contrast + i} tabIndex={0} role="img" aria-label={text} onMouseEnter={() => onHover(text)} onMouseLeave={() => onHover(null)} onFocus={() => onHover(text)} onBlur={() => onHover(null)} className="outline-none">
+              <rect x={0} y={y - ROW / 2} width={W} height={ROW} fill="transparent" />
+              <text x={0} y={y + 1} fontSize={13} fill="var(--ink)">
+                {label}
+              </text>
+              <text x={0} y={y + 14} fontSize={11} fill="var(--ink-3)">
+                {claim ? `${claim}, pre-registered` : 'Exploratory'}
+              </text>
+              {r.ciAdjusted && depth >= 3 ? <line x1={x(r.ciAdjusted[0])} x2={x(r.ciAdjusted[1])} y1={y} y2={y} stroke="var(--ink-3)" strokeWidth={1} /> : null}
+              <line x1={x(r.ci95[0])} x2={x(r.ci95[1])} y1={y} y2={y} stroke="var(--ink)" strokeWidth={2.2} strokeLinecap="round" />
+              <circle cx={x(r.difference)} cy={y} r={5} fill={exploratory ? 'var(--sheet)' : 'var(--ink)'} stroke="var(--ink)" strokeWidth={1.6} />
+              <foreignObject x={W - 118} y={y - 10} width={118} height={22}>
+                {/* A margin test passing for one comparison is not the whole claim passing: say which. */}
+                <ClaimStatusMark status={status} label={r.margin != null ? (status === 'supported' ? 'Non-inferior' : 'Not shown') : undefined} />
+              </foreignObject>
+            </g>
+          )
+        })}
+      </svg>
+    </div>
   )
 }
 

@@ -45,6 +45,8 @@ export interface Snapshot {
   h5Development: AnalysisBlock
   rewrittenKeyDevelopment: AnalysisBlock
   finalCheckpointsDevelopment: AnalysisBlock
+  runs: Record<string, { updates: number; freshAdapter: boolean; selected: number; checkpoints: { update: number; valLoss: number }[] }>
+  checkpointEngine: Record<string, Record<'selected' | 'final', { label: string } & Record<string, number | string>>>
   reliability: {
     /** "anthropic vs openai" -> metric -> agreement. */
     pairwise: Record<string, Record<string, { kappa: number; n: number; observed_agreement: number }>>

@@ -115,6 +115,20 @@ const snapshot = {
     join(results, 'supplementary/final_checkpoints/analysis.json'),
     { description: 'Development set at each run’s final checkpoint (post hoc).' },
   ),
+  // Validation loss at every saved checkpoint of every run, and which checkpoint the rule chose.
+  runs: Object.fromEntries(
+    Object.entries(load('manifest', join(root, 'docs/v2/research/paper/data/manifest.json')).runs).map(([id, r]) => [
+      id,
+      {
+        updates: r.updates,
+        freshAdapter: r.fresh_adapter,
+        selected: Number(String(r.selected_checkpoint).replace('ckpt-', '')),
+        checkpoints: r.checkpoint_validation.map((c) => ({ update: Number(String(c.checkpoint).replace('ckpt-', '')), valLoss: c.val_loss })),
+      },
+    ]),
+  ),
+  // Engine metrics at each run's selected checkpoint and at its last one.
+  checkpointEngine: load('checkpointEngine', join(results, 'checkpoints.json')),
   reliability: load('reliability', join(results, 'judge_reliability.json')),
   latency: load('latency', join(results, 'latency.json')),
   selection: load('selection', join(results, 'selection.json')),

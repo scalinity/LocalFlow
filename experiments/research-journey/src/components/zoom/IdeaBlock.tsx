@@ -6,7 +6,7 @@ import { references } from '../../content/markup'
 import { EVIDENCE } from '../../data/evidence'
 import { GLOSSARY } from '../../data/glossary'
 import type { Idea } from '../../data/types'
-import { Instrument } from '../../instruments/Instrument'
+import { Figure } from '../../instruments/Instrument'
 import { ProvenanceTag } from '../primitives/Status'
 import { CiteContext, GlossContext } from '../text/context'
 import { Prose } from '../text/Prose'
@@ -24,7 +24,7 @@ export function IdeaBlock({ idea }: { idea: Idea }) {
   const sources = [...new Set([...cited, ...(depth >= 3 ? idea.evidence : [])])].filter((id) => EVIDENCE[id])
   const numbers = new Map(sources.map((id, i) => [id, i + 1]))
   const toggle = (id: string) => setOpen((ids) => (ids.includes(id) ? ids.filter((x) => x !== id) : [...ids, id]))
-  const showFigure = idea.figure && depth >= idea.figure.from
+  const figures = (idea.figures ?? []).filter((f) => depth >= f.from && (f.until === undefined || depth <= f.until))
 
   return (
     <section id={idea.id} aria-labelledby={`${idea.id}-title`} className="idea-grid scroll-mt-28">
@@ -96,9 +96,11 @@ export function IdeaBlock({ idea }: { idea: Idea }) {
         ) : null}
       </aside>
 
-      {showFigure && idea.figure ? (
-        <div className="idea-figure">
-          <Instrument name={idea.figure.instrument} depth={depth} />
+      {figures.length > 0 ? (
+        <div className="idea-figure flex flex-col gap-6">
+          {figures.map((f) => (
+            <Figure key={f.key} name={f.key} depth={depth} />
+          ))}
         </div>
       ) : null}
     </section>

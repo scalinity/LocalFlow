@@ -14,7 +14,7 @@ export const seal: Chapter = {
       title: 'Five claims, each with a pass mark',
       provenance: 'observed',
       evidence: ['amendment-1', 'amendment-1-known'],
-      figure: { instrument: 'claims', from: 1 },
+      figures: [{ key: 'claims', from: 1 }, { key: 'rulers', from: 1 }],
       levels: {
         1: `The practice results suggested five things worth confirming. Each became a [[claim]] with a pass mark set in advance:
 - C1: M2 is better than C, and no less safe.
@@ -50,8 +50,9 @@ Sonnet needed the second opinion: the training examples were written by Claude S
       title: 'The seal: a fingerprint before the answers',
       provenance: 'observed',
       evidence: ['freeze-record', 'commit-seal', 'commit-annotation'],
+      figures: [{ key: 'fingerprint', from: 1 }],
       levels: {
-        1: `At 4:47 p.m. ET on October 17, the plan was [[seal|sealed]]: the claims, the code and the trained models’ files were fingerprinted and the fingerprints published. Any later change would show.
+        1: `At 4:47 p.m. ET on October 17, the plan was [[seal|sealed]]: the claims, the code and the trained models’ files were fingerprinted and the fingerprints published. Any later change would show: try changing one character below.
 
 What the seal protects is timing. It was set before any final answer existed, and before the human check of the graders began. Everything after it can be judged against it.`,
         2: `A fingerprint (a hash) is a short code computed from a file’s exact contents. Change one character and the fingerprint changes completely. Publishing the fingerprints commits the project to those exact files without publishing the files themselves.
@@ -67,6 +68,7 @@ Changes after the seal are still possible, but only openly: as a written [[amend
       title: 'What happens when an answer is missing',
       provenance: 'observed',
       evidence: ['amendment-1', 'amendment-2'],
+      figures: [{ key: 'one-case', from: 1 }],
       levels: {
         1: `Sometimes a result simply does not exist: a grader times out, or a model refuses. The rule, written in advance: a [[missing-outcome|missing answer]] is never counted as a pass or a fail.
 

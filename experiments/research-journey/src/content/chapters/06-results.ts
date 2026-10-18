@@ -14,11 +14,11 @@ export const results: Chapter = {
       title: 'Teaching is the big step',
       provenance: 'calculated',
       evidence: ['results-dev', 'findings'],
-      figure: { instrument: 'results', from: 1 },
+      figures: [{ key: 'hundred-practice', from: 1 }, { key: 'results', from: 1 }],
       levels: {
         1: `The clearest result is the difference teaching makes. The same 4B network, given instructions only, passed the graders on about 71 of every 100 practice cases. Taught, it passed about 89.
 
-On spoken corrections the gap is larger still: the untaught model handled about 12 in 100, the taught one about 87. A network twice the size, untaught, did no better than the small one.`,
+Switch the figure to spoken corrections and the gap is larger still. A network twice the size, untaught, did no better than the small one.`,
         2: `Read these as development results: the practice set guided the study’s decisions, so its numbers suggest rather than prove. They are large and consistent, though: every grader and every rule-engine measure moves the same way.
 
 The untaught models often propose changes the referee must reject, so LocalFlow falls back to the raw words. That is why the gap appears in both the graders’ verdicts and the engine’s counts.`,
@@ -52,6 +52,7 @@ On the practice set, the second round of teaching improved on the first.`,
       title: 'The new data did not win the way it was expected to',
       provenance: 'calculated',
       evidence: ['results-dev', 'findings', 'evidence-map'],
+      figures: [{ key: 'slope', from: 1 }],
       levels: {
         1: `The main question was whether the new training data beats the earlier data. On the graders’ verdicts it did not: the models taught on earlier data scored as well, or slightly better.
 
@@ -85,6 +86,7 @@ That is useful to know. Anyone building something similar can skip all three. Th
       title: '“Keep C”, by a third of a sentence',
       provenance: 'calculated',
       evidence: ['selection', 'analysis-plan'],
+      figures: [{ key: 'third', from: 1 }],
       levels: {
         1: `A rule written in advance decided which model to recommend. It said: keep C.
 

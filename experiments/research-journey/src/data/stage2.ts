@@ -227,3 +227,34 @@ export const PIPELINE: PipelineStage[] = [
     evidence: ['amendment-1', 'amendment-2'],
   },
 ]
+
+/** Inside the nine minutes: each model's saved answers scored in turn, then the C3 key written (scoring-log exit times). */
+export const NINE_SEQUENCE: { label: string; start: string; end: string }[] = [
+  { label: 'C (installed)', start: '2026-10-17T22:39:28-04:00', end: '2026-10-17T22:40:49-04:00' },
+  { label: 'M2', start: '2026-10-17T22:40:49-04:00', end: '2026-10-17T22:42:02-04:00' },
+  { label: 'A2prime', start: '2026-10-17T22:42:02-04:00', end: '2026-10-17T22:43:14-04:00' },
+  { label: 'M1', start: '2026-10-17T22:43:14-04:00', end: '2026-10-17T22:44:27-04:00' },
+  { label: 'A2', start: '2026-10-17T22:44:27-04:00', end: '2026-10-17T22:45:40-04:00' },
+  { label: 'M3', start: '2026-10-17T22:45:40-04:00', end: '2026-10-17T22:46:53-04:00' },
+  { label: 'Untuned 9B', start: '2026-10-17T22:46:53-04:00', end: '2026-10-17T22:48:10-04:00' },
+  { label: 'Claude Sonnet, few-shot', start: '2026-10-17T22:48:10-04:00', end: '2026-10-17T22:49:23-04:00' },
+]
+
+export interface GradingJob {
+  grader: string
+  job: string
+  cases: number
+  /** Identical answers within a case are graded once, so a job grades fewer distinct answers than slots. */
+  distinct: number
+  judged: number | null
+  status: StepStatus
+  end?: string
+}
+
+/** The four grading jobs started at 10:49 p.m. Counts are the jobs' own final log lines. */
+export const GRADING_JOBS: GradingJob[] = [
+  { grader: 'GPT (gpt-6.1-sol)', job: 'C3 re-grade', cases: 168, distinct: 1058, judged: 1058, status: 'done', end: '2026-10-17T22:54:59-04:00' },
+  { grader: 'Claude Sonnet', job: 'C3 re-grade', cases: 168, distinct: 1058, judged: 1058, status: 'done', end: '2026-10-17T22:59:17-04:00' },
+  { grader: 'Claude Sonnet', job: 'Main grading', cases: 955, distinct: 3093, judged: 3093, status: 'done', end: '2026-10-17T23:28:52-04:00' },
+  { grader: 'GPT (gpt-6.1-sol)', job: 'Main grading', cases: 955, distinct: 3093, judged: null, status: 'running' },
+]

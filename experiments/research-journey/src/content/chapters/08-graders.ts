@@ -14,6 +14,7 @@ export const graders: Chapter = {
       title: 'Three graders, three companies, one ranking',
       provenance: 'calculated',
       evidence: ['reliability', 'findings'],
+      figures: [{ key: 'agreement', from: 1 }],
       levels: {
         1: `An AI grader is itself a model, with its own habits. So the practice answers were graded by three, from three different companies: Anthropic’s Claude Opus, OpenAI’s GPT and Meta’s Muse.
 
@@ -30,6 +31,7 @@ They agreed with each other most of the time, and they ranked the models in the 
       title: 'A human checks the graders',
       provenance: 'calculated',
       evidence: ['annotation-results', 'commit-annotation', 'evidence-map'],
+      figures: [{ key: 'human-dots', from: 1 }],
       levels: {
         1: `Graders agreeing with each other could still all be wrong in the same way. So a person checked them: 150 pairs of practice answers, shown side by side without names, each judged by hand. Fifteen pairs were secretly repeated.
 
@@ -48,6 +50,7 @@ One honest wrinkle: the graders often called a pair a tie, while the person alwa
       title: 'The small model against Claude, on practice cases',
       provenance: 'calculated',
       evidence: ['results-h5', 'findings'],
+      figures: [{ key: 'frontier', from: 1 }],
       levels: {
         1: `The last question asked whether the small model on the Mac can keep up with the large cloud models. On the practice set, M2 beat Claude Opus (given five examples) under all three graders, and came out about level with Claude Sonnet.
 

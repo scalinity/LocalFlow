@@ -92,16 +92,23 @@ const END = '2026-10-18T00:15:00-04:00'
 
 function Clock() {
   const [hover, setHover] = useState<{ lane: Lane; span: Span } | null>(null)
+  // The replay playhead, in minutes after START; null until the reader moves it.
+  const [at, setAt] = useState<number | null>(null)
   const x = scaleTime()
     .domain([new Date(START), new Date(END)])
     .range([LABEL_W, WIDTH - 12])
   const height = TONIGHT.length * ROW + 46
   const now = new Date(RUN_SNAPSHOT_AT)
   const ticks = x.ticks(8)
+  const length = Math.floor(minutesBetween(START, RUN_SNAPSHOT_AT))
+  const playhead = at === null ? null : new Date(new Date(START).getTime() + at * 60_000)
+  const live = (span: Span) => playhead !== null && new Date(span.start) <= playhead && playhead <= new Date(span.end ?? RUN_SNAPSHOT_AT)
+  const busy = TONIGHT.flatMap((lane) => lane.spans.filter(live).map((span) => `${lane.label}: ${span.label}`))
   const marker = (iso: string, label: string, dashed = false) => (
     <g>
       <line x1={x(new Date(iso))} x2={x(new Date(iso))} y1={18} y2={height - 6} stroke="var(--ink-2)" strokeWidth={1} strokeDasharray={dashed ? '3 3' : undefined} />
-      <text x={x(new Date(iso)) + 4} y={14} fontSize={11.5} fill="var(--ink-2)">
+      {/* Near the right edge the label sits left of its line, so it is never clipped. */}
+      <text x={x(new Date(iso)) + (x(new Date(iso)) > WIDTH - 90 ? -4 : 4)} y={14} fontSize={11.5} textAnchor={x(new Date(iso)) > WIDTH - 90 ? 'end' : 'start'} fill="var(--ink-2)">
         {label}
       </text>
     </g>
@@ -109,7 +116,7 @@ function Clock() {
   return (
     <div>
       <div className="overflow-x-auto">
-        <svg viewBox={`0 0 ${WIDTH} ${height}`} className="min-w-[760px]" role="img" aria-label="The final run on a clock, from 4:30 p.m. to past midnight, one row per job">
+        <svg viewBox={`0 0 ${WIDTH} ${height}`} className="min-w-[740px] lg:min-w-0" role="img" aria-label="The final run on a clock, from 4:30 p.m. to past midnight, one row per job">
           <rect x={x(new Date(NINE_MINUTES.start))} width={Math.max(3, x(new Date(NINE_MINUTES.end)) - x(new Date(NINE_MINUTES.start)))} y={20} height={height - 26} fill="var(--ins-wash)" />
           {ticks.map((t) => (
             <g key={t.toISOString()}>
@@ -121,6 +128,7 @@ function Clock() {
           ))}
           {marker('2026-10-17T16:47:11-04:00', 'Sealed')}
           {marker(RUN_SNAPSHOT_AT, 'Snapshot', true)}
+          {playhead ? <line x1={x(playhead)} x2={x(playhead)} y1={18} y2={height - 6} stroke="var(--ins)" strokeWidth={2} /> : null}
           {TONIGHT.map((lane, row) => {
             const y = 26 + row * ROW
             return (
@@ -144,7 +152,7 @@ function Clock() {
                       onBlur={() => setHover(null)}
                       className="cursor-default outline-none"
                     >
-                      <rect x={x0} y={y + 4} width={w} height={ROW - 12} rx={4} fill={KIND_FILL[lane.kind]} opacity={span.status === 'running' ? 0.35 : 0.9} />
+                      <rect x={x0} y={y + 4} width={w} height={ROW - 12} rx={4} fill={KIND_FILL[lane.kind]} opacity={playhead && !live(span) ? 0.2 : span.status === 'running' ? 0.35 : 0.9} />
                       {span.status === 'running' ? (
                         <rect x={x0} y={y + 4} width={w} height={ROW - 12} rx={4} fill="none" stroke={KIND_FILL[lane.kind]} strokeDasharray="4 3" />
                       ) : null}
@@ -157,6 +165,21 @@ function Clock() {
           })}
         </svg>
       </div>
+      <label className="mt-3 flex items-center gap-4 text-[13.5px] text-ink-2">
+        <span className="shrink-0">Replay the evening</span>
+        <input
+          type="range"
+          min={0}
+          max={length}
+          step={1}
+          value={at ?? 0}
+          onChange={(e) => setAt(Number(e.target.value))}
+          className="range min-w-0 flex-1"
+          aria-label="A moment of the evening"
+          aria-valuetext={clock((playhead ?? new Date(START)).toISOString())}
+        />
+        <span className="tabular w-[4.5rem] shrink-0 text-right text-ink">{clock((playhead ?? new Date(START)).toISOString())}</span>
+      </label>
       <div className="mt-3 min-h-[3.2rem] rounded-xl bg-paper px-4 py-2.5 text-[13.5px] leading-snug text-ink-2" aria-live="polite">
         {hover ? (
           <>
@@ -166,8 +189,10 @@ function Clock() {
             , {clock(hover.span.start)}
             {hover.span.end ? ` to ${clock(hover.span.end)} (${duration(minutesBetween(hover.span.start, hover.span.end))})` : ', still running at the snapshot'}. {hover.span.note}
           </>
+        ) : playhead ? (
+          `At ${clock(playhead.toISOString())}: ${busy.length ? busy.join('; ') : 'nothing was running'}.`
         ) : (
-          'Point at a bar (or move to it with Tab) to see what it was. The tinted band is the nine minutes.'
+          'Point at a bar (or move to it with Tab) to see what it was, or drag the slider to replay the evening. The tinted band is the nine minutes.'
         )}
       </div>
       <ul className="mt-3 flex flex-wrap gap-x-5 gap-y-1.5 text-[12.5px] text-ink-3">

@@ -14,7 +14,7 @@ export const tonight: Chapter = {
       title: 'First, every model answers every case',
       provenance: 'observed',
       evidence: ['stage2-logs'],
-      figure: { instrument: 'pipeline', from: 1 },
+      figures: [{ key: 'pipeline', from: 1 }],
       levels: {
         1: `Three minutes after the seal, the nine systems started answering the 955 final cases. The seven models that run on the Mac took turns, three at a time, through the evening; the two Claude systems answered through Anthropic’s service.
 
@@ -30,6 +30,7 @@ Running the models took hours, from 4:50 to 10:38 p.m. Each system’s answers w
       title: 'One refusal, and a rule that was too blunt',
       provenance: 'observed',
       evidence: ['opus-refusal-record', 'amendment-2', 'commit-amendment-2', 'deviations'],
+      figures: [{ key: 'refusal', from: 1 }],
       levels: {
         1: `At 5:09 p.m., Claude Opus stopped: its safety filter had refused one of the 955 cases. The sealed rules said a system with any missing answer gets no scores at all, which would have thrown away 954 good answers.
 
@@ -48,6 +49,7 @@ Only one result uses Opus few-shot: H5, the comparison with Claude. None of C1 t
       title: 'The nine minutes: checks, not scores',
       provenance: 'observed',
       evidence: ['stage2-logs', 'score-code', 'normalize-code'],
+      figures: [{ key: 'nine-zoom', from: 1 }],
       levels: {
         1: `From 10:39 to 10:49 p.m. came the stretch called “the nine minutes”. It did **not** run the models (they had finished) and it did **not** produce the final scores.
 
@@ -65,6 +67,7 @@ These measurements decide C2 and the damage half of C1 on their own. But a claim
       title: 'Now: two graders read every answer',
       provenance: 'observed',
       evidence: ['stage2-logs', 'judge-code'],
+      figures: [{ key: 'grading-jobs', from: 1 }],
       levels: {
         1: `At 10:49 p.m. the two final graders started reading. Each grades all nine answers to every one of the 955 cases against the original answer key, and separately re-grades the 168 cases whose key changed.
 

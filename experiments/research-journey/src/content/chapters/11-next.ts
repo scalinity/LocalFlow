@@ -14,7 +14,7 @@ export const next: Chapter = {
       title: 'What is established',
       provenance: 'calculated',
       evidence: ['readme-results', 'results-dev', 'reliability', 'evidence-map'],
-      figure: { instrument: 'status', from: 1 },
+      figures: [{ key: 'status', from: 1 }],
       levels: {
         1: `Some things are settled by tests that were planned in advance:
 - Teaching works. The taught model C beat the original model and the untaught Qwen3.5 on a test frozen before any of them answered.

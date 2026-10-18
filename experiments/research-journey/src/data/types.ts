@@ -122,9 +122,44 @@ export interface Idea {
   levels: Record<Depth, string>
   provenance: Provenance
   evidence: string[]
-  /** An instrument shown with this idea from the given depth on. */
-  figure?: { instrument: InstrumentKey; from: Depth }
+  /** Figures shown with this idea, each from one depth on (and, optionally, only up to another). */
+  figures?: FigureRef[]
 }
+
+export interface FigureRef {
+  key: FigureKey
+  from: Depth
+  until?: Depth
+}
+
+/** Small figures that carry one idea each; instruments are the larger explorers. */
+export type FigureKey =
+  | InstrumentKey
+  | 'referee'
+  | 'hundred-first'
+  | 'hundred-practice'
+  | 'sieve'
+  | 'independent'
+  | 'cost'
+  | 'vault'
+  | 'recipes'
+  | 'checkpoints'
+  | 'seeds'
+  | 'slope'
+  | 'third'
+  | 'categories'
+  | 'key-flip'
+  | 'shift-calc'
+  | 'regrade-grid'
+  | 'human-dots'
+  | 'agreement'
+  | 'rulers'
+  | 'fingerprint'
+  | 'one-case'
+  | 'nine-zoom'
+  | 'grading-jobs'
+  | 'frontier'
+  | 'refusal'
 
 export type InstrumentKey =
   | 'example-trace'

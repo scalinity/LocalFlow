@@ -715,6 +715,203 @@
     border-color: var(--rule-strong);
   }
 
+  /* Small figures: lighter than the instruments, one per idea. */
+  .figure-frame {
+    padding: 20px 22px 18px;
+    border-radius: 18px;
+    background: var(--sheet);
+    border: 1px solid var(--rule);
+  }
+  .illustration-badge {
+    font-size: 11.5px;
+    padding: 2px 8px;
+    border-radius: 999px;
+    color: var(--ink-3);
+    border: 1px dashed var(--rule-strong);
+  }
+  .grid-cell {
+    transition: opacity 260ms var(--ease);
+  }
+  .figure-number {
+    font-family: var(--font-serif);
+    font-variation-settings: 'opsz' 40;
+    font-size: 34px;
+    line-height: 1;
+    color: var(--ink);
+    font-variant-numeric: tabular-nums;
+  }
+
+  /* The referee: four stations joined by a rule; the checker's verdicts tick in on each change. */
+  .referee {
+    display: grid;
+    gap: 14px;
+    grid-template-columns: minmax(0, 1fr);
+  }
+  @media (min-width: 900px) {
+    .referee {
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+    }
+    .ref-station + .ref-station::before {
+      content: '';
+      position: absolute;
+      left: -15px;
+      top: 50%;
+      width: 16px;
+      height: 1.5px;
+      background: var(--rule-strong);
+    }
+  }
+  .ref-station {
+    position: relative;
+    padding: 14px 15px 15px;
+    border-radius: 14px;
+    background: var(--paper);
+    border: 1px solid var(--rule);
+  }
+  .ref-step {
+    display: block;
+    font-size: 12.5px;
+    font-weight: 600;
+    line-height: 1.35;
+    color: var(--ink-2);
+  }
+  .ref-text {
+    margin-top: 6px;
+    font-family: var(--font-serif);
+    font-size: 16.5px;
+    line-height: 1.5;
+    color: var(--ink);
+  }
+  .ref-gate.is-pass {
+    border-color: color-mix(in oklab, var(--good) 45%, transparent);
+  }
+  .ref-gate.is-fail {
+    border-color: color-mix(in oklab, var(--del) 45%, transparent);
+  }
+  .ref-rule {
+    display: grid;
+    grid-template-columns: 16px minmax(0, 1fr);
+    gap: 6px;
+    font-size: 13px;
+    line-height: 1.35;
+    color: var(--ink-2);
+    animation: edit-appear 0.3s var(--ease) both;
+  }
+  .ref-mark {
+    color: var(--good);
+    font-weight: 700;
+  }
+  .ref-rule.is-broken {
+    color: var(--ink);
+    font-weight: 600;
+  }
+  .ref-rule.is-broken .ref-mark {
+    color: var(--del);
+  }
+  .ref-out.is-pass {
+    background: var(--ins-wash);
+    border-color: color-mix(in oklab, var(--ins) 40%, transparent);
+  }
+  .ref-out.is-fail {
+    background: var(--well);
+  }
+
+  .sieve-part {
+    height: 100%;
+    border-right: 2px solid var(--sheet);
+    transition: opacity 200ms var(--ease);
+  }
+  .indep-tile {
+    padding: 12px 14px;
+    border-radius: 14px;
+    background: var(--paper);
+    border: 1px solid var(--rule);
+    transition: opacity 250ms var(--ease), filter 250ms var(--ease);
+  }
+  .indep-tile.is-dim {
+    opacity: 0.28;
+    filter: grayscale(1);
+  }
+
+  /* Spot the difference: the one ingredient the two recipes do not share is marked like an insertion. */
+  .recipe-table th,
+  .recipe-table td {
+    padding: 7px 10px;
+    font-size: 15px;
+    color: var(--ink-2);
+  }
+  .recipe-table th:first-child {
+    padding-left: 0;
+  }
+  .recipe-table tr.is-diff td {
+    color: var(--ink);
+    font-weight: 600;
+    background: color-mix(in oklab, var(--ins) 16%, transparent);
+  }
+
+  /* One square per repair case: red where the rewrite strikes extras from the reference, hatched
+     where it cannot safely undo them. */
+  .cat-cell {
+    width: 9px;
+    height: 9px;
+    border-radius: 2px;
+    background: var(--well);
+  }
+  .cat-cell.is-changed {
+    background: var(--del);
+  }
+  .cat-cell.is-excluded {
+    background: repeating-linear-gradient(45deg, var(--del) 0 1.5px, transparent 1.5px 3.5px);
+    box-shadow: inset 0 0 0 1px var(--del);
+  }
+
+  /* The C3 calculator: every verdict is a switch. */
+  .shift-table th,
+  .shift-table td {
+    padding: 5px 12px 5px 0;
+  }
+  .verdict-toggle {
+    min-width: 4.5rem;
+    border-radius: 999px;
+    border: 1px solid color-mix(in oklab, var(--del) 35%, transparent);
+    padding: 3px 12px;
+    font-weight: 600;
+    color: var(--del);
+    background: color-mix(in oklab, var(--del) 12%, transparent);
+    transition: background-color 150ms var(--ease), color 150ms var(--ease);
+  }
+  .verdict-toggle.is-pass {
+    border-color: color-mix(in oklab, var(--good) 35%, transparent);
+    color: var(--good);
+    background: color-mix(in oklab, var(--good) 12%, transparent);
+  }
+  .human-dot {
+    transition: fill 240ms var(--ease), stroke 240ms var(--ease);
+  }
+  .vault-lock {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 12px;
+    text-align: center;
+    font-size: 13.5px;
+    line-height: 1.4;
+    color: var(--ink);
+    border-radius: 10px;
+    background: color-mix(in oklab, var(--sheet) 50%, transparent);
+    backdrop-filter: blur(1.5px);
+  }
+  .vault-lock:hover {
+    background: color-mix(in oklab, var(--sheet) 35%, transparent);
+  }
+  .range {
+    accent-color: var(--ins);
+  }
+
   .panel {
     background: var(--sheet);
     border: 1px solid var(--rule);
@@ -767,6 +964,16 @@
   }
   .replay {
     display: none;
+  }
+  .grid-cell,
+  .sieve-part,
+  .indep-tile,
+  .verdict-toggle,
+  .human-dot {
+    transition: none;
+  }
+  .ref-rule {
+    animation: none;
   }
   ::view-transition-group(*),
   ::view-transition-old(*),

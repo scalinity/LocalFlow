@@ -30,6 +30,7 @@ The whole night of training cost about $43.`,
       title: 'Which saved copy to keep',
       provenance: 'observed',
       evidence: ['prereg', 'findings', 'deviations', 'v2-readme'],
+      figures: [{ key: 'checkpoints', from: 1 }],
       levels: {
         1: `Each run saved eight copies of its model along the way. A rule fixed in advance picked one per run: the copy that did best on a small held-back quiz.
 
@@ -45,6 +46,7 @@ That rule tended to pick early copies, sometimes the very first. It was known it
       title: 'Measuring luck',
       provenance: 'calculated',
       evidence: ['results-dev', 'prereg', 'open-decisions'],
+      figures: [{ key: 'seeds', from: 1 }],
       levels: {
         1: `Train the same recipe twice and you get two slightly different models, just from chance in how training starts. So the two main recipes were each trained three times.
 

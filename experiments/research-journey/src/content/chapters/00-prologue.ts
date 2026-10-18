@@ -14,7 +14,7 @@ export const prologue: Chapter = {
       title: 'Two programs, one after the other',
       provenance: 'observed',
       evidence: ['app-config', 'app-stt', 'installed-config', 'cleanup-contract'],
-      figure: { instrument: 'example-trace', from: 1 },
+      figures: [{ key: 'example-trace', from: 1 }],
       levels: {
         1: `LocalFlow is a [[dictation]] app for the Mac: you talk, and it types what you said into whatever you are writing.
 

@@ -34,6 +34,7 @@ The v2 specification kept it as a reference engine and named Qwen3.5-4B as the c
       title: 'First, a stricter referee',
       provenance: 'observed',
       evidence: ['cleanup-contract'],
+      figures: [{ key: 'referee', from: 1 }],
       levels: {
         1: `Before changing the model, LocalFlow got a stricter referee: a set of rules that checks every cleanup and types your original words whenever an edit breaks one.
 
@@ -65,7 +66,7 @@ That is the trade at the heart of the whole story: the referee can stop damage, 
       title: 'Seven models that were never compared',
       provenance: 'observed',
       evidence: ['m15-roster', 'status-json'],
-      figure: { instrument: 'lineage', from: 3 },
+      figures: [{ key: 'lineage', from: 3 }],
       levels: {
         1: `The obvious next step was to shop for a better model. Seven candidates were installed for a side-by-side comparison on October 1, and the comparison never ran.
 

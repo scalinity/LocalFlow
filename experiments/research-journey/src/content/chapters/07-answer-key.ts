@@ -30,7 +30,7 @@ An answer key is written by someone, in some style. If the style is a matter of 
       title: 'Two styles of answer key',
       provenance: 'observed',
       evidence: ['policy-code', 'normalize-code', 'commit-policy'],
-      figure: { instrument: 'answer-key', from: 1 },
+      figures: [{ key: 'answer-key', from: 1 }],
       levels: {
         1: `The practice and final answer keys were written in the earlier style, which tidies generously: it adds commas, splits long dictations into paragraphs, sometimes turns a comma into a colon. The newer [[minimal-edit|minimal-edit]] style removes those extras.
 
@@ -54,6 +54,7 @@ Words and commas the speaker already had are never touched.`,
       title: 'The discovery: the key leaned one way',
       provenance: 'calculated',
       evidence: ['findings', 'results-rewritten', 'deviations'],
+      figures: [{ key: 'categories', from: 1 }, { key: 'key-flip', from: 1 }],
       levels: {
         1: `When the practice results showed the earlier-data models doing as well or better, the team looked at where. The differences sat exactly in the cases where the answer key’s style mattered: long instructions, lists, sentence boundaries.
 
@@ -72,7 +73,7 @@ Which style is *right* is a product decision, not a statistical one. What the st
       title: 'C3: does the key’s style move the comparison?',
       provenance: 'observed',
       evidence: ['amendment-1', 'amendment-1-known', 'analysis-code'],
-      figure: { instrument: 'claims', from: 3 },
+      figures: [{ key: 'shift-calc', from: 2 }, { key: 'claims', from: 3 }],
       levels: {
         1: `C3 is the third of the five claims the final test checks. It is not a model: “C” is the installed model, while C1 to C5 are the final test’s five claims.
 
@@ -95,6 +96,7 @@ The mean shift over all cases must have the lower end of its 99% interval above 
       title: 'What changes, and what is reused',
       provenance: 'observed',
       evidence: ['amendment-1', 'analysis-code', 'stage2-logs'],
+      figures: [{ key: 'regrade-grid', from: 1 }],
       levels: {
         1: `When the key changes, nothing about the models changes: same transcripts, same answers. Only the cases whose answer-key entry actually changed need fresh grading, so only those go back to the graders.
 

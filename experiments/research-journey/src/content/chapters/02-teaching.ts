@@ -34,6 +34,7 @@ The checkpoint was chosen *preservation first*: fewest meaning changes, then the
       title: 'Where the worked examples came from',
       provenance: 'observed',
       evidence: ['readme-cleanup'],
+      figures: [{ key: 'sieve', from: 1 }],
       levels: {
         1: `Nobody hand-wrote six thousand examples. Claude Sonnet, a large AI model, wrote them, and LocalFlow’s own engine checked every one: an example was kept only if the real product would have produced exactly that cleanup.
 
@@ -52,10 +53,11 @@ The engine replayed each example and kept it only if the result matched byte for
       title: 'Three models, one frozen test',
       provenance: 'calculated',
       evidence: ['readme-results', 'v1-report'],
+      figures: [{ key: 'hundred-first', from: 1 }],
       levels: {
         1: `The first experiment put three models through the same test: A (the original), B (the newer Qwen3.5 as it comes) and C (Qwen3.5, taught).
 
-The taught model was in a different league. Of every 100 spoken corrections, C handled 96, A handled about 15, and B about 12. C almost never changed what was meant.`,
+The taught model was in a different league: it handled 96 of every 100 spoken corrections, and almost never changed what was meant.`,
         2: `The test was frozen before any model produced an answer, so nobody could adjust it after seeing results. It mixed synthetic cases with real recorded speech, transcribed by LocalFlow’s own Parakeet path, and with LocalFlow’s hand-written test sentences.
 
 It also kept the model’s raw output separate from what LocalFlow delivers, because the referee’s fallback can hide a model’s mistakes.`,
@@ -77,6 +79,7 @@ It also kept the model’s raw output separate from what LocalFlow delivers, bec
       title: 'Why only “consider C”',
       provenance: 'observed',
       evidence: ['readme-outcome', 'installed-config'],
+      figures: [{ key: 'independent', from: 1 }],
       levels: {
         1: `C passed every check, yet the rules allowed only “consider it”, never an automatic switch. C had learned from the same writer, Claude, that wrote most of the test, so a high score there could partly be familiarity.
 

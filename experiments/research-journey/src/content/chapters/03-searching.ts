@@ -32,6 +32,7 @@ A refinement chain on October 14 (the G series) found no qualified candidate eit
       title: 'Which AI should write the examples?',
       provenance: 'calculated',
       evidence: ['generator-study'],
+      figures: [{ key: 'cost', from: 1 }],
       levels: {
         1: `If an AI writes the training examples, which one should it be? Three Claude models wrote examples from the same 96 instructions, and two independent checks graded the results.
 
@@ -47,6 +48,7 @@ The smallest and cheapest, Haiku, did as well as the larger ones at a quarter of
       title: 'A practice set and a locked final set',
       provenance: 'observed',
       evidence: ['data-cards'],
+      figures: [{ key: 'vault', from: 1 }],
       levels: {
         1: `To tell candidates apart, the project built two new tests. A [[development-set|practice set]] of 431 cases can be looked at as often as needed while choosing models. A [[final-set]] of 955 cases was locked away, to be used once, at the very end.
 

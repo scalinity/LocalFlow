@@ -31,7 +31,7 @@ The build uses relative paths and hash routes, so `dist/` works from any folder 
 - `src/content/chapters/`: one file per chapter, each a list of ideas written at four depths in a small markup (`[[term]]`, `{ev:source}`, `*em*`, `` `code` ``). A new chapter is one file and one line in `index.ts`.
 - `src/data/`: the research as data. Sources (`evidence.ts`), models and lineage (`models.ts`), claims (`claims.ts`), decision records (`timeline.ts`), the final run (`stage2.ts`), the glossary, and the generated snapshot.
 - `src/components/`: the shell (masthead, timeline spine, chapter view, evidence drawer) and conceptual zoom (`zoom/`: the page-wide depth dial and each idea's own lens).
-- `src/instruments/`: the interactive figures, each loaded on first use.
+- `src/instruments/` and `src/figures/`: the explorers and the smaller figures, each loaded on first use and contained, so one failing figure never blanks the page.
 - `src/app/`: a small hash router on `useSyncExternalStore` (deep links and history without effects), depth state and evidence navigation.
 - `tests/`: integrity checks (every citation and glossary term resolves, lineage has no cycles, no final-set outcome is stated before the analysis runs, the public snapshot holds no case text) and unit tests for the markup, diff and formatting.
 

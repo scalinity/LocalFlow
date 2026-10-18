@@ -32,7 +32,7 @@ It does not forbid looking at other things. It only requires saying which result
       title: 'Seven recipes, chosen so each comparison asks one thing',
       provenance: 'observed',
       evidence: ['arms-doc', 'paper-manifest', 'data-cards'],
-      figure: { instrument: 'lineage', from: 1 },
+      figures: [{ key: 'lineage', from: 1 }],
       levels: {
         1: `The study trained seven kinds of model, each a recipe that differs from another in exactly one way. Compare two that differ only in their training data, and any difference comes from the data.
 
@@ -59,7 +59,7 @@ Plus untuned 4B and 9B baselines and two Claude few-shot systems for H5.`,
       title: 'Five questions, asked in advance',
       provenance: 'observed',
       evidence: ['prereg'],
-      figure: { instrument: 'claims', from: 2 },
+      figures: [{ key: 'recipes', from: 1 }, { key: 'claims', from: 2 }],
       levels: {
         1: `The study asked five questions:
 - Is the new data better than the earlier data?
