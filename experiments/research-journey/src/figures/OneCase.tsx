@@ -21,7 +21,7 @@ export default function OneCase({ depth }: InstrumentProps) {
         <span>
           Suppose a result clears its pass mark by <span className="figure-number !text-[22px]">{margin.toFixed(2)}</span> points
         </span>
-        <input type="range" min={0} max={2.5} step={0.01} value={margin} onChange={(e) => setMargin(Number(e.target.value))} className="range w-full max-w-xs" aria-label="How far the result clears its pass mark, in points" />
+        <input type="range" min={0} max={2.5} step={0.01} value={margin} onChange={(e) => setMargin(Number(e.target.value))} className="range w-full max-w-xs" aria-valuetext={`${margin.toFixed(2)} points`} />
       </label>
       <div className="overflow-x-auto">
         <svg viewBox={`0 0 ${W} 86`} width="100%" className="min-w-[500px]" role="img" aria-label="The pass mark, the result, and the reach of one missing case">

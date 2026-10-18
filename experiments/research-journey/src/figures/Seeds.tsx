@@ -59,7 +59,7 @@ export default function Seeds({ depth }: InstrumentProps) {
           <span>
             Suppose two recipes differ by <span className="figure-number !text-[22px]">{gap.toFixed(1)}</span> points
           </span>
-          <input type="range" min={0} max={4} step={0.1} value={gap} onChange={(e) => setGap(Number(e.target.value))} className="range w-full max-w-xs" aria-label="A difference between two recipes, in points" />
+          <input type="range" min={0} max={4} step={0.1} value={gap} onChange={(e) => setGap(Number(e.target.value))} className="range w-full max-w-xs" aria-valuetext={`${gap.toFixed(1)} points`} />
         </label>
         <p className={`mt-2 text-[14px] ${beyond ? 'text-ink' : 'text-ink-2'}`}>
           {beyond

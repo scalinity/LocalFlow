@@ -18,7 +18,7 @@ export default function Cost({ depth }: InstrumentProps) {
         <span>
           Examples you need: <span className="figure-number !text-[24px]">{needed.toLocaleString()}</span>
         </span>
-        <input type="range" min={1000} max={20000} step={1000} value={needed} onChange={(e) => setNeeded(Number(e.target.value))} className="range w-full max-w-xs" aria-label="Number of accepted examples needed" />
+        <input type="range" min={1000} max={20000} step={1000} value={needed} onChange={(e) => setNeeded(Number(e.target.value))} className="range w-full max-w-xs" aria-valuetext={`${needed.toLocaleString()} examples`} />
       </label>
       <ul className="mt-5 flex flex-col gap-3">
         {WRITERS.map((w) => {

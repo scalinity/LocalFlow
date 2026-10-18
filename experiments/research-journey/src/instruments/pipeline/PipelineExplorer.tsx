@@ -165,21 +165,23 @@ function Clock() {
           })}
         </svg>
       </div>
-      <label className="mt-3 flex items-center gap-4 text-[13.5px] text-ink-2">
-        <span className="shrink-0">Replay the evening</span>
-        <input
-          type="range"
-          min={0}
-          max={length}
-          step={1}
-          value={at ?? 0}
-          onChange={(e) => setAt(Number(e.target.value))}
-          className="range min-w-0 flex-1"
-          aria-label="A moment of the evening"
-          aria-valuetext={clock((playhead ?? new Date(START)).toISOString())}
-        />
-        <span className="tabular w-[4.5rem] shrink-0 text-right text-ink">{clock((playhead ?? new Date(START)).toISOString())}</span>
-      </label>
+      {/* The slider is named by its visible label; the time it points at is a separate output. */}
+      <div className="mt-3 flex items-center gap-4 text-[13.5px] text-ink-2">
+        <label className="flex min-w-0 flex-1 items-center gap-4">
+          <span className="shrink-0">Replay the evening</span>
+          <input
+            type="range"
+            min={0}
+            max={length}
+            step={1}
+            value={at ?? 0}
+            onChange={(e) => setAt(Number(e.target.value))}
+            className="range min-w-0 flex-1"
+            aria-valuetext={clock((playhead ?? new Date(START)).toISOString())}
+          />
+        </label>
+        <output className="tabular w-[4.5rem] shrink-0 text-right text-ink">{clock((playhead ?? new Date(START)).toISOString())}</output>
+      </div>
       <div className="mt-3 min-h-[3.2rem] rounded-xl bg-paper px-4 py-2.5 text-[13.5px] leading-snug text-ink-2" aria-live="polite">
         {hover ? (
           <>
