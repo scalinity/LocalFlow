@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { ClaimStatusMark } from '../components/primitives/Status'
 import { CLAIM_BY_ID } from '../data/claims'
-import { useSnapshot, type Stage2Component } from '../data/results'
+import { claimStatus, useSnapshot, type Stage2Component } from '../data/results'
 import { pts } from '../lib/format'
 
 /**
@@ -14,7 +14,6 @@ const TITLE: Record<string, string> = {
   'H5 opus-5-5-fewshot': 'H5: within 3 points of Claude Opus',
   'H5 sonnet-5-5-fewshot': 'H5: within 3 points of Claude Sonnet',
 }
-const ORDER = ['C1', 'C2', 'C3', 'C4', 'C5', 'H5 opus-5-5-fewshot', 'H5 sonnet-5-5-fewshot']
 // Spoken names: both H5 claims must stay distinct when read without their headings.
 const NAME: Record<string, string> = { 'H5 opus-5-5-fewshot': 'H5 against Claude Opus', 'H5 sonnet-5-5-fewshot': 'H5 against Claude Sonnet' }
 const LO = -0.06
@@ -30,7 +29,8 @@ const span = ([a, b]: [number, number]) => ({ left: at(a), width: `${((b - a) / 
 export function FinalClaims({ depth }: { depth: number }) {
   const { final } = useSnapshot()
   const [hot, setHot] = useState<string | null>(null)
-  const claims = ORDER.flatMap((id) => (final.stage2?.[id] ? [{ id, ...final.stage2[id]! }] : []))
+  // In the analysis's own order, so a claim the analysis adds or renames is never silently dropped.
+  const claims = Object.entries(final.stage2 ?? {}).map(([id, claim]) => ({ id, ...claim }))
   const describe = (claim: string, c: Stage2Component) =>
     `${claim}, ${gradedBy(c.name)}: ${pts(c.estimate)}, 99% interval ${exact(c.ci99[0])} to ${exact(c.ci99[1])}; the pass mark is ${exact(c.threshold)}, ${c.outcome === 'pass' ? 'and the whole interval clears it' : 'and the interval reaches past it, so this part does not pass'}.`
   const active = claims.flatMap((cl) => cl.components.map((c, k) => ({ key: `${cl.id}-${k}`, text: describe(NAME[cl.id] ?? cl.id, c) }))).find((r) => r.key === hot)
@@ -42,7 +42,7 @@ export function FinalClaims({ depth }: { depth: number }) {
           <li key={cl.id}>
             <p className="mb-1 flex flex-wrap items-baseline justify-between gap-x-3 text-[13.5px]">
               <span className="font-medium text-ink">{TITLE[cl.id] ?? `${cl.id}: ${CLAIM_BY_ID[cl.id]?.title ?? ''}`}</span>
-              <ClaimStatusMark status={cl.outcome === 'supported' ? 'supported' : cl.outcome === 'not supported' ? 'not-supported' : 'not-evaluable'} />
+              <ClaimStatusMark status={claimStatus(cl.outcome)} />
             </p>
             {cl.components.map((c, k) => {
               const tone = c.outcome === 'pass' ? 'var(--good)' : 'var(--bad)'

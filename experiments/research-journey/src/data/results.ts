@@ -1,4 +1,5 @@
 import { use } from 'react'
+import type { ClaimStatus } from './types'
 
 /** Shapes written by scripts/snapshot.mjs. Every interval is oriented "first arm better". */
 export interface ArmValue {
@@ -24,6 +25,13 @@ export interface ContrastRow {
   noninferiority?: boolean | null
 }
 
+/** A Stage 2 outcome as the registered analysis writes it. */
+export type Stage2Outcome = 'supported' | 'not supported' | 'not evaluable'
+
+/** The analysis's outcome words as the app's status names, in one place. */
+export const claimStatus = (outcome: Stage2Outcome): ClaimStatus =>
+  outcome === 'supported' ? 'supported' : outcome === 'not supported' ? 'not-supported' : 'not-evaluable'
+
 export interface Stage2Component {
   name: string
   threshold: number
@@ -47,7 +55,7 @@ export interface AnalysisBlock {
   contrasts: Record<string, ContrastRow[]>
   exploratory?: Record<string, ContrastRow[]>
   /** Final set only: each claim's registered outcome and its components. */
-  stage2?: Record<string, { outcome: 'supported' | 'not supported' | 'not evaluable'; components: Stage2Component[] }>
+  stage2?: Record<string, { outcome: Stage2Outcome; components: Stage2Component[] }>
 }
 
 export interface Snapshot {

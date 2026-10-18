@@ -3,6 +3,7 @@ import { CHAPTERS, CURRENT_CHAPTER } from '../src/content/chapters'
 import { references } from '../src/content/markup'
 import { QUESTIONS } from '../src/content/questions'
 import { CLAIMS } from '../src/data/claims'
+import { claimStatus, type Stage2Outcome } from '../src/data/results'
 import { EVIDENCE, EVIDENCE_LIST } from '../src/data/evidence'
 import { GLOSSARY } from '../src/data/glossary'
 import { DATASETS, MODEL_BY_ID, MODELS } from '../src/data/models'
@@ -101,9 +102,8 @@ describe('status is told honestly', () => {
 
   it('states each final-set outcome as the analysis recorded it', () => {
     const recorded = snapshotJson.final.stage2 as Record<string, { outcome: string }>
-    const status = (outcome: string) => outcome.replace(' ', '-')
     const final = (id: string) => CLAIMS.find((c) => c.id === id)?.results.find((r) => r.set === 'final')?.status
-    for (const id of ['C1', 'C2', 'C3', 'C4', 'C5']) expect(final(id), id).toBe(status(recorded[id]!.outcome))
+    for (const id of ['C1', 'C2', 'C3', 'C4', 'C5']) expect(final(id), id).toBe(claimStatus(recorded[id]!.outcome as Stage2Outcome))
     // H5 as a whole needs both comparators, as on the practice set.
     const both = ['H5 opus-5-5-fewshot', 'H5 sonnet-5-5-fewshot'].every((k) => recorded[k]!.outcome === 'supported')
     expect(final('H5')).toBe(both ? 'supported' : 'not-supported')
