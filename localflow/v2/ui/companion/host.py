@@ -332,12 +332,30 @@ class _WindowDelegate(NSObject, protocols=[
 def _ensure_edit_menu():
     """Text fields take ⌘A/⌘C/⌘V/⌘X/⌘Z from the application's Edit menu,
     and a window ⌘M/⌘W from its Window menu; a menu-bar-only app has
-    neither, so the companion installs minimal ones (their key
-    equivalents work without a visible menu bar)."""
+    neither, so the companion installs minimal ones behind an app menu
+    (their key equivalents work without a visible menu bar)."""
     app = NSApplication.sharedApplication()
     if app.mainMenu() is not None:
         return
+    app.setMainMenu_(companion_menu())
+
+
+def companion_menu():
+    """The companion's main menu: LocalFlow, Edit, Window."""
     main = NSMenu.alloc().init()
+    # The app menu comes first: it is the menu bar's LocalFlow menu while
+    # the Hub's Dock tile shows. ⌘Q there closes the Hub; only Quit
+    # LocalFlow in the menu bar item ends dictation.
+    app_top = NSMenuItem.alloc().initWithTitle_action_keyEquivalent_(
+        "LocalFlow", None, "")
+    app_menu = NSMenu.alloc().initWithTitle_("LocalFlow")
+    for title, action, key in (("Hide LocalFlow", "hide:", "h"),
+                               ("Close Hub", "performClose:", "q")):
+        app_menu.addItem_(NSMenuItem.alloc()
+                          .initWithTitle_action_keyEquivalent_(title, action,
+                                                               key))
+    app_top.setSubmenu_(app_menu)
+    main.addItem_(app_top)
     top = NSMenuItem.alloc().initWithTitle_action_keyEquivalent_(
         "Edit", None, "")
     edit = NSMenu.alloc().initWithTitle_("Edit")
@@ -362,7 +380,7 @@ def _ensure_edit_menu():
                      .initWithTitle_action_keyEquivalent_(title, action, key))
     win_top.setSubmenu_(win)
     main.addItem_(win_top)
-    app.setMainMenu_(main)
+    return main
 
 
 class CompanionHost:

@@ -22,6 +22,7 @@ import objc
 from AppKit import (
     NSApplication,
     NSApplicationActivationPolicyAccessory,
+    NSApplicationActivationPolicyRegular,
     NSImage,
     NSMenu,
     NSMenuItem,
@@ -29,7 +30,7 @@ from AppKit import (
     NSStatusBar,
     NSWorkspace,
 )
-from Foundation import NSObject, NSTimer
+from Foundation import NSAppleEventManager, NSObject, NSTimer
 from PyObjCTools import AppHelper
 
 from . import config as config_mod
@@ -2768,6 +2769,52 @@ class AppDelegate(NSObject):
             self.v2log.emit("worker.start_failed", level="ERROR",
                             reason_code=e.reason_code)
 
+    def quitLocalFlow_(self, sender):
+        """The explicit Quit LocalFlow (the status menu, the Hub's own
+        menu, Ctrl-C): the one request that ends dictation."""
+        self._quit_requested = True
+        NSApplication.sharedApplication().terminate_(sender)
+
+    def applicationShouldTerminate_(self, sender):
+        """⌘Q in the Hub and the Dock's Quit close the Hub; dictation
+        keeps running. Only an explicit Quit LocalFlow, a logout or a
+        shutdown ends the app."""
+        if getattr(self, "_quit_requested", False) or _system_is_quitting():
+            return 1  # NSTerminateNow
+        hub = getattr(self, "_hub", None)
+        try:
+            if hub is not None and hub.window.isVisible():
+                hub.window.performClose_(None)
+        except Exception as e:
+            self.v2log.emit("hub.close_failed", level="WARNING",
+                            reason_code=type(e).__name__)
+        return 0  # NSTerminateCancel
+
+    def applicationShouldHandleReopen_hasVisibleWindows_(self, app, visible):
+        """A click on the Dock tile brings the Hub back."""
+        self.openHub_(None)
+        return True
+
+    @objc.python_method
+    def _hub_dock(self, shown):
+        """While the Hub is open LocalFlow is a regular app with its own
+        Dock tile; closed, it is menu-bar only again. Only the bundled
+        app has the icon; a source checkout keeps the menu-bar-only
+        shell (its Dock tile would be Python's)."""
+        icon = _bundle_icon()
+        if icon is None:
+            return
+        app = NSApplication.sharedApplication()
+        if shown:
+            app.setActivationPolicy_(NSApplicationActivationPolicyRegular)
+            app.setApplicationIconImage_(icon)
+        else:
+            app.setActivationPolicy_(NSApplicationActivationPolicyAccessory)
+
+    @objc.python_method
+    def hubWindowClosed(self):
+        self._hub_dock(False)
+
     def applicationWillTerminate_(self, note):
         """M03-AUDIT-04: one ordered quit. (1) app admission closes — no
         new capture, retry or recovery; (2) an active capture stops and
@@ -5444,8 +5491,9 @@ class AppDelegate(NSObject):
 
         menu.addItem_(NSMenuItem.separatorItem())
         quit_item = NSMenuItem.alloc().initWithTitle_action_keyEquivalent_(
-            "Quit LocalFlow", "terminate:", "q"
+            "Quit LocalFlow", "quitLocalFlow:", "q"
         )
+        quit_item.setTarget_(self)
         menu.addItem_(quit_item)
         self.status_item.setMenu_(menu)
 
@@ -5587,6 +5635,7 @@ class AppDelegate(NSObject):
         try:
             if self._hub is None:
                 self._hub = self._make_hub()
+            self._hub_dock(True)
             self._hub.showWindow_(sender)
         except Exception as e:
             self.v2log.emit("hub.open_failed", level="WARNING",
@@ -6678,8 +6727,45 @@ class AppDelegate(NSObject):
                 job_id, **kw), job_id=job_id)
 
 
+_QUIT_REASONS = ("logo", "rlgo", "rrst", "rsdn", "rest", "shut")
+
+
+def _fourcc(code):
+    return int.from_bytes(code.encode("mac_roman"), "big")
+
+
+def _system_is_quitting():
+    """The quit request carries a logout, restart or shutdown reason."""
+    event = NSAppleEventManager.sharedAppleEventManager().currentAppleEvent()
+    if event is None:
+        return False
+    why = event.attributeDescriptorForKeyword_(_fourcc("why?"))
+    return why is not None and why.enumCodeValue() in {
+        _fourcc(c) for c in _QUIT_REASONS}
+
+
+_icon = []
+
+
+def _bundle_icon():
+    """LocalFlow.icns beside the code in the app bundle; None in a source
+    checkout."""
+    if not _icon:
+        path = config_mod.ROOT / "LocalFlow.icns"
+        _icon.append(NSImage.alloc().initWithContentsOfFile_(str(path))
+                     if path.exists() else None)
+    return _icon[0]
+
+
 def main():
     cfg = config_mod.load()
+    if _bundle_icon() is not None:
+        # The bundle runs on Python.app; name the process LocalFlow for
+        # its Dock tile and app menu while the Hub is open.
+        from AppKit import NSBundle
+        info = NSBundle.mainBundle().localizedInfoDictionary() \
+            or NSBundle.mainBundle().infoDictionary()
+        info["CFBundleName"] = "LocalFlow"
     app = NSApplication.sharedApplication()
     app.setActivationPolicy_(NSApplicationActivationPolicyAccessory)
 
@@ -6687,7 +6773,8 @@ def main():
     delegate.configure(cfg)
     app.setDelegate_(delegate)
 
-    signal.signal(signal.SIGINT, lambda *_: AppHelper.callAfter(app.terminate_, None))
+    signal.signal(signal.SIGINT,
+                  lambda *_: AppHelper.callAfter(delegate.quitLocalFlow_, None))
     AppHelper.runEventLoop()
 
 

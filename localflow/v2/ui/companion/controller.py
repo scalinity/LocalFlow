@@ -216,6 +216,9 @@ class CompanionController:
 
     def on_close(self):
         self.state.close()
+        closed = getattr(self.coordinator, "hubWindowClosed", None)
+        if closed is not None:
+            closed()
 
     def on_toolbar(self, name):
         if name == "sidebar":
@@ -485,8 +488,12 @@ class CompanionController:
 
         @br.command("app.quit")
         def quit_app(p):
-            from AppKit import NSApp
-            AppHelper.callAfter(NSApp.terminate_, None)
+            # The Hub's own Quit LocalFlow is an explicit quit.
+            quit_ = getattr(self.coordinator, "quitLocalFlow_", None)
+            if quit_ is None:
+                from AppKit import NSApp
+                quit_ = NSApp.terminate_
+            AppHelper.callAfter(quit_, None)
             return {}
 
         from . import surfaces

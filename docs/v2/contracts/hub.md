@@ -124,6 +124,15 @@ live as of M13, the refusal check uses any unregistered name).
   service keeps running; explicit Quit is the app's only exit
   (M09-AC04). View/selection/search state survives close/reopen by
   construction (the controller persists; nothing is deallocated).
+- While the Hub is open the bundled app is a regular app with a Dock
+  tile (the bundle's icon, named LocalFlow); closing the Hub returns it
+  to the menu bar only, and a click on the tile reopens the Hub. A
+  source checkout has no bundle icon and stays menu-bar only. The app
+  menu leads the companion's menus; ⌘Q there ("Close Hub") and the
+  Dock's Quit close the Hub. Only Quit LocalFlow — the menu bar item's
+  or the Hub's own — Ctrl-C, a logout or a shutdown end the app. The
+  tile runs under Python's bundle identity, so it cannot be kept in the
+  Dock.
 - Default 1100×760 clamped to the visible frame; minimum 900×620
   clamped to the screen; frame persisted via the native autosave
   (M09-AC03). Light/dark follow system controls; lists are NSTableView
