@@ -71,6 +71,13 @@ $PY experiments/cleanup-model-v2/tools/research_analysis.py docs/v2/research/pap
     --rewritten-judge openai=$A/judge/openai/final-c3-openai/verdicts.jsonl
 ```
 
+The bootstrap distribution behind each Stage 2 component (post hoc; a figure's data). The rerun must reproduce the
+committed `stage2` section exactly, and it writes densities and threshold shares only:
+
+```sh
+$PY experiments/cleanup-model-v2/tools/research_bootstrap_densities.py $A/research/results/stage2-bootstrap-densities.json
+```
+
 Judge–human agreement (ANALYSIS_PLAN rule; the three development judges' forward passes, and Sonnet 5.5's 150-case
 pass from AMENDMENT-2 item 3). The first command reproduces `agreement.json` exactly; the second adds Sonnet and writes
 `agreement-sonnet.json`, in which the first three judges are identical to `agreement.json`:
