@@ -35,8 +35,9 @@ $PY experiments/cleanup-model-v2/tools/research_report.py docs/v2/research/paper
 ```
 
 A re-run of this block also scores the two few-shot systems, whose development outputs now exist: `analysis.json` and the two
-normalized-reference supplementary analyses gain those arms and Holm p-values over all seven contrasts on the engine metrics;
-every other value is unchanged, and `data/manifest.json` records the checkout it ran on (DEVIATIONS, 2026-10-22).
+normalized-reference supplementary analyses gain those arms, and on the engine metrics the two few-shot contrasts then rank by
+their own p-values instead of taking the last ranks of the seven-contrast Holm family, which lowers some engine-metric Holm
+p-values; every other value is unchanged, and `data/manifest.json` records the checkout it ran on (DEVIATIONS, 2026-10-22).
 
 H5 on the development set (pre-registered; its own judge pass shows M2 seed 0 beside the two few-shot systems, see DEVIATIONS):
 
@@ -97,6 +98,14 @@ $PY experiments/cleanup-model-v2/tools/research_analysis.py docs/v2/research/pap
 $PY experiments/cleanup-model-v2/tools/research_analysis.py docs/v2/research/paper/data/arms.json --out-dir OUT --cases $A/research/dev-normalized/validation.jsonl --judge anthropic=$A/judge/dev-norm-sel-anthropic/verdicts.jsonl
 $PY experiments/cleanup-model-v2/tools/research_categories.py docs/v2/research/paper/data/arms_final.json $A/judge/dev-final-anthropic/verdicts.jsonl OUT.json
 $PY experiments/cleanup-model-v2/tools/research_checkpoints.py docs/v2/research/paper/results/checkpoints.json
+```
+
+Exact-arithmetic recheck of the committed development analyses (post hoc; see DEVIATIONS). It reruns each analysis on the
+arms its committed file holds, with bootstrap sums taken exactly on the 1/6 lattice that three-seed arm values imply, and
+writes each analysis and `summary.json`, every p-value, Holm p-value or support decision that differs from the committed file:
+
+```sh
+$PY experiments/cleanup-model-v2/tools/research_exact_recheck.py $A/research/results/exact-recheck
 ```
 
 Judge runs used (names under `$A/judge`): `dev-main-*`, `dev-swap-*`, `dev-final-*`, `dev-h5-*`, `dev-norm-sel-anthropic`, `dev-norm-final-anthropic`, with commands `python -m v2.judge CASES SYSTEMS --prefix development --role development --backend B --name NAME [--swap-order]`; and on the final set `final-main-*` and `final-c3-*`, with the commands in the Stage 2 block above. A rerun of the same command resumes.
