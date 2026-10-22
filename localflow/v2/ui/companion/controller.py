@@ -96,6 +96,10 @@ def default_prefs_path():
 
 
 class CompanionController:
+    # While open, the bundled app shows a Dock tile for this Hub; closing
+    # tells the coordinator (``hubWindowClosed``) to remove it.
+    dock_tile = True
+
     """One per process (Open Hub… focuses the existing window). Closing
     hides; explicit Quit is the only exit (M09-AC04)."""
 

@@ -64,6 +64,52 @@ def test_only_an_explicit_quit_ends_the_app():
           " ends the app")
 
 
+def _quit_event(reason=None, as_attribute=False):
+    from Foundation import NSAppleEventDescriptor
+    fourcc = app_mod._fourcc
+    event = NSAppleEventDescriptor.appleEventWithEventClass_eventID_targetDescriptor_returnID_transactionID_(
+        fourcc("aevt"), fourcc("quit"), None, -1, 0)
+    if reason is not None:
+        why = NSAppleEventDescriptor.descriptorWithEnumCode_(fourcc(reason))
+        if as_attribute:
+            event.setAttributeDescriptor_forKeyword_(why, fourcc("why?"))
+        else:
+            event.setParamDescriptor_forKeyword_(why, fourcc("why?"))
+    return event
+
+
+def test_logout_restart_and_shutdown_are_never_refused():
+    for reason in ("logo", "rlgo", "rrst", "rsdn", "rest", "shut"):
+        assert app_mod._system_is_quitting(_quit_event(reason)), reason
+        assert app_mod._system_is_quitting(
+            _quit_event(reason, as_attribute=True)), reason
+    # The Dock's Quit carries no reason: it closes the Hub instead.
+    assert not app_mod._system_is_quitting(_quit_event())
+    assert not app_mod._system_is_quitting(_quit_event("abcd"))
+    print("ok  quit: a logout, restart or shutdown reason always ends the"
+          " app")
+
+
+def test_appkit_fallback_hub_stays_menu_bar_only():
+    h = Harness(durations=[1.0])
+    try:
+        d = h.d
+        calls = []
+        d._hub_dock = lambda shown: calls.append(shown)
+
+        class _AppKitHub:
+            def showWindow_(self, sender):
+                pass
+        d._hub = _AppKitHub()
+        d.openHub_(None)
+        assert calls == [], calls
+        from localflow.v2.ui.companion.controller import CompanionController
+        assert CompanionController.dock_tile is True
+    finally:
+        h.close()
+    print("ok  dock: only the companion Hub shows a Dock tile")
+
+
 def test_dock_tile_reopens_the_hub_and_stays_off_in_a_checkout():
     h = Harness(durations=[1.0])
     try:

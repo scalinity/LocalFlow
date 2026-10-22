@@ -5635,7 +5635,10 @@ class AppDelegate(NSObject):
         try:
             if self._hub is None:
                 self._hub = self._make_hub()
-            self._hub_dock(True)
+            if getattr(self._hub, "dock_tile", False):
+                # The companion Hub only; the AppKit fallback Hub stays
+                # menu-bar only.
+                self._hub_dock(True)
             self._hub.showWindow_(sender)
         except Exception as e:
             self.v2log.emit("hub.open_failed", level="WARNING",
@@ -6734,12 +6737,17 @@ def _fourcc(code):
     return int.from_bytes(code.encode("mac_roman"), "big")
 
 
-def _system_is_quitting():
-    """The quit request carries a logout, restart or shutdown reason."""
-    event = NSAppleEventManager.sharedAppleEventManager().currentAppleEvent()
+def _system_is_quitting(event=None):
+    """The quit request carries a logout, restart or shutdown reason
+    (kAEQuitReason, read as a parameter or an attribute)."""
+    if event is None:
+        event = NSAppleEventManager.sharedAppleEventManager() \
+            .currentAppleEvent()
     if event is None:
         return False
-    why = event.attributeDescriptorForKeyword_(_fourcc("why?"))
+    key = _fourcc("why?")
+    why = event.paramDescriptorForKeyword_(key) \
+        or event.attributeDescriptorForKeyword_(key)
     return why is not None and why.enumCodeValue() in {
         _fourcc(c) for c in _QUIT_REASONS}
 
