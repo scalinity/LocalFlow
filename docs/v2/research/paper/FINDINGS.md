@@ -67,7 +67,7 @@ Nine systems ran once each on the 955 final cases and were graded by Sonnet 5.5 
 
 ## Model selection
 
-See [SELECTION.md](SELECTION.md). The pre-registered rule returns **keep C**, failing one gate by a third of a case; the paper should say that, and say what a noninferiority reading would recommend.
+See [SELECTION.md](SELECTION.md). The pre-registered rule returns **keep C**, failing one gate by a third of a case; the paper should say that, and say what a post-hoc variant of the rule would recommend.
 
 ## Operational notes the write-up should not hide
 
