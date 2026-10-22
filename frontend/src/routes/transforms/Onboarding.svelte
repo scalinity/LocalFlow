@@ -69,7 +69,7 @@
       <ul class="checks">
         <li><Icon name="check" size={15} /> Keeps your meaning and facts</li>
         <li><Icon name="check" size={15} /> Shows every change before it replaces anything</li>
-        <li><Icon name="check" size={15} /> Runs on this Mac</li>
+        <li><Icon name="check" size={15} /> Runs on Claude: the selected text goes to Anthropic</li>
         <li><Icon name="check" size={15} /> Your own instructions, too</li>
       </ul>
       <div class="cta"><Button variant="primary" size="lg" onclick={() => (step = 1)} data-autofocus>Show me how</Button></div>

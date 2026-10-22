@@ -178,6 +178,83 @@ def test_key_is_read_lazily_and_dropped_when_rejected():
           " rejection; invalid pairs never sent")
 
 
+def test_key_change_and_removal_take_effect_after_success():
+    keys = ["k1", "k1", "k2", None]
+    made = []
+
+    def factory(key):
+        made.append(key)
+        return claude_fakes.FakeClient(*["Meet at three."] * 3)
+    t = claude.Transformer(key_reader=lambda: keys.pop(0),
+                           client_factory=factory)
+    assert t.run(_job(), "claude-haiku-5-5", "low").path == "applied"
+    assert t.run(_job(), "claude-haiku-5-5", "low").path == "applied"
+    assert made == ["k1"]                       # same key: client reused
+    assert t.run(_job(), "claude-haiku-5-5", "low").path == "applied"
+    assert made == ["k1", "k2"]                 # replaced key: new client
+    r = t.run(_job(), "claude-haiku-5-5", "low")
+    assert r.reason == "transform_unavailable:no_api_key"  # removed key
+    print("ok  key: a replaced or removed key applies on the next run")
+
+
+def test_shutdown_refuses_new_and_discards_in_flight():
+    import threading
+    sup, client = claude_fakes.claude_supervisor("Meet at three.")
+    started, release = threading.Event(), threading.Event()
+    real = client.beta.messages.stream
+
+    def blocked(**kw):
+        started.set()
+        release.wait(10)
+        return real(**kw)
+    client.beta.messages.stream = blocked
+    client.close = release.set          # closing the client ends the stream
+    out = {}
+
+    def run():
+        out["msg"] = sup.transform(
+            transform_id="builtin:polish", transform_revision=1,
+            prompt_revision="p", mode="polish", source="meet at three",
+            model="claude-haiku-5-5", reasoning="low")
+    t = threading.Thread(target=run)
+    t.start()
+    assert started.wait(5)
+    sup.shutdown()
+    t.join(10)
+    res = out["msg"]["result"]
+    assert res["path"] == "fallback_original", res
+    assert res["reason"] == "transform_unavailable:closed_in_flight"
+    after = sup.transform(transform_id="builtin:polish", transform_revision=1,
+                          prompt_revision="p", mode="polish", source="hi")
+    assert after["refused"] == "supervisor_closed", after
+    assert len(client.calls) == 1, client.calls  # nothing sent after close
+    print("ok  shutdown: a transform after it is refused; one in flight is"
+          " discarded")
+
+
+def test_panel_says_whether_the_text_was_sent():
+    from localflow.v2.ui.transforms_panel import served_text
+    cases = [
+        (("", "refusal"), "claude-opus-5-5 · reasoning low"),
+        (("cut", "max_tokens"), "claude-opus-5-5 · reasoning low"),
+        (anthropic.APIConnectionError(request=REQ),
+         "may have reached Claude · no answer"),
+        (anthropic.RateLimitError(
+            "x", response=httpx2.Response(429, request=REQ), body=None),
+         "sent to Claude · no answer"),
+    ]
+    for answer, said in cases:
+        client = claude_fakes.FakeClient(answer)
+        res = claude_fakes.transformer(client).run(_job(), "claude-opus-5-5",
+                                                   "low")
+        assert served_text(res) == said, (res.reason, served_text(res))
+    nokey = claude.Transformer(key_reader=lambda: None).run(
+        _job(), "claude-opus-5-5", "low")
+    assert served_text(nokey) == "not sent to Claude"
+    print("ok  panel: answered, sent, maybe sent and not sent are told"
+          " apart")
+
+
 def test_model_choice_lives_beside_the_definition():
     td = pathlib.Path(tempfile.mkdtemp())
     st = store_mod.Store(td / "v2.db", backup_dir=td / "backups")
@@ -213,6 +290,14 @@ def test_model_choice_lives_beside_the_definition():
              "model:builtin:polish")))
         assert ts.model_choice("builtin:polish", "polish")["source"] == \
             "default"
+        # Malformed stored values read as the default too, never break
+        # the listing.
+        for bad in ('{"model": [], "reasoning": "low"}', '[1]', 'not json'):
+            st.submit(lambda db, v=bad: db.execute(
+                "UPDATE transform_meta SET value=? WHERE key=?",
+                (v, "model:builtin:polish")))
+            assert ts.model_choices()["builtin:polish"]["source"] == \
+                "default", bad
         ts.set_model_choice("builtin:polish", "claude-opus-5-5", "high")
         ts.reset_model_choice("builtin:polish")
         assert ts.model_choice("builtin:polish", "polish")["source"] == \

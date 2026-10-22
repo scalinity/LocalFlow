@@ -86,11 +86,12 @@ def _conn_model_choice(db, transform_id, mode) -> dict:
     if row:
         try:
             pref = json.loads(row[0])
-            if tf.claude.is_valid(pref.get("model"), pref.get("reasoning")):
-                return {"model": pref["model"],
-                        "reasoning": pref["reasoning"], "source": "user"}
-        except (ValueError, AttributeError):
-            pass
+        except ValueError:
+            pref = None
+        if isinstance(pref, dict) and tf.claude.is_valid(
+                pref.get("model"), pref.get("reasoning")):
+            return {"model": pref["model"],
+                    "reasoning": pref["reasoning"], "source": "user"}
     model, reasoning = tf.claude.recommended(mode)
     return {"model": model, "reasoning": reasoning, "source": "default"}
 

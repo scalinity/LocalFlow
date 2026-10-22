@@ -55,7 +55,13 @@ _UNAVAILABLE = {
     "model_refused": "Claude declined to transform this text.",
     "output_limit": "Claude's answer ran past its length limit.",
     "output_invalid": "Claude's answer was not in the expected shape.",
+    "closed": "LocalFlow is closing. Nothing was sent.",
+    "closed_in_flight": "LocalFlow closed while Claude was answering.",
 }
+# Reason codes for which the selected text never left this Mac, and the
+# ones where it may not have (the connection failed or timed out).
+_NOT_SENT = ("no_api_key", "sdk_missing", "closed")
+_MAYBE_SENT = ("network_unavailable", "timeout")
 
 
 def reason_text(reason):
@@ -64,12 +70,20 @@ def reason_text(reason):
 
 
 def served_text(result):
-    """Where the text went: the model that served and its reasoning
-    level, or that nothing was sent."""
+    """Where the text went: the model that answered and its reasoning
+    level; otherwise whether the text was sent at all."""
     model = getattr(result, "model", None)
-    if not model:
+    if model:
+        return f"{model} · reasoning {getattr(result, 'reasoning', None) or '?'}"
+    reason = getattr(result, "reason", None) or ""
+    code = reason.removeprefix("transform_unavailable:")
+    if getattr(result, "job", None) is None or code in _NOT_SENT \
+            or not reason.startswith(("transform_unavailable:",
+                                      "transform_engine_failed:")):
         return "not sent to Claude"
-    return f"{model} · reasoning {getattr(result, 'reasoning', None) or '?'}"
+    if code in _MAYBE_SENT or reason.startswith("transform_engine_failed:"):
+        return "may have reached Claude · no answer"
+    return "sent to Claude · no answer"
 
 # Two action rows (title, action, enabled, width, row).
 _ACTIONS = (

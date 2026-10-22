@@ -43,7 +43,13 @@ retro, that one stays at 3pm"):
 both app call sites (`_m11_run_transform`, `_m11_run_job`) and every
 harness fake are unchanged, but it no longer takes `_gpu_lock` or
 sends a worker op: it runs the job through `claude.Transformer` in the
-calling thread. A dictation's ASR never waits behind a network call.
+calling thread. A selected-text transform runs on its own thread, so no
+dictation waits behind it; an auto-applied dictation transform runs in
+the coordinator between that dictation's cleanup and insertion, as the
+local one did, so a dictation that follows it waits for it. The
+supervisor's shutdown closes admission for transforms too: a transform
+after it is refused, and one in flight has its client closed and its
+answer discarded (`closed_in_flight`).
 The worker's `transform` op, its handler and the generate/render handles
 kept only for it are removed — no local transform path remains to fall
 back to.
@@ -134,7 +140,8 @@ parameters and no prefill.
 The result is `fallback_original` with
 `transform_unavailable:<code>` — `no_api_key`, `sdk_missing`,
 `network_unavailable`, `timeout`, `api_key_rejected`, `rate_limited`,
-`usage_limit_reached` (the account's spending cap), `request_rejected`, `api_error_<status>`, `model_refused`,
+`usage_limit_reached` (the account's spending cap), `request_rejected`,
+`closed`, `closed_in_flight`, `api_error_<status>`, `model_refused`,
 `output_limit`, `output_invalid` — which the panel states in words. The
 local model is never used: its no-ops read as success.
 
@@ -149,17 +156,22 @@ that is not `applied`.
 
 - **Sent:** the selected text (or the Clean text of a dictation whose
   style auto-applies a transform), the transform's system prompt and,
-  for a custom transform, its instruction. Selection capture keeps its
+  for a custom transform, its instruction, plus every writing example
+  (before/after pair) the definition keeps, on each run. Selection capture keeps its
   secure-field and denied-app refusals, so nothing from those reaches
   Anthropic.
 - **Key:** `TRANSFORMS_ANTHROPIC_API_KEY` in the login Keychain (service
-  `LocalFlow`), read through `/usr/bin/security` only when the app runs
-  on its real store. It is never logged, emitted or stored.
+  `LocalFlow`), read through `/usr/bin/security` on every transform,
+  only when the app runs on its real store; a changed or removed key
+  takes effect on the next transform. It is never logged, emitted or
+  stored.
 - **Stored:** unchanged from M11 — candidates under collection consent,
   with the exact request as the `transform_prompt` artifact and the
   decision record carrying the model and reasoning level.
-- **Shown:** the review panel's status line names the serving model and
-  reasoning level, or "not sent to Claude".
+- **Shown:** the review panel's status line names the model that
+  answered and the reasoning level; without an answer it says whether
+  the text was sent ("sent to Claude · no answer"), may have been (a
+  failed connection or a timeout), or was not (no key, no SDK, closing).
 
 LF-R25 allowlists exactly two (module, import) pairs:
 `voice_insights.py` and `transforms/claude.py` may import `anthropic`.

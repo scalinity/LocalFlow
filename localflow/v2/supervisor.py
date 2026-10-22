@@ -595,11 +595,14 @@ class WorkerSupervisor:
                   examples_revision="", examples=(), locale=None,
                   model=None, reasoning=None):
         """M11 (S16), ADR-0002: one transform on Claude, in this process.
-        No GPU lock and no worker: a dictation's ASR never waits behind a
-        network call. Returns the reply shape the app rebuilds
-        (``engine.result_from_message``); an oversized source is a
-        refusal."""
+        No GPU lock and no worker, so no dictation's ASR queues behind it
+        on the worker. Returns the reply shape the app rebuilds
+        (``engine.result_from_message``); an oversized source, or any
+        transform after ``shutdown``, is a refusal."""
         from .transforms import engine as tf_engine
+        if self.closed:
+            return {"attempt": attempt, "generation": None,
+                    "refused": "supervisor_closed"}
         try:
             job = tf_engine.TransformJob(
                 transform_id=transform_id,
@@ -943,6 +946,9 @@ class WorkerSupervisor:
             self.supervisor_state = "closed"
             stuck = list(self._pending.items())
             self._pending.clear()
+        # A Claude transform in flight ends with its client; its answer
+        # is discarded (ADR-0002).
+        self.transformer.close()
         for req_id, pending in stuck:
             pending.msg = {"v": PROTOCOL_VERSION, "op": "fault",
                            "req_id": req_id, "error_type": "SupervisorClosed",

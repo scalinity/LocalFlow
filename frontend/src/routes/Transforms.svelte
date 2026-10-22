@@ -96,7 +96,7 @@
       <div class="hero-grid">
         <div>
           <h2>Rewrite anything you’ve written.</h2>
-          <p>Select text in any app, press a transform shortcut, and review the change before it replaces your selection. Transforms run on Claude, so the selected text is sent to Anthropic.</p>
+          <p>Select text in any app, press a transform shortcut, and review the change before it replaces your selection. Transforms run on Claude, so the selected text, and any writing examples a transform keeps, are sent to Anthropic.</p>
           <div class="hero-cta">
             <Button variant="paper" onclick={() => navigate('scratchpad')}>Try it in Scratchpad</Button>
             <button type="button" class="link" onclick={() => (onboarding = true)}>How it works</button>

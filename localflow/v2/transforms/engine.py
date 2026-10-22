@@ -310,7 +310,8 @@ def run_transform(job: TransformJob, generate: Callable, *,
     try:
         gen = generate(system, messages, schema)
     except tf_claude.TransformUnavailable as e:
-        return fallback(f"transform_unavailable:{e.code}")
+        return fallback(f"transform_unavailable:{e.code}",
+                        {"model": e.model} if e.model else None)
     except Exception as e:
         return fallback(f"transform_engine_failed:{type(e).__name__}")
     map_cov = []

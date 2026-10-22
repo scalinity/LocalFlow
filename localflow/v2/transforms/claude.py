@@ -67,7 +67,8 @@ def configurations() -> list[tuple[str, str]]:
 
 
 def is_valid(model, reasoning) -> bool:
-    return model in MODELS and reasoning in reasoning_levels(model)
+    return isinstance(model, str) and isinstance(reasoning, str) \
+        and model in MODELS and reasoning in reasoning_levels(model)
 
 
 def recommended(mode: str) -> tuple[str, str]:
@@ -101,11 +102,13 @@ def cost_usd(model: str, input_tokens: int, output_tokens: int) -> float:
 
 
 class TransformUnavailable(Exception):
-    """A content-free reason the request produced no result."""
+    """A content-free reason the request produced no result; ``model``
+    is the model that answered, when one did (a refusal, a cut-off)."""
 
-    def __init__(self, code: str):
+    def __init__(self, code: str, model=None):
         super().__init__(code)
         self.code = code
+        self.model = model
 
 
 def read_api_key():
@@ -165,11 +168,12 @@ def call(client, *, model, reasoning, system, messages, schema) -> dict:
     except anthropic.APIStatusError as e:
         raise TransformUnavailable(f"api_error_{e.status_code}") from e
     latency_ms = round((time.monotonic() - t0) * 1000.0, 1)
+    served = getattr(message, "model", None) or model
     if message.stop_reason == "refusal":
-        raise TransformUnavailable("model_refused")
+        raise TransformUnavailable("model_refused", served)
     if message.stop_reason in ("max_tokens",
                                "model_context_window_exceeded"):
-        raise TransformUnavailable("output_limit")
+        raise TransformUnavailable("output_limit", served)
     blocks = list(message.content)
     start = max((i for i, b in enumerate(blocks)
                  if getattr(b, "type", None) == "fallback"), default=-1) + 1
@@ -185,23 +189,40 @@ def call(client, *, model, reasoning, system, messages, schema) -> dict:
 
 
 class Transformer:
-    """The app's transform runner: one cached client per key. The key is
-    re-read until one is found and dropped when the API rejects it, so
-    adding or replacing it in the Keychain needs no restart."""
+    """The app's transform runner. The key is read on every run and the
+    client reused only while the key is unchanged, so adding, replacing
+    or removing it in the Keychain takes effect on the next transform.
+    ``close`` (the supervisor's shutdown) refuses new transforms and
+    closes the client; an answer that arrives afterwards is discarded."""
 
     def __init__(self, key_reader=read_api_key, client_factory=make_client):
         self._key_reader = key_reader
         self._client_factory = client_factory
         self._client = None
+        self._key = None
+        self._closed = False
         self._lock = threading.Lock()
+
+    def close(self):
+        with self._lock:
+            self._closed = True
+            client, self._client, self._key = self._client, None, None
+        if client is not None and hasattr(client, "close"):
+            try:
+                client.close()
+            except Exception:  # noqa: BLE001 — closing is best effort
+                pass
 
     def _get_client(self):
         with self._lock:
-            if self._client is None:
-                key = self._key_reader()
-                if not key:
-                    raise TransformUnavailable("no_api_key")
-                self._client = self._client_factory(key)
+            if self._closed:
+                raise TransformUnavailable("closed")
+            key = self._key_reader()
+            if not key:
+                self._client = self._key = None
+                raise TransformUnavailable("no_api_key")
+            if self._client is None or key != self._key:
+                self._client, self._key = self._client_factory(key), key
             return self._client
 
     def run(self, job, model=None, reasoning=None):
@@ -214,12 +235,21 @@ class Transformer:
         def generate(system, messages, schema):
             client = self._get_client()
             try:
-                return call(client, model=model, reasoning=reasoning,
-                            system=system, messages=messages, schema=schema)
+                out = call(client, model=model, reasoning=reasoning,
+                           system=system, messages=messages, schema=schema)
             except TransformUnavailable as e:
                 if e.code == "api_key_rejected":
                     with self._lock:
-                        self._client = None
+                        self._client = self._key = None
+                if self._closed:
+                    raise TransformUnavailable("closed_in_flight") from e
                 raise
+            except Exception as e:
+                if self._closed:
+                    raise TransformUnavailable("closed_in_flight") from e
+                raise
+            if self._closed:
+                raise TransformUnavailable("closed_in_flight")
+            return out
         return engine.run_transform(job, generate, model=model,
                                     reasoning=reasoning)

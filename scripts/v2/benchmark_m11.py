@@ -1,12 +1,11 @@
-"""M11 benchmarks (Spec S24/S16 required benchmarks):
+"""M11 benchmark (Spec S24/S16): UI progress acknowledgment ≤ 50 ms —
+dispatch-to-overlay time on the main thread (headless immediate-callAfter
+harness).
 
-1. 500-word transform P95 ≤ 15 s — the real model, warm, repeated.
-2. UI progress acknowledgment ≤ 50 ms — dispatch-to-overlay time on
-   the main thread (headless immediate-callAfter harness).
-3. Dictation delay while transform inference is active — a real ASR
-   transcribe queued behind an in-flight transform generation (the
-   supervisor's serialized GPU lock): its wall time vs the solo
-   baseline is the honest delay.
+Transforms run on Claude (ADR-0002): their latency per model and
+reasoning level is measured by scripts/v2/transform_model_eval.py, and a
+transform takes no GPU lock, so no dictation queues behind it on the
+worker.
 
 Run: .venv/bin/python scripts/v2/benchmark_m11.py [--out DIR]
 """
@@ -16,54 +15,15 @@ import json
 import pathlib
 import statistics
 import sys
-import threading
 import time
 
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[2]))
-
-from localflow.v2 import store as store_mod  # noqa: E402
-from localflow.v2 import supervisor as sup_mod  # noqa: E402
-from localflow.v2 import transforms as tf  # noqa: E402
-
-CLEANUP_MODEL = "mlx-community/Qwen3-4B-Instruct-2507-4bit"
-ASR_MODEL = "mlx-community/parakeet-tdt-0.6b-v3"
-WORD500 = " ".join(
-    f"review item {i} and confirm the constraint number {i % 97}"
-    for i in range(56))  # ~504 words
 
 
 def pct(values, q):
     s = sorted(values)
     k = max(0, min(len(s) - 1, int(round(q / 100.0 * (len(s) - 1)))))
     return s[k]
-
-
-def bench_transform_p95():
-    from localflow.v2.cleanup import ModelRunner
-    print(f"loading {CLEANUP_MODEL} …")
-    runner = ModelRunner(CLEANUP_MODEL)
-    runner.load()
-    defn = next(d for d in tf.built_ins()
-                if d.transform_id == "builtin:concise")
-    times = []
-    # Warm (one run), then 5 measured repeats on the 500-word input.
-    tf.run_transform(tf.job_for_definition(defn, WORD500,
-                                           source_kind="selection"),
-                     runner.generate_fn(), runner.render)
-    for _ in range(5):
-        res = tf.run_transform(
-            tf.job_for_definition(defn, WORD500,
-                                  source_kind="selection"),
-            runner.generate_fn(), runner.render)
-        times.append(res.duration_ms / 1000.0)
-    return {
-        "cases": len(times), "input_words": len(WORD500.split()),
-        "p50_s": round(statistics.median(times), 3),
-        "p95_s": round(pct(times, 95), 3),
-        "max_s": round(max(times), 3),
-        "budget_p95_s": 15.0,
-        "pass": pct(times, 95) <= 15.0,
-    }
 
 
 def bench_ui_acknowledgment(tmpdir):
@@ -132,86 +92,16 @@ def bench_ui_acknowledgment(tmpdir):
         store.close()
 
 
-def bench_dictation_delay_with_transform(tmpdir):
-    """The serialized-GPU delay: a real transcribe queued behind an
-    in-flight transform generation, vs the same transcribe solo."""
-    import numpy as np
-    audio_root = pathlib.Path(tmpdir) / "audio"
-    audio_root.mkdir(parents=True, exist_ok=True)
-    wav = audio_root / "bench-m11.wav"
-    store_mod.write_wav_f32(wav, np.zeros(32000, dtype=np.float32), 16000)
-    rec = (lambda *a, **k: None)
-    sup = sup_mod.WorkerSupervisor(
-        audio_root=audio_root, asr_model=ASR_MODEL,
-        cleanup_mode="llm", cleanup_model=CLEANUP_MODEL, emit=rec,
-        hello_timeout=30.0, ready_timeout=120.0, request_timeout=600.0)
-    print("spawning real worker (asr + cleanup engines) …")
-    out = {"asr_model": ASR_MODEL, "cleanup_model": CLEANUP_MODEL}
-    try:
-        sup.ensure_running()
-        assert sup.wait_engine("asr", 180) == "ready"
-        assert sup.wait_engine("cleanup", 180) == "ready"
-
-        def transcribe_wall():
-            t0 = time.monotonic()
-            res = sup.transcribe(job_id=None, attempt=1,
-                                 audio_name=wav.name)
-            return time.monotonic() - t0, res
-
-        solo, _ = transcribe_wall()
-        solo2, _ = transcribe_wall()
-        out["transcribe_solo_s"] = round(min(solo, solo2), 3)
-
-        defn = next(d for d in tf.built_ins()
-                    if d.transform_id == "builtin:concise")
-        job = tf.job_for_definition(defn, WORD500,
-                                    source_kind="selection")
-        busy = {}
-
-        def run_transform_first():
-            busy["res"] = sup.transform(
-                job_id=None, transform_id=job.transform_id,
-                transform_revision=job.transform_revision,
-                prompt_revision=job.prompt_revision, mode=job.mode,
-                source=job.source, source_kind="selection",
-                instructions="", examples_revision="",
-                examples=(), locale="en-US")
-
-        t = threading.Thread(target=run_transform_first)
-        t0 = time.monotonic()
-        t.start()
-        time.sleep(0.05)  # the generation holds the GPU lock
-        queued, _ = transcribe_wall()  # waits its turn
-        t.join()
-        out["transform_duration_s"] = round(
-            (time.monotonic() - t0), 3)
-        out["transcribe_queued_s"] = round(queued, 3)
-        out["dictation_delay_s"] = round(queued - min(solo, solo2), 3)
-        out["note"] = ("the transform generation holds the supervisor's"
-                       " serialized GPU lock; the queued dictation's ASR"
-                       " waits its turn (S06) — recorded, never starved")
-    finally:
-        sup.shutdown()
-    return out
-
-
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--out", default=None)
     args = ap.parse_args()
-    report = {"schema": "m11-benchmark/1", "kind": "model-backed"}
-    report["transform_500w"] = bench_transform_p95()
-    print(json.dumps(report["transform_500w"], indent=1))
+    report = {"schema": "m11-benchmark/2", "kind": "headless"}
     import tempfile
     with tempfile.TemporaryDirectory() as td:
         report["ui_acknowledgment"] = bench_ui_acknowledgment(td)
         print(json.dumps(report["ui_acknowledgment"], indent=1))
-        report["dictation_delay_with_transform"] = \
-            bench_dictation_delay_with_transform(td)
-    print(json.dumps(report["dictation_delay_with_transform"], indent=1))
-    report["pass"] = all(
-        report[k].get("pass", True) for k in
-        ("transform_500w", "ui_acknowledgment"))
+    report["pass"] = report["ui_acknowledgment"].get("pass", True)
     if args.out:
         out = pathlib.Path(args.out)
         out.mkdir(parents=True, exist_ok=True)
