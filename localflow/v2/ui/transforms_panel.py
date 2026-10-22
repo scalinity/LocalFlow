@@ -37,6 +37,37 @@ from Foundation import NSObject
 
 PANEL_W, PANEL_H = 580.0, 480.0
 
+# Why a transform produced no result (ADR-0002 reason codes).
+_UNAVAILABLE = {
+    "no_api_key": "No Anthropic API key in the login Keychain (service"
+                  " LocalFlow, account TRANSFORMS_ANTHROPIC_API_KEY)."
+                  " Nothing was sent.",
+    "sdk_missing": "The Anthropic SDK is not installed. Nothing was sent.",
+    "network_unavailable": "Anthropic could not be reached (no network).",
+    "timeout": "Anthropic did not answer in time.",
+    "api_key_rejected": "Anthropic rejected the API key.",
+    "rate_limited": "Anthropic is rate-limiting requests; try again"
+                    " shortly.",
+    "request_rejected": "Anthropic rejected the request.",
+    "model_refused": "Claude declined to transform this text.",
+    "output_limit": "Claude's answer ran past its length limit.",
+    "output_invalid": "Claude's answer was not in the expected shape.",
+}
+
+
+def reason_text(reason):
+    code = (reason or "").removeprefix("transform_unavailable:")
+    return _UNAVAILABLE.get(code, reason or "unknown")
+
+
+def served_text(result):
+    """Where the text went: the model that served and its reasoning
+    level, or that nothing was sent."""
+    model = getattr(result, "model", None)
+    if not model:
+        return "not sent to Claude"
+    return f"{model} · reasoning {getattr(result, 'reasoning', None) or '?'}"
+
 # Two action rows (title, action, enabled, width, row).
 _ACTIONS = (
     ("Accept", "panelAccept:", True, 74.0, 0),
@@ -401,14 +432,16 @@ class TransformPreviewPanel(NSObject):
                        "defn": defn, "candidate_id": candidate_id}
         title = {"applied": "ready to apply",
                  "needs_review": "needs review — original clauses kept",
-                 "fallback_original": "fallback: original kept"}.get(
+                 "no_changes": "already reads well — nothing to change",
+                 "fallback_original": "not transformed — original kept"}.get(
             result.path, result.path)
         self.panel.setTitle_(f"{defn.name} — {title}")
         self.name.setStringValue_(defn.name)
         source = result.job.source if result.job else capture["source"]
         pieces, changes = inline_changes(source, result.output)
         self.count.setStringValue_(
-            ("No changes" if not changes else f"{changes} change{'' if changes == 1 else 's'}") + " · " + title)
+            ("No changes" if not changes else f"{changes} change{'' if changes == 1 else 's'}") + " · " + title
+            + " · " + served_text(result))
         text = NSMutableAttributedString.alloc().init()
         for kind, s in pieces:
             self._append(text, s, kind)
@@ -420,14 +453,16 @@ class TransformPreviewPanel(NSObject):
             for ex in result.review_excerpts:
                 tail.append(f"\n  • {ex}")
         if result.path == "fallback_original":
-            tail.append(f"\n\nReason: {result.reason}")
+            tail.append(f"\n\nReason: {reason_text(result.reason)}"
+                        f" ({result.reason})")
         if tail:
             self._append(text, "".join(tail), "note")
         self.text.textStorage().setAttributedString_(text)
         self._fit_height()
         # Retry needs a task (a refused job has none to re-run).
         self._buttons["panelRetry:"].setEnabled_(result.job is not None)
-        self._buttons["panelAccept:"].setEnabled_(True)
+        # An unchanged result has nothing to apply.
+        self._buttons["panelAccept:"].setEnabled_(result.path != "no_changes")
         self._anchor()
         self.panel.orderFrontRegardless()
 

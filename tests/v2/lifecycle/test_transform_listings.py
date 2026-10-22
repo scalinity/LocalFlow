@@ -70,6 +70,11 @@ def test_hub_and_companion_list_has_no_legacy_rows():
         def hotkey_conflicts(self):
             return []
 
+        def model_choices(self):
+            return {d.transform_id: {"model": "claude-sonnet-5-5",
+                                     "reasoning": "low", "source": "default"}
+                    for d in DEFS}
+
     published = {}
     stub = types.SimpleNamespace(
         transforms_service=_Service(),

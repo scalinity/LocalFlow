@@ -73,7 +73,7 @@ excerpt — transcripts never appear there.
 
 - **Generation-owned requests.** A pending request records its immutable
   expected identity: generation, `job_id`, `attempt` and result kind
-  (`transcribe→asr`, `clean→clean`, `transform→transform`). A frame
+  (`transcribe→asr`, `clean→clean`). A frame
   resolves it only when it comes from, and echoes, that generation and
   matches the rest; a live `req_id` with the wrong job/attempt/kind is a
   worker protocol violation and resolves as a fatal fault
@@ -134,9 +134,8 @@ excerpt — transcripts never appear there.
   cleanup load. An ASR request arriving while a cleanup load is already
   running waits for that load (one GPU owner) — the parent reports it as
   `worker.request_queued_behind_load`; the request timeout still bounds
-  it. A transform waits for the cleanup load; a failed load refuses it
-  (`cleanup_engine_not_ready`, non-fatal). When the ASR load fails, the
-  cleanup load never starts: the worker reports cleanup `failed`
+  it. Transforms are not worker requests (ADR-0002). When the ASR load
+  fails, the cleanup load never starts: the worker reports cleanup `failed`
   (`cleanup_not_loaded_asr_failed`; V2 marks its load failed, V1 keeps a
   basic-only cleaner) — or `ready` with `not_llm_mode` when no model was
   configured — so a later `clean` gets the engine's normal degraded

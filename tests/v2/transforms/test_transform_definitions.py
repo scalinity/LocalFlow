@@ -49,7 +49,7 @@ def test_built_ins_seed_idempotently():
         d = e.ts.definition("builtin:prompt_engineer")
         assert d.mode == "prompt_engineer" and d.revision == 1
         assert d.auto_apply is False  # opt-in default (AC04)
-        assert d.prompt_revision.startswith("m11:")
+        assert d.prompt_revision.startswith(tf.prompts.VERSION + ":")
         print("ok  built-ins seed once; auto-apply defaults off")
 
 

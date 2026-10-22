@@ -30,7 +30,7 @@ sys.path.insert(0, str(HERE.parents[1] / "notes"))
 
 import localflow.app as app_mod  # noqa: E402
 import test_transform_pipeline as tp  # noqa: E402
-import test_transform_remediation as portable  # noqa: E402
+import claude_fakes  # noqa: E402
 from fixture_target import FixtureTargetApp  # noqa: E402
 
 CASES = []
@@ -77,38 +77,6 @@ def wait_until(pred, timeout=5.0):
     return pred()
 
 
-class WorkerBackedSupervisor:
-    """Answers ``transform`` through the REAL Worker._transform handler
-    (portable.captured_worker) and raises the real WorkerFailure on a
-    fault message."""
-
-    def __init__(self, output):
-        self.output = output
-        self.generation = 1
-        self.engine_state = {"asr": "ready", "cleanup": "ready"}
-        self.supervisor_state = "running"
-
-    def transform(self, **payload):
-        from localflow.v2.supervisor import WorkerFailure
-        _w, sent, call, restore = portable.captured_worker(
-            portable.gen_of(self.output))
-        try:
-            call({"op": "transform", "req_id": "r", **payload})
-        finally:
-            restore()
-        msg = sent[0]
-        if msg["op"] == "fault":
-            raise WorkerFailure("worker_fault", stage="transform",
-                                detail=msg["reason_code"])
-        return msg
-
-    def wait_engine(self, engine, timeout):
-        return "ready"
-
-    def shutdown(self, timeout=5.0):
-        pass
-
-
 def selection_target(content="alpha rewrite this rough sentence omega",
                      sel=(6, 33), title="Doc A.txt", role="AXTextArea"):
     t = FixtureTargetApp(window_title=title, role=role)
@@ -138,18 +106,27 @@ def count(h, sql, args=()):
 
 
 # ---------------------------------------------------------------------------
-# 03 — the coordinator sees the worker's result, not a fault
+# 03 — the coordinator sees the Claude result, not a fault
 # ---------------------------------------------------------------------------
 
 @case
-def f03_coordinator_uses_worker_result_not_fault():
+def f03_coordinator_uses_claude_result_not_fault():
+    """The real supervisor → Claude module → engine reply, rebuilt by the
+    coordinator (ADR-0002: no worker on the transform path)."""
     src = "Give exactly three options."
-    h = tp.Harness([1.0], supervisor=WorkerBackedSupervisor(src))
+    sup, client = claude_fakes.claude_supervisor(claude_fakes.pe_answer(
+        "Give exactly three options, numbered.",
+        [("Give exactly three options", "Give exactly three options")]))
+    h = tp.Harness([1.0], supervisor=sup)
     try:
         defn = h.d._transforms_snapshot().by_id("builtin:prompt_engineer")
         res = h.d._m11_run_transform(defn, src, source_kind="selection")
         assert res.path == "applied", (res.path, res.reason)
         assert res.coverage and res.validator_revision
+        model, reasoning = app_mod.v2_transforms.claude.recommended(
+            "prompt_engineer")
+        assert client.calls[0]["model"] == model
+        assert (res.model, res.reasoning) == (model, reasoning)
     finally:
         h.close()
 

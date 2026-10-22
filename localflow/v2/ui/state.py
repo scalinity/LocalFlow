@@ -647,11 +647,16 @@ class HubState:
             rows = [d.to_json() for d in stored if d.origin != "legacy"]
             from ..transform_hotkeys import display
             prefs = self.transforms_service.hotkeys()
+            choices = self.transforms_service.model_choices()
             for row in rows:
                 pref = prefs[row["transform_id"]]
                 row["hotkey"] = pref["binding"]
                 row["hotkey_source"] = pref["source"]
                 row["hotkey_display"] = display(pref["binding"])
+                choice = choices[row["transform_id"]]
+                row["model"] = choice["model"]
+                row["reasoning"] = choice["reasoning"]
+                row["model_source"] = choice["source"]
             conflicts = self.transforms_service.hotkey_conflicts()
         except Exception as e:
             self._publish_locked("transforms", req, error=type(e).__name__,

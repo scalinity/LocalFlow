@@ -28,6 +28,7 @@ sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[1] /
                        "insertion"))
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[1] /
                        "lifecycle"))
+sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent))
 
 import localflow.app as app_mod  # noqa: E402
 from localflow.app import AppDelegate  # noqa: E402
@@ -534,38 +535,39 @@ def test_preference_same_task_invariants():
     print("ok  AC05: same-task pairs only; undo/accept distinct")
 
 
-def test_worker_transform_op_through_supervisor():
-    """The real supervisor ↔ worker protocol carries the transform op
-    (the fake worker script answers it; GPU serialization is the
-    supervisor's existing lock)."""
-    from localflow.v2.supervisor import WorkerSupervisor
-    fake = pathlib.Path(__file__).resolve().parents[1] / "lifecycle" / \
-        "fake_worker.py"
-    with tempfile.TemporaryDirectory() as td:
-        plan_path = pathlib.Path(td) / "plan.json"
-        plan_path.write_text(json.dumps({
-            "asr": "ready", "cleanup": "ready",
-            "transform": ["ok:TRANSFORMED OUTPUT"]}))
-        rec = _Recorder()
-        sup = WorkerSupervisor(
-            audio_root=pathlib.Path(td) / "audio",
-            asr_model="fake-asr", cleanup_mode="llm",
-            cleanup_model="fake-llm", emit=rec,
-            worker_cmd=[sys.executable, str(fake)],
-            spawn_env={"LOCALFLOW_FAKE_WORKER_PLAN": str(plan_path)},
-            hello_timeout=15.0, ready_timeout=30.0, request_timeout=30.0)
-        try:
-            sup.ensure_running()
-            assert sup.wait_engine("cleanup", 15) == "ready"
-            res = sup.transform(
-                job_id=None, transform_id="builtin:polish",
-                transform_revision=1, prompt_revision="m11:x",
-                mode="polish", source="rough text",
-                source_kind="selection")
-            assert res["output"] == "TRANSFORMED OUTPUT", res
-            assert res["result"]["path"] == "applied"
-        finally:
-            sup.shutdown()
+def test_supervisor_transform_runs_on_claude_without_the_gpu_lock():
+    """ADR-0002: the real supervisor answers a transform from the Claude
+    module in this process — with the GPU lock held elsewhere (a
+    dictation's ASR in flight) it still answers, and no worker spawns."""
+    import threading
+    import claude_fakes
+    sup, client = claude_fakes.claude_supervisor("TRANSFORMED OUTPUT")
+    held, release = threading.Event(), threading.Event()
+
+    def asr_in_flight():
+        with sup._gpu_lock:
+            held.set()
+            release.wait(10)
+    t = threading.Thread(target=asr_in_flight)
+    t.start()
+    try:
+        assert held.wait(5)
+        res = sup.transform(
+            job_id=None, transform_id="builtin:polish",
+            transform_revision=1, prompt_revision="m11:x",
+            mode="polish", source="rough text", source_kind="selection",
+            model="claude-haiku-5-5", reasoning="off")
+        assert res["output"] == "TRANSFORMED OUTPUT", res
+        assert res["result"]["path"] == "applied"
+        assert (res["result"]["model"], res["result"]["reasoning"]) == \
+            ("claude-haiku-5-5", "off")
+        assert client.calls[0]["model"] == "claude-haiku-5-5"
+        assert client.calls[0]["thinking"] == {"type": "disabled"}
+        assert sup._proc is None, "a transform spawned the worker"
+    finally:
+        release.set()
+        t.join()
+        sup.shutdown()
     # The parent-side rebuild round-trips through the message shape.
     from localflow.v2.transforms import TransformJob
     job = TransformJob(transform_id="builtin:polish",
@@ -583,7 +585,7 @@ def test_worker_transform_op_through_supervisor():
     assert result.path == "applied" and result.output == \
         "TRANSFORMED OUTPUT"
     assert result.job.task_key() == job.task_key()
-    print("ok  worker transform op: protocol + parent rebuild")
+    print("ok  supervisor transform: Claude, no GPU lock, parent rebuild")
 
 
 def test_panel_constructs_and_shows():
@@ -702,7 +704,7 @@ if __name__ == "__main__":
     test_selection_transform_accept_replaces_through_queue()
     test_changed_selection_never_overwritten()
     test_preference_same_task_invariants()
-    test_worker_transform_op_through_supervisor()
+    test_supervisor_transform_runs_on_claude_without_the_gpu_lock()
     test_panel_constructs_and_shows()
     test_oversized_selection_refuses_without_wedging()
     test_cleanup_off_records_gate_reason()

@@ -18,6 +18,7 @@ from __future__ import annotations
 
 from .. import bridge as B
 from ..bridge import Bool, Enum, List, Nullable, Obj, Int, Str
+from ....transforms import claude as tf_claude
 
 STYLE_SCOPES = ("global", "category", "app", "site", "workspace")
 STYLE_MODES = ("raw", "clean", "polish", "concise", "prompt_engineer",
@@ -309,6 +310,30 @@ def register(ctl):
         _refresh_hotkeys(coord)
         return {}
 
+    @br.command("transforms.set_model", {
+        "transform_id": Str(max_len=200),
+        "model": Enum(tuple(tf_claude.MODELS)),
+        "reasoning": Enum(tuple(tf_claude.REASONING_LABELS))})
+    def transforms_set_model(p):
+        try:
+            svc("transforms").set_model_choice(
+                p["transform_id"], p["model"], p["reasoning"])
+        except Exception as e:
+            st.reload_transforms()
+            _tf_failed(e)
+        st.reload_transforms()
+        return {}
+
+    @br.command("transforms.reset_model", {"transform_id": Str(max_len=200)})
+    def transforms_reset_model(p):
+        try:
+            svc("transforms").reset_model_choice(p["transform_id"])
+        except Exception as e:
+            st.reload_transforms()
+            _tf_failed(e)
+        st.reload_transforms()
+        return {}
+
     @br.command("transforms.record_shortcut", {"active": Bool()})
     def transforms_record_shortcut(p):
         if coord is not None and hasattr(coord, "tfRecordShortcut"):
@@ -379,11 +404,19 @@ def transforms_model(ctl):
         out["transforms"] = None
         return out
     out.update({
-        "transforms": [{k: t.get(k) for k in (
+        "transforms": [{**{k: t.get(k) for k in (
             "transform_id", "name", "mode", "origin", "description",
             "prompt", "edit_types", "shortcut", "target_profiles",
-            "auto_apply", "enabled", "revision", "hotkey", "hotkey_source", "hotkey_display")}
+            "auto_apply", "enabled", "revision", "hotkey", "hotkey_source", "hotkey_display",
+            "model", "reasoning", "model_source")},
+            "recommended": list(tf_claude.recommended(t.get("mode")))}
             for t in data.get("transforms") or ()],
+        # The valid pairs, from the one model table (ADR-0002).
+        "models": [{"id": m, "label": spec["label"],
+                    "reasoning": [{"value": r,
+                                   "label": tf_claude.REASONING_LABELS[r]}
+                                  for r in tf_claude.reasoning_levels(m)]}
+                   for m, spec in tf_claude.MODELS.items()],
         "shortcut_conflicts": [
             {"shortcut": c.get("shortcut"),
              "transform_ids": list(c.get("transform_ids") or ())}

@@ -6,6 +6,7 @@
   import Switch from '../components/Switch.svelte';
   import Icon, { type IconName } from '../components/Icon.svelte';
   import Kbd from '../components/Kbd.svelte';
+  import Select from '../components/Select.svelte';
   import Editor from './transforms/Editor.svelte';
   import Onboarding from './transforms/Onboarding.svelte';
   import { app, act, navigate } from '../stores/app.svelte';
@@ -40,6 +41,37 @@
           });
   }
 
+  // Claude model and reasoning level per transform (ADR-0002): only the
+  // pairs the read model publishes from LocalFlow's one model table.
+  const models: { id: string; label: string; reasoning: { value: string; label: string }[] }[] = $derived(tf?.models ?? []);
+  const levelsOf = (model: string) => models.find((m) => m.id === model)?.reasoning ?? [];
+  const isRecommended = (t: any) => t.model === t.recommended?.[0] && t.reasoning === t.recommended?.[1];
+  const modelOptions = (t: any) =>
+    models.map((m) => ({ value: m.id, label: m.id === t.recommended?.[0] ? `${m.label} · recommended` : m.label }));
+  const reasoningOptions = (t: any) =>
+    levelsOf(t.model).map((r) => ({
+      value: r.value,
+      label: t.model === t.recommended?.[0] && r.value === t.recommended?.[1] ? `${r.label} · recommended` : r.label,
+    }));
+
+  async function setModel(t: any, model: string, reasoning: string | null) {
+    const levels = levelsOf(model).map((r) => r.value);
+    const pick =
+      reasoning ??
+      (levels.includes(t.reasoning) ? t.reasoning : model === t.recommended?.[0] ? t.recommended[1] : levels.includes('low') ? 'low' : levels[0]);
+    busyId = t.transform_id;
+    const r = await act('transforms.set_model', { transform_id: t.transform_id, model, reasoning: pick });
+    busyId = null;
+    note = r.status === 'success' ? null : outcome(r, { outcome_unknown: 'Not known yet — the change was queued and may still complete.' });
+  }
+
+  async function resetModel(t: any) {
+    busyId = t.transform_id;
+    const r = await act('transforms.reset_model', { transform_id: t.transform_id });
+    busyId = null;
+    note = r.status === 'success' ? null : outcome(r, {});
+  }
+
   const conflicts = $derived(tf?.shortcut_conflicts ?? []);
   const GLYPHS: { icon: IconName; x: number; y: number }[] = [
     { icon: 'mail', x: 58, y: 20 },
@@ -64,7 +96,7 @@
       <div class="hero-grid">
         <div>
           <h2>Rewrite anything you’ve written.</h2>
-          <p>Select text in any app, press a transform shortcut, and review the change before it replaces your selection.</p>
+          <p>Select text in any app, press a transform shortcut, and review the change before it replaces your selection. Transforms run on Claude, so the selected text is sent to Anthropic.</p>
           <div class="hero-cta">
             <Button variant="paper" onclick={() => navigate('scratchpad')}>Try it in Scratchpad</Button>
             <button type="button" class="link" onclick={() => (onboarding = true)}>How it works</button>
@@ -110,6 +142,21 @@
             <!-- Outside the open button: a switch can't nest in a button. -->
             <div class="card-switch">
               <Switch label="{t.name} on" checked={t.enabled} busy={busyId === t.transform_id} onchange={(v) => toggle(t, v)} />
+            </div>
+          {/if}
+          {#if models.length}
+            <div class="card-model">
+              {#key `${t.model}/${t.reasoning}`}
+                <Select size="sm" label="Claude model" options={modelOptions(t)} value={t.model} disabled={busyId === t.transform_id} onchange={(v) => setModel(t, v, null)} />
+                <Select size="sm" label="Reasoning" options={reasoningOptions(t)} value={t.reasoning} disabled={busyId === t.transform_id} onchange={(v) => setModel(t, t.model, v)} />
+              {/key}
+              <div class="model-foot">
+                {#if isRecommended(t)}
+                  <span class="tag">Recommended</span>
+                {:else}
+                  <button type="button" class="reset" disabled={busyId === t.transform_id} onclick={() => resetModel(t)}>Reset to recommended</button>
+                {/if}
+              </div>
             </div>
           {/if}
         </article>
@@ -250,6 +297,29 @@
     font-size: var(--text-md);
     color: var(--text-2);
     line-height: 1.45;
+  }
+  .card-model {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    padding: 0 24px 20px;
+  }
+  .model-foot {
+    grid-column: 1 / -1;
+    display: flex;
+    align-items: center;
+    min-height: 22px;
+  }
+  .reset {
+    font-size: var(--text-sm);
+    color: var(--text-2);
+    padding: 2px 0;
+    border-radius: 5px;
+  }
+  .reset:hover:not(:disabled) {
+    color: var(--text);
+    text-decoration: underline;
+    text-underline-offset: 3px;
   }
   .card-switch {
     position: absolute;

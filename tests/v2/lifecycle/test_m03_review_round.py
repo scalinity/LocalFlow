@@ -652,7 +652,10 @@ def test_R10_revoked_failure_not_announced_as_retry():
 
 # ---- U1 -----------------------------------------------------------------
 
-def test_U1_transform_retry_attempt_acknowledged():
+def test_U1_transform_never_reaches_the_worker():
+    """ADR-0002: a dictation-path transform runs on Claude in the app
+    process. Even with a worker scripted to fault on a transform, no
+    transform op is sent, no retry runs and the job keeps attempt 1."""
     from localflow.v2 import transforms as T
     with tmpdir() as td:
         a = App(td, start_coordinator=False)
@@ -679,17 +682,18 @@ def test_U1_transform_retry_attempt_acknowledged():
                                        category=None)
             job = {"job_id": jid, "attempt": 1,
                    "m10": {"wp": wp, "transforms": snap}}
-            d._m11_apply_transform(job, "some clean text here", None)
+            text = d._m11_apply_transform(job, "some clean text here", None)
             d.store.sync()
-            assert sent == [1, 2], sent
-            assert job["attempt"] == 2, job["attempt"]
-            assert d.store.job(jid)["attempt"] == 2
+            assert sent == [], sent
+            assert text == "some clean text here", text
+            assert job["attempt"] == 1, job["attempt"]
+            assert d.store.job(jid)["attempt"] == 1
+            assert job["transform_note"] == \
+                "transform_unavailable:no_api_key", job["transform_note"]
         finally:
             if s is not None:
                 s.shutdown()
             a.close()
-    print("ok  U1 dictation transform retried as attempt 2: job and store"
-          " attempt follow it")
 
 
 # ---- U3 -----------------------------------------------------------------
@@ -797,7 +801,7 @@ def main():
          test_R8_gap_not_double_reported,
          test_R9_crc_covers_positions,
          test_R10_revoked_failure_not_announced_as_retry,
-         test_U1_transform_retry_attempt_acknowledged,
+         test_U1_transform_never_reaches_the_worker,
          test_U3_journal_gate_never_abandons_its_open,
          test_U6_prior_normal_failure_keeps_its_labels],
         "m03 review round tests")

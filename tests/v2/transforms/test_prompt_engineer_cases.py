@@ -1,9 +1,13 @@
-"""EV-13 / M11 (model-backed): the Prompt Engineer acceptance cases.
+"""EV-13 / M11: the Prompt Engineer acceptance cases.
 
-Every case runs through the REAL cleanup model (the same ModelRunner
-the worker loads) under the builtin:prompt_engineer contract, and the
-result is judged by ``judge`` — an oracle that is independent of the
-production gate in ``localflow/v2/transforms/atoms.py``. Fixture
+Since ADR-0002 Prompt Engineer runs on Claude, and no suite reaches the
+network. This runner judges Prompt Engineer outputs that
+scripts/v2/transform_model_eval.py saved (``--outputs DIR``, one
+``<case_id>.json`` per case with ``output``, ``path`` and
+``review_excerpts``), or runs the engine with an injected generator
+(``main(generate=…)``). The judge is ``judge`` — an oracle that is
+independent of the production gate and of the evaluation's
+other-vendor judge. Fixture
 version 2 (``fixtures_prompt_engineer_v2.json``) encodes each
 requirement as a relation that must hold inside ONE output segment
 (polarity, conditions, order, scope, counts bound to their noun,
@@ -29,7 +33,7 @@ error, and on any fallback unless ``--allow-fallback`` is given.
 Latency statistics cover every case, failures included.
 
 Run: .venv/bin/python tests/v2/transforms/test_prompt_engineer_cases.py
-     [--limit N] [--split dev|validation|regression|held-out]
+     --outputs DIR [--limit N] [--split dev|validation|regression|held-out]
      [--allow-fallback] [--json OUT.json]
 """
 
@@ -42,11 +46,9 @@ import time
 
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[3]))
 
-from localflow.v2.cleanup import ModelRunner  # noqa: E402
 from localflow.v2 import transforms as tf  # noqa: E402
 
 FIXTURES = pathlib.Path(__file__).parent / "fixtures_prompt_engineer_v2.json"
-MODEL = "mlx-community/Qwen3-4B-Instruct-2507-4bit"
 EXPECTED_SPLITS = {"dev": 15, "validation": 5, "regression": 10,
                    "held-out": 10}
 
@@ -239,12 +241,29 @@ def load_cases():
     return doc, doc["cases"]
 
 
-def run_case(runner, defn, case):
+class Saved:
+    """A saved evaluation record standing in for a TransformResult."""
+
+    def __init__(self, rec):
+        self.output = rec["output"]
+        self.path = rec["path"]
+        self.reason = rec.get("reason")
+        self.review_excerpts = tuple(rec.get("review_excerpts") or ())
+        self.duration_ms = rec.get("latency_ms") or 0.0
+
+
+def run_case(source_of, defn, case):
+    """``source_of`` is a Claude-shaped generator (run the engine) or a
+    directory of saved records (judge what was saved)."""
     t0 = time.monotonic()
     try:
-        job = tf.job_for_definition(defn, case["source"],
-                                    source_kind="selection")
-        res = tf.run_transform(job, runner.generate_fn(), runner.render)
+        if isinstance(source_of, pathlib.Path):
+            res = Saved(json.loads(
+                (source_of / f"{case['case_id']}.json").read_text()))
+        else:
+            job = tf.job_for_definition(defn, case["source"],
+                                        source_kind="selection")
+            res = tf.run_transform(job, source_of)
     except Exception as e:
         return None, {"verdict": "error",
                       "failures": [f"harness:{type(e).__name__}"]}, \
@@ -263,8 +282,10 @@ def _latency(values):
             "max_ms": round(s[-1], 1)}
 
 
-def main():
-    args = sys.argv[1:]
+def main(argv=None, generate=None):
+    args = sys.argv[1:] if argv is None else list(argv)
+    outputs = pathlib.Path(args[args.index("--outputs") + 1]) \
+        if "--outputs" in args else None
     limit = int(args[args.index("--limit") + 1]) if "--limit" in args \
         else None
     split = args[args.index("--split") + 1] if "--split" in args else None
@@ -280,11 +301,11 @@ def main():
     if limit:
         cases = cases[:limit]
 
-    print(f"loading {MODEL} …")
-    t0 = time.monotonic()
-    runner = ModelRunner(MODEL)
-    runner.load()
-    print(f"model ready in {time.monotonic() - t0:.1f}s")
+    if generate is None and outputs is None:
+        print("NOT RUN: give --outputs DIR (Prompt Engineer records saved"
+              " by scripts/v2/transform_model_eval.py)")
+        sys.exit(2)
+    source_of = generate if generate is not None else outputs
 
     defn = next(d for d in tf.built_ins()
                 if d.transform_id == "builtin:prompt_engineer")
@@ -293,7 +314,7 @@ def main():
     latencies = []
     records = []
     for case in cases:
-        res, j, wall_ms = run_case(runner, defn, case)
+        res, j, wall_ms = run_case(source_of, defn, case)
         v = j["verdict"]
         tally[v] += 1
         by_split.setdefault(case["split"], {k: 0 for k in VERDICTS})[v] += 1
@@ -316,7 +337,8 @@ def main():
     summary = {"total": len(cases), "verdicts": tally,
                "by_split": by_split, "latency_all_cases": _latency(latencies),
                "allow_fallback": allow_fallback,
-               "fixtures": doc["schema"], "model": MODEL}
+               "fixtures": doc["schema"],
+               "outputs": str(outputs) if outputs else "injected"}
     print(json.dumps(summary, indent=1))
     if out_json:
         pathlib.Path(out_json).write_text(json.dumps(

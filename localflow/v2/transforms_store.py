@@ -80,6 +80,21 @@ def conn_record_observation(db, *, task_key, candidate_id, judgment,
     return observation_id
 
 
+def _conn_model_choice(db, transform_id, mode) -> dict:
+    row = db.execute("SELECT value FROM transform_meta WHERE key=?",
+                     ("model:" + transform_id,)).fetchone()
+    if row:
+        try:
+            pref = json.loads(row[0])
+            if tf.claude.is_valid(pref.get("model"), pref.get("reasoning")):
+                return {"model": pref["model"],
+                        "reasoning": pref["reasoning"], "source": "user"}
+        except (ValueError, AttributeError):
+            pass
+    model, reasoning = tf.claude.recommended(mode)
+    return {"model": model, "reasoning": reasoning, "source": "default"}
+
+
 def _row_to_def(row) -> tf.TransformDefinition:
     d = dict(zip(_COLS, row))
     return tf.TransformDefinition(
@@ -156,6 +171,48 @@ class TransformStore:
             self._bump(db)
             return pref
         return self._submit_hotkey_op(op)
+
+    # ---- model choice (ADR-0002) -----------------------------------------
+    # A transform_meta preference row per transform, apart from definition
+    # revisions: switching models keeps the task key, so outputs stay
+    # comparable candidates. No row means the recommended pair for the
+    # transform's kind; a stored pair the table no longer offers reads as
+    # the recommendation too.
+
+    def model_choices(self) -> dict:
+        """transform_id → {"model", "reasoning", "source"}."""
+        def op(db):
+            out = {}
+            for tid, mode in db.execute(
+                    "SELECT transform_id, mode FROM transforms").fetchall():
+                out[tid] = _conn_model_choice(db, tid, mode)
+            return out
+        return self.store.submit(op)
+
+    def model_choice(self, transform_id: str, mode: str) -> dict:
+        return self.store.submit(
+            lambda db: _conn_model_choice(db, transform_id, mode))
+
+    def set_model_choice(self, transform_id, model, reasoning):
+        if not tf.claude.is_valid(model, reasoning):
+            raise ValueError("this model does not offer that reasoning level")
+
+        def op(db):
+            if db.execute("SELECT 1 FROM transforms WHERE transform_id=?",
+                          (transform_id,)).fetchone() is None:
+                raise ValueError("transform not found")
+            db.execute(
+                "INSERT INTO transform_meta(key,value) VALUES(?,?) ON"
+                " CONFLICT(key) DO UPDATE SET value=excluded.value",
+                ("model:" + transform_id,
+                 json.dumps({"model": model, "reasoning": reasoning})))
+        return self._submit_hotkey_op(op)
+
+    def reset_model_choice(self, transform_id):
+        def op(db):
+            db.execute("DELETE FROM transform_meta WHERE key=?",
+                       ("model:" + transform_id,))
+        self.store.submit(op)
 
     def _submit_hotkey_op(self, op):
         try:

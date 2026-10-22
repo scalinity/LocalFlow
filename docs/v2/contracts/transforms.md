@@ -2,13 +2,14 @@
 
 **Spec:** S15 (transform-backed modes), S16, S13 (the faithful
 boundary), S18 (replacement authority), S24, S29.4 (transform family),
-S29.10 · **Owner:** M11 · **Suites:** EV-13 (tests/v2/transforms/),
-EV-19/EV-20 (producer fixtures in test_transform_pipeline.py)
+S29.10, ADR-0002 (transforms on Claude) · **Owner:** M11 · **Suites:**
+EV-13 (tests/v2/transforms/), EV-19/EV-20 (producer fixtures in
+test_transform_pipeline.py)
 
 `localflow.v2.transforms` (`prompts`, `definitions`, `atoms`,
-`engine`, `diffview`) + `transforms_store` (schema v7) + the
+`engine`, `claude`, `diffview`) + `transforms_store` (schema v7) + the
 coordinator's executor/selection paths and the Hub Transforms view
-deliver deliberate local rewriting as a product workflow — never a
+deliver deliberate rewriting on Claude as a product workflow — never a
 loosening of faithful cleanup (S16: a transform never expands the S13
 permitted edits; requirement preservation is this contract, not a
 cleanup relaxation).
@@ -93,22 +94,42 @@ attempt may join the task key as a preference candidate);
 **transform-of-result and any changed source/instructions are
 different tasks** — never exported as same-input pairs (M11-AC05).
 
-`run_transform` renders contract system message + few-shot samples +
-one labeled draft payload (instructions never mix into the payload;
-the label, not a bare JSON object, is what the 4-bit model reads
-reliably), runs ONE bounded greedy generation on the cleanup engine's
-model in the worker subprocess (`transform` op; no second engine, no
-model change; serialized with every other GPU request — a concurrent
-dictation's ASR waits its turn, measured and recorded). Output budget
-`min(words*4+128, 4096)`; an output-limit hit falls back to the
-original with the honest reason — a truncated proposal never applies.
+`run_transform` sends the contract as the system prompt, writing
+samples as earlier turns and the selected text as the last user turn
+inside `<draft>` tags (data, never instructions), and runs ONE Claude
+request (ADR-0002) under the transform's model and reasoning level —
+its `transform_meta` preference, else `claude.recommended(mode)`. The
+request runs in the app process (`WorkerSupervisor.transform` →
+`claude.Transformer`); it never takes the GPU lock or reaches the
+worker. Every transform answers with structured output: `{"text"}`, or
+for Prompt Engineer `{"prompt", "requirements", "uncertain"}`.
+`max_tokens` is 32000 (thinking counts toward it); a cut-off answer
+falls back to the original with the honest reason — a truncated
+proposal never applies. The result records the serving model
+(`message.model`) and the reasoning level.
 
 Result paths: `applied` (validated) · `needs_review`
-(`requirement_coverage_uncertain` — original clauses kept, never
-auto-applied) · `fallback_original` (generation failed/limit/refused).
-A source over 12,000 characters refuses honestly, never truncates.
+(`requirement_coverage_uncertain` — original spans kept, never
+auto-applied) · `no_changes` (the output equals the source; nothing to
+apply) · `fallback_original` (`transform_unavailable:<code>` — no key,
+no network, timeout, rejected key, rate limit, refusal, length, invalid
+answer — or an engine fault; never the local model). A source over
+12,000 characters refuses honestly, never truncates.
 
-## The requirement-preservation gate (`atoms.py`, revision `m11-gate-2`)
+## The gate on the transform path (revision `claude-gate-1`)
+
+Exact-carry literals (below) block for every kind: a lost one is
+`needs_review` with the span kept. Prompt Engineer's requirement map is
+verified span by span — each cited draft span must be in the draft and
+each cited output span in the prompt (spacing, case and markdown marks
+aside); an unverified span or a requirement Claude marks uncertain is a
+review issue with the draft's wording kept. An answer that contains the
+request's `<draft>` framing falls back (`output_invalid`). The lexical
+clause gate below is not on the transform path (ADR-0002: it reviewed
+every correct rewrite); it stays as the regression-pinned validator in
+`atoms.py`.
+
+## The lexical requirement validator (`atoms.py`, revision `m11-gate-2`)
 
 A deterministic gate that **fails closed**: a requirement it cannot
 place in the output is a review issue, never silently applied. An
@@ -173,8 +194,8 @@ declines. The historical atom kinds (`question`, `negation`, `count`,
 `ordering`, `edit_constraint`, `deadline`, `uncertainty`) remain
 defined so older coverage JSON reads. `TransformResult.to_json()`
 records `validator_revision`; coverage entries serialize their atom's
-kind and operators and survive the worker protocol
-(`engine.result_from_message` rebuilds them parent-side).
+kind and operators and survive the supervisor's reply
+(`engine.result_from_message` rebuilds them).
 
 **Why Polish and Concise are gated too.** Their own contracts in
 `prompts.py` require every condition, negation, quantity and question
@@ -313,13 +334,13 @@ Transforms view); execution budgets are engine constants, not config.
 
 ## Limitations (documented, not hidden)
 
-- The gate is lexical and English: it binds operators, governed
-  words, numbers, direction and literals, not full semantics. A
-  paraphrase that keeps every operator and content word but changes
-  meaning is not caught; a synonym that replaces an operator word
-  ("leave X untouched" for "do not modify X") is reviewed. Its
-  false-review rate on real model output is measured by the
-  model-backed suite, not assumed.
+- On the transform path, Polish and Concise are gated only by exact
+  carry, and Prompt Engineer's map is as complete as Claude makes it: a
+  requirement Claude omits from both the prompt and the map is not
+  caught by code. scripts/v2/transform_model_eval.py measures how often
+  that happens per model and reasoning level (ADR-0002).
+- The lexical validator is English: it binds operators, governed
+  words, numbers, direction and literals, not full semantics.
 - Custom transforms carry only the exact-carry gate: the user's
   instruction may legitimately remove or reword clauses, so a lost
   condition under a Custom instruction is not caught.
@@ -331,14 +352,14 @@ Transforms view); execution budgets are engine constants, not config.
   `context_denied_apps` (contracts/context.md), and a malformed deny
   list refuses every app (`deny_list_invalid`); a secure field refuses
   before any read.
-- A transform generation queues behind/holds the serialized GPU lock:
-  a concurrent dictation's ASR waits (measured 0.65 s behind a
-  504-word transform on this machine) — recorded, never starved.
+- Transforms need a network connection and the Keychain key; without
+  either they report why and change nothing.
 - The preview panel's visual pass (layout, focus, text scale,
   keyboard reachability) is the pending native trial; the headless
   suites cover state, wiring, geometry, the real coordinator and the
   insertion composition.
 - Task identity hashes the contract, custom instruction and user
-  examples; the built-in few-shot turns and payload framing are pinned
-  by a test (`tg_task_identity_inputs_pinned`) so editing them forces a
-  `prompts.VERSION` bump.
+  examples; the draft framing and the answer schemas are pinned by a
+  test (`tg_task_identity_inputs_pinned`) so editing them forces a
+  `prompts.VERSION` bump. The model and reasoning level are not part of
+  the task: switching models keeps candidates comparable.

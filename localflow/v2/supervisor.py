@@ -29,7 +29,8 @@ The supervisor owns the model-worker subprocess described in
   stage trip the supervisor into ``failed``; further automatic work fails
   fast (audio preserved by the caller). A manual ``restart()`` re-arms it.
 * **Serialized GPU.** One request is in flight at a time; ordinary dictation
-  stages queue behind each other (S06).
+  stages queue behind each other (S06). Transforms are not GPU work: they
+  run on Claude in this process (ADR-0002) and never take the GPU lock.
 
 The worker cannot request insertion — the protocol has no such message, and
 unknown worker→parent messages are ignored.
@@ -53,8 +54,7 @@ STDERR_KEEP_GENERATIONS = 2
 _CODE = re.compile(r"^[a-z0-9_.:-]{1,80}\Z")
 _TYPE = re.compile(r"^[A-Za-z_][A-Za-z0-9_.]{0,63}\Z")
 _ENGINE_STATES = {"not_started", "loading", "warming", "ready", "failed"}
-_RESULT_KIND = {"transcribe": "asr", "clean": "clean",
-                "transform": "transform"}
+_RESULT_KIND = {"transcribe": "asr", "clean": "clean"}
 # Worker fault classes that do not indicate a damaged process: the request
 # is refused as-is — no kill, no respawn, no retry, no death counted.
 _NONFATAL_CLASSES = {"input", "engine", "protocol", "closed", "revoked"}
@@ -151,8 +151,15 @@ class WorkerSupervisor:
                  cleanup_model=None, cleanup_implementation="v2",
                  emit=None, on_engine=None,
                  worker_cmd=None, spawn_env=None, request_timeout=600.0,
-                 ready_timeout=600.0, hello_timeout=15.0):
+                 ready_timeout=600.0, hello_timeout=15.0, transformer=None):
         self.audio_root = str(audio_root)
+        # ADR-0002: selected-text transforms run on Claude from this
+        # process. Without a configured transformer there is no key, so a
+        # transform reports transform_unavailable:no_api_key.
+        if transformer is None:
+            from .transforms import claude as tf_claude
+            transformer = tf_claude.Transformer(key_reader=lambda: None)
+        self.transformer = transformer
         self.asr_model = asr_model
         self.cleanup_mode = cleanup_mode
         self.cleanup_model = cleanup_model
@@ -585,23 +592,30 @@ class WorkerSupervisor:
     def transform(self, *, job_id=None, attempt=1, transform_id,
                   transform_revision, prompt_revision, mode, source,
                   source_kind="selection", instructions="",
-                  examples_revision="", examples=(), locale=None):
-        """M11 (S16): one bounded transform generation on the cleanup
-        engine's model. Serialized with every other GPU request (a
-        concurrent dictation's ASR waits its turn — recorded, never
-        starved). Coverage validation happens in the worker's engine."""
-        payload = {"job_id": job_id, "attempt": attempt,
-                   "transform_id": transform_id,
-                   "transform_revision": transform_revision,
-                   "prompt_revision": prompt_revision, "mode": mode,
-                   "source": source, "source_kind": source_kind,
-                   "instructions": instructions,
-                   "examples_revision": examples_revision,
-                   "examples": [list(ex) for ex in examples]}
-        if locale is not None:
-            payload["locale"] = locale
-        return self._request("transform", "cleanup", payload,
-                             engine_wait=0.0)
+                  examples_revision="", examples=(), locale=None,
+                  model=None, reasoning=None):
+        """M11 (S16), ADR-0002: one transform on Claude, in this process.
+        No GPU lock and no worker: a dictation's ASR never waits behind a
+        network call. Returns the reply shape the app rebuilds
+        (``engine.result_from_message``); an oversized source is a
+        refusal."""
+        from .transforms import engine as tf_engine
+        try:
+            job = tf_engine.TransformJob(
+                transform_id=transform_id,
+                transform_revision=int(transform_revision or 1),
+                prompt_revision=prompt_revision or "", mode=mode,
+                source=source or "", source_kind=source_kind,
+                instructions=instructions or "",
+                examples_revision=examples_revision or "",
+                examples=tuple(tuple(ex) for ex in examples or ()),
+                locale=locale or "en-US", parent_job_id=job_id)
+        except ValueError as e:
+            return {"attempt": attempt, "generation": None,
+                    "refused": str(e)[:160]}
+        result = self.transformer.run(job, model, reasoning)
+        return {"attempt": attempt, "generation": None,
+                "job_id": job_id, **tf_engine.message_for(result)}
 
     def _request(self, op, engine, payload, _retry=True, engine_wait=None,
                  revoked=None):

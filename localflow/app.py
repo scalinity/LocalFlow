@@ -357,6 +357,10 @@ class AppDelegate(NSObject):
         # (Spec S06). The supervisor spawns/restarts workers and reports
         # engine readiness; it is started lazily so construction alone (as
         # in tests) spawns nothing.
+        # ADR-0002: transforms run on Claude from this process. The
+        # Keychain key is read only for the real store: every harness
+        # redirects V2_DB, so no test can spend API calls.
+        tf_claude = v2_transforms.claude
         self.supervisor = WorkerSupervisor(
             audio_root=V2_JOURNAL, asr_model=cfg["model"],
             cleanup_mode=cfg["cleanup"], cleanup_model=cfg["cleanup_model"],
@@ -364,6 +368,9 @@ class AppDelegate(NSObject):
             emit=self.v2log.emit,
             on_engine=lambda engine, state, info:
                 AppHelper.callAfter(self._setEngineStatus_, (engine, state)),
+            transformer=tf_claude.Transformer(
+                key_reader=tf_claude.read_api_key
+                if V2_DB == APP_SUPPORT / "v2.db" else (lambda: None)),
         )
         self._asr_revision = v2.ids.resolve_model_revision(cfg["model"])[0]
         self._capability_manifest = v2.capabilities.asr_capability_manifest(
@@ -1391,21 +1398,23 @@ class AppDelegate(NSObject):
     def _m11_run_transform(self, defn, source, *, source_kind,
                            parent_job_id=None, attempt=1,
                            selection=None, executed=None):
-        """Run one transform on the worker's cleanup model and rebuild
-        the ``TransformResult`` parent-side. TOTAL: a failed request —
+        """Run one transform on Claude (ADR-0002) under the transform's
+        chosen model and reasoning level, and rebuild the
+        ``TransformResult``. TOTAL: a failed request —
         including an oversized source refused at job construction —
         returns the honest fallback-original result, never a raised
         exception into the dictation or selection paths (an exception
         escaping the selection work() would wedge ``_tf_active``
-        forever). ``executed`` (a dict), when given, receives what the
-        worker actually ran — ``attempt``/``generation`` of the result, or
-        ``error`` (the WorkerFailure) — so the caller can acknowledge an
-        automatic retry's attempt (review U1)."""
+        forever). ``executed`` (a dict), when given, receives what
+        actually ran — ``attempt``/``generation`` of the result, or
+        ``error`` — so the caller acknowledges any attempt that differs
+        from its own (review U1; a Claude transform keeps the job's)."""
         try:
             job = v2_transforms.job_for_definition(
                 defn, source, source_kind=source_kind,
                 parent_job_id=parent_job_id, selection=selection,
                 locale=self.cfg.get("normalization_locale", "en-US"))
+            model, reasoning = self._tf_model_choice(job)
             res = self.supervisor.transform(
                 job_id=parent_job_id, attempt=attempt,
                 transform_id=job.transform_id,
@@ -1415,7 +1424,8 @@ class AppDelegate(NSObject):
                 instructions=job.instructions,
                 examples_revision=job.examples_revision,
                 examples=job.examples,
-                locale=self.cfg.get("normalization_locale", "en-US"))
+                locale=self.cfg.get("normalization_locale", "en-US"),
+                model=model, reasoning=reasoning)
         except ValueError as e:
             # The honest oversized-source refusal (S16), surfaced
             # through the same fallback channel as a worker fault.
@@ -1440,6 +1450,21 @@ class AppDelegate(NSObject):
                 path=v2_transforms.PATH_FALLBACK_ORIGINAL,
                 reason=f"transform_refused:{res['refused'][:60]}")
         return self._m11_result_from_message(job, res)
+
+    @objc.python_method
+    def _tf_model_choice(self, job):
+        """The (model, reasoning) a transform runs on: its transform_meta
+        preference, else the recommended pair — read per run, so a Hub
+        change applies to the next transform without a restart."""
+        if self._tf_store is not None:
+            try:
+                c = self._tf_store.model_choice(job.transform_id, job.mode)
+                return c["model"], c["reasoning"]
+            except Exception as e:
+                self.v2log.emit("transforms.model_choice_failed",
+                                level="WARNING",
+                                reason_code=type(e).__name__)
+        return v2_transforms.claude.recommended(job.mode)
 
     @staticmethod
     @objc.python_method
@@ -1519,7 +1544,7 @@ class AppDelegate(NSObject):
                     # consent this job captured at its start (S29.2).
                     self._tf_store.record_candidate(
                         result, task_kind="dictation_auto_apply",
-                        model_id=self.cfg.get("cleanup_model"),
+                        model_id=result.served_model_id,
                         collecting=bool(ctx is not None
                                         and ctx.collecting))
                     if applied:
@@ -1532,8 +1557,8 @@ class AppDelegate(NSObject):
             "stage.completed", level="INFO", job_id=job_id,
             attempt=job.get("attempt", 1), stage="transforming",
             duration_ms=result.duration_ms, outcome=result.path,
-            reason_code=result.reason,
-            model_id=self.cfg.get("cleanup_model"))
+            reason_code=result.reason, model_id=result.model,
+            model_revision=result.reasoning)
         if not applied:
             # Uncertain coverage or a failed generation: the Clean
             # artifact inserts; the transform proposal stays recorded
@@ -1697,7 +1722,7 @@ class AppDelegate(NSObject):
                             else "transform_selection"),
                         source_artifact_text=capture["source"],
                         output_artifact_text=result.output,
-                        model_id=self.cfg.get("cleanup_model"),
+                        model_id=result.served_model_id,
                         display_order=order,
                         source_meta=({"note_id": note.get("note_id"),
                                       "note_revision_id":
@@ -1882,6 +1907,7 @@ class AppDelegate(NSObject):
         a worker fault degrades to the honest fallback result, never an
         exception into the transform thread."""
         try:
+            model, reasoning = self._tf_model_choice(job)
             res = self.supervisor.transform(
                 job_id=job.parent_job_id, attempt=1,
                 transform_id=job.transform_id,
@@ -1890,7 +1916,8 @@ class AppDelegate(NSObject):
                 source=job.source, source_kind=job.source_kind,
                 instructions=job.instructions,
                 examples_revision=job.examples_revision,
-                examples=job.examples, locale=job.locale)
+                examples=job.examples, locale=job.locale,
+                model=model, reasoning=reasoning)
         except Exception as e:
             reason = getattr(e, "reason_code", None) or type(e).__name__
             return v2_transforms.TransformResult(

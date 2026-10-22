@@ -3236,9 +3236,10 @@ def r04_silence_warnings_are_reported():
         h.close()
 
 
-@case("LF-R25 (no LocalFlow module imports a network client — the one"
-      " allowlisted exception is the opt-in Your Voice written layer,"
-      " ADR-0001; whole-app offline operation at runtime is M16's native"
+@case("LF-R25 (no LocalFlow module imports a network client — the two"
+      " allowlisted exceptions are the opt-in Your Voice written layer,"
+      " ADR-0001, and selected-text transforms on Claude, ADR-0002;"
+      " whole-app offline operation at runtime is M16's native"
       " acceptance)")
 def r25_no_network_client_imports():
     import ast
@@ -3246,9 +3247,10 @@ def r25_no_network_client_imports():
               "requests", "httpx", "httpx2", "httpcore", "httpcore2",
               "aiohttp", "ftplib", "smtplib", "websocket", "websockets",
               "anthropic")
-    # (module file, imported name) pairs ADR-0001 allows: the Anthropic
-    # SDK in exactly one module, nothing else anywhere.
-    allowed = {("localflow/v2/voice_insights.py", "anthropic")}
+    # (module file, imported name) pairs ADR-0001 and ADR-0002 allow: the
+    # Anthropic SDK in exactly these two modules, nothing else anywhere.
+    allowed = {("localflow/v2/voice_insights.py", "anthropic"),
+               ("localflow/v2/transforms/claude.py", "anthropic")}
     hits = []
     for path in sorted((ROOT / "localflow").rglob("*.py")):
         tree = ast.parse(path.read_text(), filename=str(path))

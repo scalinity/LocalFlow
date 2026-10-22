@@ -1,20 +1,25 @@
 """M11 remediation regressions — the portable half (audit 2026-09-24 at
-1ee8e44). No AppKit, no model: every case drives the real transform
-engine with an injected generator, the real worker handler, the real
+1ee8e44). No AppKit, no network: every case drives the requirement
+validator, the real transform engine with an injected Claude-shaped
+generator, the real supervisor with a fake Anthropic client, the real
 store/collector, the real insertion validator over the fixture target,
-or the model-suite oracle with injected outputs.
+or the oracle with injected outputs.
 
-Each case names its layer: ``engine`` (run_transform), ``worker``
-(Worker._transform + the serve loop's fault branch), ``store``
-(TransformStore / EvidenceCollector over a real Store), ``insertion``
-(validate_target over FixtureTargetApp), ``oracle``
-(test_prompt_engineer_cases.judge) or ``helper`` (a portable helper the
-coordinator delegates to). The AppKit coordinator/Hub/panel cases live
-in test_transform_remediation_native.py and run on the reference Mac.
+Each case names its layer: ``validator`` (atoms.coverage_map),
+``engine`` (run_transform), ``supervisor`` (WorkerSupervisor.transform
+→ claude.Transformer → engine, ADR-0002), ``store`` (TransformStore /
+EvidenceCollector over a real Store), ``insertion`` (validate_target
+over FixtureTargetApp), ``oracle`` (test_prompt_engineer_cases.judge)
+or ``helper`` (a portable helper the coordinator delegates to). The
+AppKit coordinator/Hub/panel cases live in
+test_transform_remediation_native.py and run on the reference Mac.
 
-"Not applied" means the result's path is not ``applied`` AND the review
-excerpts are non-empty (the loss is surfaced, never silent). The audit
-exposed every case here, so they are development/regression cases.
+``validator`` cases pin the lexical requirement validator in atoms.py.
+Since ADR-0002 it no longer decides application — exact carry and
+Prompt Engineer's requirement map do (test_claude_transforms.py) — so
+"not applied" here means the validator reports at least one review
+issue and "applied" that it reports none. The audit exposed every case
+here, so they are development/regression cases.
 
 Run: .venv/bin/python tests/v2/transforms/test_transform_remediation.py
      [--json OUT.json] [--trace]
@@ -40,8 +45,10 @@ sys.path.insert(0, str(HERE.parents[1] / "insertion"))
 from localflow.v2 import ids  # noqa: E402
 from localflow.v2 import transforms as tf  # noqa: E402
 from localflow.v2.transforms import atoms as tf_atoms  # noqa: E402
+from localflow.v2.transforms import claude as tf_claude  # noqa: E402
 from localflow.v2.transforms import engine as tf_engine  # noqa: E402
 from localflow.v2.transforms import prompts as tf_prompts  # noqa: E402
+import claude_fakes  # noqa: E402
 
 CASES = []
 
@@ -71,62 +78,52 @@ def job_for(source, mode="prompt_engineer"):
         instructions="Make it friendlier." if mode == "custom" else "")
 
 
-def gen_of(output, limit=False):
-    def gen(prompt, max_tokens):
-        return {"text": output, "output_tokens": 5, "limit_hit": limit}
+def gen_of(output, limit=False, pairs=()):
+    """A Claude-shaped generator answering ``output`` (Prompt Engineer:
+    with ``pairs`` as its requirement map); ``limit`` stands for an
+    answer cut off at max_tokens."""
+    def gen(system, messages, schema):
+        if limit:
+            raise tf_claude.TransformUnavailable("output_limit")
+        text = json.dumps({"text": output}) \
+            if schema is tf_prompts.TEXT_SCHEMA \
+            else json.dumps(claude_fakes.pe_answer(output, pairs))
+        return {"text": text, "model": "claude-sonnet-5-5",
+                "reasoning": "low", "input_tokens": 50,
+                "output_tokens": 5}
     return gen
 
 
-def render(messages):
-    return "\n".join(m["content"] for m in messages)
+def run(source, output, mode="prompt_engineer", pairs=()):
+    return tf.run_transform(job_for(source, mode), gen_of(output,
+                                                          pairs=pairs))
 
 
-def run(source, output, mode="prompt_engineer"):
-    return tf.run_transform(job_for(source, mode), gen_of(output), render)
+class Verdict:
+    def __init__(self, coverage):
+        self.coverage = tuple(coverage)
+        self.review_excerpts = tuple(dict.fromkeys(
+            c.atom.excerpt for c in coverage if c.review_issue))
+
+
+def validate(source, output, mode="prompt_engineer"):
+    """The lexical requirement validator's verdict (atoms.coverage_map)."""
+    return Verdict(tf_atoms.coverage_map(source, output, mode=mode))
 
 
 def not_applied(source, output, mode="prompt_engineer"):
-    res = run(source, output, mode)
-    assert res.path != tf.PATH_APPLIED, \
-        f"[{mode}] applied: {source!r} -> {output!r}"
+    res = validate(source, output, mode)
     assert res.review_excerpts, \
-        f"[{mode}] no review excerpt: {source!r} -> {output!r}"
+        f"[{mode}] no review issue: {source!r} -> {output!r}"
     return res
 
 
 def applied(source, output, mode="prompt_engineer"):
-    res = run(source, output, mode)
-    assert res.path == tf.PATH_APPLIED, \
-        (f"[{mode}] {res.path}: {source!r} -> {output!r}"
+    res = validate(source, output, mode)
+    assert not res.review_excerpts, \
+        (f"[{mode}] review issues: {source!r} -> {output!r}"
          f" excerpts={res.review_excerpts}")
     return res
-
-
-def captured_worker(gen):
-    """The real Worker._transform with the serve loop's fault branch
-    reproduced; returns the messages the worker wrote."""
-    from localflow.v2 import worker as worker_mod
-    w = worker_mod.Worker(tempfile.mkdtemp())
-    w._cleanup_generate = gen
-    w._cleanup_render = render
-    sent = []
-    real = worker_mod._write_msg
-    worker_mod._write_msg = sent.append
-
-    def call(msg):
-        try:
-            w._transform(msg)
-        except Exception as e:  # the serve loop's generic branch
-            worker_mod._fault(msg, type(e).__name__, worker_mod._reason(e))
-    return w, sent, call, (lambda: setattr(worker_mod, "_write_msg", real))
-
-
-def transform_msg(source, mode="prompt_engineer"):
-    return {"op": "transform", "req_id": "r1", "job_id": None,
-            "attempt": 1, "generation": 1,
-            "transform_id": f"builtin:{mode}", "transform_revision": 1,
-            "prompt_revision": "m11:test", "mode": mode,
-            "source": source, "source_kind": "selection"}
 
 
 def new_store():
@@ -140,7 +137,8 @@ def rows(st, sql, args=()):
 
 
 def pe_result(source, output, mode="prompt_engineer"):
-    return run(source, output, mode)
+    return run(source, output, mode, pairs=((source, output),)
+               if mode == "prompt_engineer" and output in source else ())
 
 
 # ---------------------------------------------------------------------------
@@ -163,13 +161,13 @@ F01_PAIRS = [
 ]
 
 
-@case("engine")
+@case("validator")
 def f01_unrepresented_requirements_not_applied():
     for src, out in F01_PAIRS:
         not_applied(src, out, "prompt_engineer")
 
 
-@case("engine")
+@case("validator")
 def f01_same_losses_under_polish_and_concise():
     # The cross-mode decision (contracts/transforms.md): Polish and
     # Concise carry the same operator/invention/exact-carry gate.
@@ -182,7 +180,7 @@ def f01_same_losses_under_polish_and_concise():
 # 02 — false coverage: polarity, order, hedges, quantities, occurrences
 # ---------------------------------------------------------------------------
 
-@case("engine")
+@case("validator")
 def f02_polarity_ordering_hedge_quantity():
     for src, out in [
             ("Do not modify the database schema.",
@@ -198,12 +196,12 @@ def f02_polarity_ordering_hedge_quantity():
             not_applied(src, out, mode)
 
 
-@case("engine")
+@case("validator")
 def f02_negative_control_recognized_comparator():
     not_applied("At most five suggestions.", "At least five suggestions.")
 
 
-@case("engine")
+@case("validator")
 def f02_wrong_occurrence_and_argument_swaps():
     for src, out in [
             ("Do not modify app.py. Explain why app.py owns startup."
@@ -222,7 +220,7 @@ def f02_wrong_occurrence_and_argument_swaps():
         not_applied(src, out, "prompt_engineer")
 
 
-@case("engine")
+@case("validator")
 def f02_governed_words_and_soft_conditions():
     """Found by the remediation's mutation probe: a cue governs only
     the words up to the next operator, and a soft condition ("if they
@@ -249,63 +247,68 @@ def f03_coverage_serializes_every_status():
         js = tf_atoms.Coverage(atom, status).to_json()
         assert js["kind"] == tf_atoms.COUNT and js["status"] == status
         json.dumps(js)
-    res = run("Give exactly three options.", "Give exactly three options.")
+    res = run("Give exactly three options.", "Give exactly three options.",
+              pairs=(("Give exactly three options",
+                      "Give exactly three options"),))
     assert res.coverage, "atom-bearing source produced no coverage"
     json.loads(tf_engine.result_json_for_store(res))
 
 
-@case("worker")
-def f03_real_worker_round_trip_nonempty_coverage():
+@case("supervisor")
+def f03_supervisor_round_trip_nonempty_coverage():
     src = "Give exactly three options."
-    _w, sent, call, restore = captured_worker(gen_of(src))
-    try:
-        call(transform_msg(src))
-    finally:
-        restore()
-    assert len(sent) == 1, sent
-    msg = sent[0]
-    assert msg["op"] == "result", msg
+    sup, _client = claude_fakes.claude_supervisor(claude_fakes.pe_answer(
+        "Give exactly three options, numbered.",
+        [("Give exactly three options", "Give exactly three options")]))
+    msg = sup.transform(job_id=None, transform_id="builtin:prompt_engineer",
+                        transform_revision=1, prompt_revision="m11:test",
+                        mode="prompt_engineer", source=src,
+                        source_kind="selection")
     assert msg["coverage"], "nonempty coverage expected"
     assert all("kind" in c for c in msg["coverage"])
     assert msg["result"]["path"] == tf.PATH_APPLIED, msg["result"]
     # The parent-side rebuild (the coordinator delegates to this).
-    rebuild = getattr(tf_engine, "result_from_message", None)
-    assert rebuild is not None, "no portable parent-side rebuild"
-    res = rebuild(job_for(src), msg)
+    res = tf_engine.result_from_message(job_for(src), msg)
     assert res.path == tf.PATH_APPLIED and res.coverage
     assert res.coverage[0].atom.kind == msg["coverage"][0]["kind"]
     assert res.to_json()["validator_revision"] \
         == msg["result"]["validator_revision"]
+    assert res.model == msg["result"]["model"] and res.reasoning
 
 
-@case("worker")
-def f03_real_worker_fallbacks_still_answer():
-    def boom(prompt, n):
-        raise RuntimeError("metal fault")
-    for gen, reason in ((boom, "transform_engine_failed:RuntimeError"),
-                        (gen_of("# partial", limit=True), "output_limit")):
-        _w, sent, call, restore = captured_worker(gen)
-        try:
-            call(transform_msg("Give exactly three options."))
-        finally:
-            restore()
-        assert sent and sent[0]["op"] == "result", sent
-        assert sent[0]["result"]["path"] == tf.PATH_FALLBACK_ORIGINAL
-        assert sent[0]["result"]["reason"] == reason
+@case("supervisor")
+def f03_supervisor_fallbacks_still_answer():
+    import anthropic
+    import httpx2
+    req = httpx2.Request("POST", "https://api.anthropic.com/v1/messages")
+    for answer, reason in (
+            (RuntimeError("boom"), "transform_engine_failed:RuntimeError"),
+            (anthropic.APIConnectionError(request=req),
+             "transform_unavailable:network_unavailable"),
+            (("# partial", "max_tokens"), "transform_unavailable:output_limit"),
+            (("", "refusal"), "transform_unavailable:model_refused")):
+        sup, _client = claude_fakes.claude_supervisor(answer)
+        msg = sup.transform(job_id=None, transform_id="builtin:polish",
+                            transform_revision=1, prompt_revision="m11:test",
+                            mode="polish", source="Give exactly three options.",
+                            source_kind="selection")
+        assert msg["result"]["path"] == tf.PATH_FALLBACK_ORIGINAL, msg
+        assert msg["result"]["reason"] == reason, msg["result"]["reason"]
+        assert msg["output"] == "Give exactly three options."
 
 
 # ---------------------------------------------------------------------------
 # 04 — exact carry
 # ---------------------------------------------------------------------------
 
-@case("engine")
+@case("validator")
 def f04_case_distinct_literals_stay_distinct():
     for mode in MODES:
         not_applied("Keep ABC.py and abc.py unchanged.",
                     "Keep ABC.py unchanged.", mode)
 
 
-@case("engine")
+@case("validator")
 def f04_technical_tokens_carry_verbatim():
     long_quote = "\"" + ("ship small and ship often " * 6).strip() + "\""
     assert len(long_quote) > 150
@@ -329,7 +332,7 @@ def f04_technical_tokens_carry_verbatim():
         not_applied(src, out, "polish")
 
 
-@case("engine")
+@case("validator")
 def f04_literals_allow_surrounding_prose_edits():
     for src, out in [
             ("please read https://docs.example.com/spec.",
@@ -387,37 +390,18 @@ def _oracle_verdict(case_d, output, path="applied", excerpts=()):
 def f05_oracle_never_reports_fallback_as_applied():
     pec = _pec()
 
-    class Runner:
-        def __init__(self, model):
-            pass
-
-        def load(self):
-            pass
-
-        def generate_fn(self):
-            def gen(prompt, n):
-                raise RuntimeError("generation failed")
-            return gen
-
-        def render(self, messages):
-            return render(messages)
-
-    real = pec.ModelRunner
-    real_argv = sys.argv
-    pec.ModelRunner = Runner
-    sys.argv = ["test_prompt_engineer_cases.py", "--limit", "3"]
+    def gen(system, messages, schema):
+        raise tf_claude.TransformUnavailable("network_unavailable")
     buf = io.StringIO()
     failed = False
     try:
         with contextlib.redirect_stdout(buf):
-            pec.main()
+            pec.main(["--limit", "3"], generate=gen)
     except (AssertionError, SystemExit):
         failed = True
-    finally:
-        pec.ModelRunner = real
-        sys.argv = real_argv
     text = buf.getvalue()
     assert "applied, all atoms survive" not in text, text[-400:]
+    assert " fallback " in text, text[-400:]
     assert failed, "an all-fallback model run must not pass"
 
 
@@ -735,7 +719,11 @@ def _children(st, parent):
 @case("store")
 def f09_selected_candidate_retains_prompt_and_decision():
     src = "Do not modify the database schema."
-    res = pe_result(src, "Modify the database schema.")
+    # Claude's map cites a span the prompt does not contain: the
+    # requirement is a review issue, its draft wording kept.
+    res = run(src, "Modify the database schema.",
+              pairs=(("Do not modify the database schema",
+                      "Do not modify the database schema"),))
     assert res.path == tf.PATH_NEEDS_REVIEW, res.path
     st, consent, ts = _tstore()
     try:
@@ -753,6 +741,8 @@ def f09_selected_candidate_retains_prompt_and_decision():
         assert decision["path"] == res.path
         assert decision["review_excerpts"] == list(res.review_excerpts)
         assert decision["coverage"] and decision["validator_revision"]
+        assert (decision["model"], decision["reasoning"]) == \
+            (res.model, res.reasoning)
     finally:
         st.close()
 
@@ -894,7 +884,7 @@ def f11_action_frames_do_not_overlap():
 # 12 — unchanged quoted literals
 # ---------------------------------------------------------------------------
 
-@case("engine")
+@case("validator")
 def f12_unchanged_quoted_literal_applies():
     for mode in MODES:
         res = applied('Keep "foo" unchanged.', 'Keep "foo" unchanged.', mode)
@@ -905,9 +895,21 @@ def f12_unchanged_quoted_literal_applies():
 # preservation controls and test gaps
 # ---------------------------------------------------------------------------
 
-@case("engine")
+# The S16 worked example and a faithful reorganization of it.
+S16_EXAMPLE = ("Look at the parser, tell me why it fails on empty input,"
+               " don't edit files yet, and give me two possible fixes.")
+S16_REORGANIZED = (
+    "# Task\nDiagnose why the parser fails on empty input.\n\n"
+    "# Constraints\n- Do not edit any files yet — diagnosis only.\n"
+    "- Scope: the empty-input failure path.\n\n"
+    "# Deliverables\n1. The reason the parser fails on empty input.\n"
+    "2. Exactly two possible fixes, proposed only — nothing is to be"
+    " implemented.")
+
+
+@case("validator")
 def pc_faithful_reorganizations_apply():
-    applied(tf_prompts.PE_EXAMPLE_USER, tf_prompts.PE_EXAMPLE_ASSISTANT)
+    applied(S16_EXAMPLE, S16_REORGANIZED)
     for src in ("Do not modify the database schema.",
                 "Only update the tests if the implementation changes.",
                 "You may optionally add caching.",
@@ -1002,7 +1004,7 @@ _MUTATIONS = [
 ]
 
 
-@case("engine")
+@case("validator")
 def pc_fixture_faithful_outputs_apply_and_mutations_never_escape():
     """Usability and safety of the gate on the non-blind fixtures: the
     faithful outputs apply and the oracle agrees; every mechanical
@@ -1015,9 +1017,9 @@ def pc_fixture_faithful_outputs_apply_and_mutations_never_escape():
     for cid, out in FAITHFUL.items():
         c = cases[cid]
         assert not c.get("blind")
-        res = run(c["source"], out)
-        assert res.path == tf.PATH_APPLIED, (cid, res.review_excerpts)
-        assert pec.judge(c, out, res.path)["verdict"] == "applied", cid
+        res = validate(c["source"], out)
+        assert not res.review_excerpts, (cid, res.review_excerpts)
+        assert pec.judge(c, out, "applied")["verdict"] == "applied", cid
         lines = [ln for ln in out.split("\n")
                  if ln.strip() and not ln.startswith("#")]
         muts = [m(out) for m in _MUTATIONS] + [out.replace(ln, "", 1)
@@ -1025,7 +1027,7 @@ def pc_fixture_faithful_outputs_apply_and_mutations_never_escape():
         for m in muts:
             if m == out:
                 continue
-            if run(c["source"], m).path == tf.PATH_APPLIED and \
+            if not validate(c["source"], m).review_excerpts and \
                     pec.judge(c, m, "applied")["verdict"] != "applied":
                 escapes.append((cid, m))
     assert not escapes, escapes[:3]
@@ -1039,7 +1041,7 @@ DENSE = ("Summarize the incident report for the on-call channel. Keep it"
          " status page was updated. Write it in plain language.")
 
 
-@case("engine")
+@case("validator")
 def tg01_dense_ten_requirement_prompt():
     applied(DENSE, DENSE)
     sentences = [s.strip() + "." for s in DENSE.split(".") if s.strip()]
@@ -1050,7 +1052,7 @@ def tg01_dense_ten_requirement_prompt():
     not_applied(DENSE, DENSE + " Also write unit tests for the fix.")
 
 
-@case("engine")
+@case("validator")
 def tg01_nested_exception_and_compound_clauses():
     for src, out in [
             ("Return only JSON with exactly four keys and no prose.",
@@ -1069,7 +1071,7 @@ def tg01_nested_exception_and_compound_clauses():
             not_applied(src, out, mode)
 
 
-@case("engine")
+@case("validator")
 def tg02_modality_and_speech_act_changes():
     for src, out in [
             ("Add a benchmark.", "Optionally add a benchmark."),
@@ -1091,34 +1093,35 @@ def tg01_near_limit_source_and_truncation():
     applied(src, src, "polish")
     not_applied(src, src.replace("line_7 = 7", "line_7 = 8"), "polish")
     res = tf.run_transform(job_for(src, "polish"),
-                           gen_of(src[:50], limit=True), render)
+                           gen_of(src[:50], limit=True))
     assert res.path == tf.PATH_FALLBACK_ORIGINAL and res.output == src
+    assert res.reason == "transform_unavailable:output_limit"
 
 
-@case("engine")
+@case("validator")
 def tg07_conflicting_requirements_surface():
     not_applied("Keep the wording verbatim but shorten the paragraph.",
                 "Shorten the paragraph.")                           # ADV-16
 
 
-# Derived on the inherited code (1ee8e44) with the serialization below;
-# the local pre-repair suite pinned the same inputs under a different,
-# unrecorded serialization (7ca53ab2651e1ab9).
-PINNED_FRAME = "5fb588b5c1818f95"
+# Derived for prompts VERSION "claude1" (ADR-0002) with the
+# serialization below.
+PINNED_FRAME = "636534b7898b0d8e"
 
 
 @case("engine")
 def tg_task_identity_inputs_pinned():
-    """Built-in few-shot turns and the payload framing are not part of
+    """The draft framing and the answer schemas are not part of
     prompt_revision; they are pinned here so an edit forces a VERSION
     bump (which changes every built-in prompt revision, hence every
     task key)."""
     import hashlib
-    framing = tf_prompts.build_messages("prompt_engineer", "<SRC>")[-1][
-        "content"]
+    _system, messages = tf_prompts.build_request("prompt_engineer", "<SRC>")
     h = hashlib.sha256("\0".join([
-        tf_prompts.VERSION, tf_prompts.PE_EXAMPLE_USER,
-        tf_prompts.PE_EXAMPLE_ASSISTANT, framing]).encode()).hexdigest()[:16]
+        tf_prompts.VERSION, messages[-1]["content"],
+        json.dumps(tf_prompts.PROMPT_ENGINEER_SCHEMA, sort_keys=True),
+        json.dumps(tf_prompts.TEXT_SCHEMA, sort_keys=True)]
+    ).encode()).hexdigest()[:16]
     assert h == PINNED_FRAME, (h, "bump prompts.VERSION and re-pin")
 
 

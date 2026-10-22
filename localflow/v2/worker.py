@@ -4,7 +4,7 @@ A fresh process — spawned, never a fork of initialized Metal state — owns
 all MLX/GPU state for ASR and cleanup. It speaks a versioned, length-framed
 JSON protocol over inherited pipes (stdin/stdout):
 
-  parent→worker : load, transcribe, clean, transform, shutdown
+  parent→worker : load, transcribe, clean, shutdown
   worker→parent : hello, engine, result, fault, diag
 
 Boundaries that hold by construction:
@@ -191,11 +191,6 @@ class Worker:
         # A failed V2 load answers with the unchanged normalized input
         # (the last preserved artifact), never a protection-blind pass.
         self._v2_load_failed = False
-        # M11 (S16): the cleanup engine's raw generation/render pair —
-        # a transform runs one bounded local generation on the SAME
-        # loaded model (no second engine, no model change).
-        self._cleanup_generate = None
-        self._cleanup_render = None
         self._cleanup_model = None
         # M03-AUDIT-07 scheduling state (control thread ↔ GPU thread).
         self.asr_state = "not_started"
@@ -276,8 +271,6 @@ class Worker:
                 with _capture_stderr():
                     runner.load()
                 self.cleanup_engine = runner.engine()
-                self._cleanup_generate = runner.generate_fn()
-                self._cleanup_render = runner.render
             except Exception as e:
                 # Load failure degrades — the engine is failed, not the
                 # worker. The degraded answer is the unchanged normalized
@@ -589,57 +582,6 @@ class Worker:
             self._v2_unchanged(msg, raw_text, "in_flight",
                                _safe_type(type(e).__name__), retire=True)
 
-    def _transform(self, msg):
-        """M11 (S16): one bounded transform generation on the loaded
-        cleanup model. The parent validates coverage and decides
-        application — this side only renders the prompt (contract
-        system message + few-shot + structured payload, built in the
-        transforms package) and runs the generation with recorded
-        sampling."""
-        from .transforms import engine as tf_engine
-        try:
-            job = tf_engine.TransformJob(
-                transform_id=msg.get("transform_id") or "",
-                transform_revision=int(msg.get("transform_revision") or 1),
-                prompt_revision=msg.get("prompt_revision") or "",
-                mode=msg.get("mode") or "custom",
-                source=msg.get("source") or "",
-                source_kind=msg.get("source_kind") or "selection",
-                instructions=msg.get("instructions") or "",
-                examples_revision=msg.get("examples_revision") or "",
-                examples=tuple(
-                    tuple(ex) for ex in msg.get("examples") or []),
-                locale=msg.get("locale") or "en-US")
-            result = tf_engine.run_transform(
-                job, self._cleanup_generate, self._cleanup_render)
-        except ValueError as e:
-            # e.g. an oversized selection refused honestly (S16) —
-            # reported as a refusal, not a fault.
-            _write_msg({
-                "v": PROTOCOL_VERSION, "op": "result",
-                "kind": "transform", "req_id": msg.get("req_id"),
-                "job_id": msg.get("job_id"),
-                "attempt": msg.get("attempt"),
-                "generation": msg.get("generation"),
-                "refused": str(e)[:160],
-            })
-            return
-        _write_msg({
-            "v": PROTOCOL_VERSION, "op": "result",
-            "kind": "transform", "req_id": msg.get("req_id"),
-            "job_id": msg.get("job_id"), "attempt": msg.get("attempt"),
-            "generation": msg.get("generation"),
-            "result": result.to_json(),
-            "output": result.output,
-            "coverage": [c.to_json() for c in result.coverage],
-            "review_excerpts": list(result.review_excerpts),
-            "task_manifest": result.job.task_manifest(),
-            # Content-bearing: the exact rendered prompt rides the
-            # message only so the parent can retain it as a
-            # lease-governed artifact (never an envelope field).
-            "prompt": result.prompt,
-        })
-
     # ---- scheduling (M03-AUDIT-07) --------------------------------------------
 
     def _enqueue(self, kind, msg):
@@ -661,11 +603,6 @@ class Worker:
                     self._loads.remove("load_asr")
                     return ("load_asr", None)
                 if self._tasks:
-                    kind, msg = self._tasks[0]
-                    if kind == "transform" \
-                            and "load_cleanup" in self._loads:
-                        self._loads.remove("load_cleanup")
-                        return ("load_cleanup", None)
                     return self._tasks.pop(0)
                 if "load_cleanup" in self._loads and (
                         not self._defer_cleanup or self._request_seen):
@@ -694,10 +631,6 @@ class Worker:
                     self._transcribe(msg)
                 elif kind == "clean":
                     self._clean(msg)
-                elif kind == "transform":
-                    if self._cleanup_generate is None:
-                        raise EngineNotReady("cleanup_engine_not_ready")
-                    self._transform(msg)
             except ProtocolError as e:
                 _fault(msg or {}, type(e).__name__, e.code, e.fault_class)
             except Exception as e:
@@ -717,7 +650,7 @@ class Worker:
                 self._loads = ["load_asr", "load_cleanup"]
                 self._cond.notify_all()
             return
-        if op not in ("transcribe", "clean", "transform"):
+        if op not in ("transcribe", "clean"):
             raise ProtocolError("unknown_op")
         _validate(msg)
         with self._cond:
@@ -739,12 +672,6 @@ class Worker:
                 self._enqueue("clean", msg)
             else:
                 self._clean_now(msg)
-            return
-        if self.cleanup_state == "failed" or (
-                self.cleanup_mode != "llm"
-                or self.cleanup_implementation != "v2"):
-            raise EngineNotReady("cleanup_engine_not_ready")
-        self._enqueue("transform", msg)
 
     # ---- loop ----------------------------------------------------------------
 
@@ -799,7 +726,7 @@ def _fault(req, error_type, reason_code, fault_class="runtime"):
                 "job_id": req.get("job_id")
                 if isinstance(req.get("job_id"), str) else None,
                 "stage": req.get("op") if req.get("op") in (
-                    "transcribe", "clean", "transform", "load") else None,
+                    "transcribe", "clean", "load") else None,
                 "error_type": _safe_type(str(error_type)),
                 "reason_code": code, "fault_class": fault_class})
 

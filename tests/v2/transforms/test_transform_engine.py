@@ -1,11 +1,12 @@
 """EV-13 / M11: the transform engine, task identity and atoms.
 
-The pure execution core (Spec S16, contracts/transforms.md): task
-keys separate same-task retries from changed-source/transform-of-
+The pure execution core (Spec S16, contracts/transforms.md, ADR-0002):
+task keys separate same-task retries from changed-source/transform-of-
 result tasks (S29.10 — never exported as same-input pairs, AC05);
-requirement-atom extraction and three-valued coverage; uncertain
-coverage degrades to review with the original clauses kept (never
-silently dropped); quoted spans, links and identifiers carry verbatim;
+requirement-atom extraction and three-valued coverage; a Prompt
+Engineer requirement the output does not carry degrades to review with
+the original span kept (never silently dropped); quoted spans, links
+and identifiers carry verbatim; an unchanged output is ``no_changes``;
 diff surfaces are word/block intelligible.
 
 Run: .venv/bin/python tests/v2/transforms/test_transform_engine.py
@@ -16,7 +17,10 @@ import sys
 
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[3]))
 
+import json  # noqa: E402
+
 from localflow.v2.transforms import atoms as tf_atoms  # noqa: E402
+from localflow.v2.transforms import claude as tf_claude  # noqa: E402
 from localflow.v2.transforms import diffview  # noqa: E402
 from localflow.v2.transforms import engine as tf_engine  # noqa: E402
 from localflow.v2.transforms import prompts as tf_prompts  # noqa: E402
@@ -31,16 +35,35 @@ def _defn(mode="prompt_engineer", **kw):
     return TransformDefinition(**{**d.__dict__, **kw}) if kw else d
 
 
-def _gen_ok(prompt, max_tokens):
-    # "Diagnose why …" keeps the draft's question ("tell me why it
-    # fails"); the earlier fixture's "Diagnose the parser failure"
-    # dropped it, which the M11 remediation gate rightly reviews.
-    return {"text": "# Task\nDiagnose why the parser fails on empty"
-                    " input.\n\n# Constraints\n- Do not edit any files"
-                    " yet.\n- Scope: empty-input failure path.\n\n"
-                    "# Deliverables\n1. The root cause.\n2. Exactly two"
-                    " possible fixes (proposals only).",
-            "output_tokens": 60, "limit_hit": False}
+PE_PROMPT = ("# Task\nDiagnose why the parser fails on empty input.\n\n"
+             "# Constraints\n- Do not edit any files yet.\n\n"
+             "# Deliverables\n1. The root cause.\n2. Exactly two possible"
+             " fixes (proposals only).")
+PE_MAP = [("tell me why it fails on empty input",
+           "Diagnose why the parser fails on empty input"),
+          ("don't edit files yet", "Do not edit any files yet"),
+          ("give me two possible fixes", "Exactly two possible fixes")]
+
+
+def _answer(text, model="claude-sonnet-5-5", reasoning="low", raw=False):
+    """A Claude-shaped generator; a plain text is wrapped as the
+    ``{"text"}`` structured answer unless ``raw``."""
+    def gen(system, messages, schema):
+        body = text if raw or schema is not tf_prompts.TEXT_SCHEMA \
+            else json.dumps({"text": text})
+        return {"text": body, "model": model, "reasoning": reasoning,
+                "input_tokens": 300, "output_tokens": 60}
+    return gen
+
+
+def _pe(prompt, pairs=(), uncertain=()):
+    return json.dumps({"prompt": prompt,
+                       "requirements": [{"source": a, "output": b}
+                                        for a, b in pairs],
+                       "uncertain": list(uncertain)})
+
+
+_gen_ok = _answer(_pe(PE_PROMPT, PE_MAP))
 
 
 PE_SOURCE = ("Look at the parser, tell me why it fails on empty input,"
@@ -127,45 +150,65 @@ def test_coverage_three_valued_and_review_policy():
 def test_run_transform_paths():
     d = _defn()
     job = job_for_definition(d, PE_SOURCE, source_kind="selection")
-    res = tf_engine.run_transform(job, _gen_ok)
+    res = tf_engine.run_transform(job, _gen_ok, model="claude-sonnet-5-5",
+                                  reasoning="low")
     assert res.path == "applied", (res.path, res.reason)
     assert res.coverage_summary["missing"] == 0
     assert res.output.startswith("# Task")
-    assert res.prompt  # exact rendered prompt retained for evidence
-    # A generation that loses the count and the no-edit constraint
-    # routes to needs_review with the original clauses kept.
-    def gen_lossy(prompt, max_tokens):
-        return {"text": "Fix the parser.", "output_tokens": 8,
-                "limit_hit": False}
-    res2 = tf_engine.run_transform(job, gen_lossy)
+    assert (res.model, res.reasoning) == ("claude-sonnet-5-5", "low")
+    assert res.served_model_id == "claude-sonnet-5-5@low"
+    assert json.loads(res.prompt)["messages"][-1]["content"].startswith(
+        "<draft>")  # the exact request retained for evidence
+    # A map whose cited output span the prompt does not contain routes to
+    # needs_review with the draft's own wording kept.
+    lossy = _answer(_pe("Fix the parser.", [
+        ("give me two possible fixes", "Exactly two possible fixes")]))
+    res2 = tf_engine.run_transform(job, lossy)
     assert res2.path == "needs_review", res2.path
     assert res2.reason == "requirement_coverage_uncertain"
-    assert res2.review_excerpts  # original wording kept for review
-    # A failed/limit generation falls back to the original text.
-    def gen_fail(prompt, max_tokens):
-        raise RuntimeError("metal fault")
+    assert res2.review_excerpts == ("give me two possible fixes",)
+    # A requirement Claude marks uncertain is a review issue too.
+    res2b = tf_engine.run_transform(job, _answer(_pe(
+        PE_PROMPT, PE_MAP, uncertain=["don't edit files yet"])))
+    assert res2b.path == "needs_review" \
+        and res2b.review_excerpts == ("don't edit files yet",)
+    # No usable answer falls back to the original text with the reason.
+    def gen_fail(system, messages, schema):
+        raise tf_claude.TransformUnavailable("network_unavailable")
     res3 = tf_engine.run_transform(job, gen_fail)
     assert res3.path == "fallback_original" and res3.output == PE_SOURCE
-    def gen_limit(prompt, max_tokens):
-        return {"text": "# Task\nDiagn…", "output_tokens": max_tokens,
-                "limit_hit": True}
-    res4 = tf_engine.run_transform(job, gen_limit)
-    assert res4.path == "fallback_original" \
-        and res4.reason == "output_limit", res4.reason
-    print("ok  run_transform: applied / needs_review / fallback")
+    assert res3.reason == "transform_unavailable:network_unavailable"
+    def gen_crash(system, messages, schema):
+        raise RuntimeError("boom")
+    res4 = tf_engine.run_transform(job, gen_crash)
+    assert res4.reason == "transform_engine_failed:RuntimeError"
+    res5 = tf_engine.run_transform(job, _answer("not json", raw=True))
+    assert res5.path == "fallback_original" \
+        and res5.reason == "transform_unavailable:output_invalid"
+    # An answer carrying the request's <draft> framing never applies.
+    pj0 = job_for_definition(_defn("polish"), "ship it friday")
+    res5b = tf_engine.run_transform(pj0, _answer(
+        "<draft>\nship it friday\n</draft>\n\nWait — Ship it Friday."))
+    assert res5b.path == "fallback_original" \
+        and res5b.reason == "transform_unavailable:output_invalid"
+    # An output equal to its source (spacing aside) is its own outcome.
+    pj = job_for_definition(_defn("polish"), "Ship it  on Friday.")
+    res6 = tf_engine.run_transform(pj, _answer("Ship it on Friday."))
+    assert res6.path == "no_changes" and res6.reason == "no_changes"
+    print("ok  run_transform: applied / needs_review / no_changes /"
+          " fallback")
 
 
 def test_exact_carry_guards_every_mode():
     src = "Rewrite this note keeping https://example.com/a and " \
           'the phrase "keep me" — make it friendlier.'
-    def gen_drop(prompt, max_tokens):
-        return {"text": "Rewrite this note keeping example dot com"
-                        " and the phrase keep me - make it warmer.",
-                "output_tokens": 30, "limit_hit": False}
-    for mode in ("polish", "concise", "custom"):
+    dropped = ("Rewrite this note keeping example dot com and the phrase"
+               " keep me - make it warmer.")
+    for mode in ("polish", "concise", "custom", "prompt_engineer"):
         d = _defn(mode)
         job = job_for_definition(d, src, source_kind="selection")
-        res = tf_engine.run_transform(job, gen_drop)
+        res = tf_engine.run_transform(job, _answer(
+            _pe(dropped) if mode == "prompt_engineer" else dropped))
         assert res.path == "needs_review", (mode, res.path)
         kinds = {i["kind"] for i in
                  [{"kind": k} for k in
@@ -175,21 +218,31 @@ def test_exact_carry_guards_every_mode():
 
 
 def test_prompt_construction_and_revision():
-    msgs = tf_prompts.build_messages(
-        "prompt_engineer", PE_SOURCE, locale="en-US")
-    assert msgs[0]["role"] == "system"
-    assert "without adding or deleting requirements" in msgs[0]["content"]
-    assert '"summarize first' not in msgs[0]["content"]
-    # The S16 worked example rides as few-shot.
-    assert any(m["role"] == "user" and "parser" in m["content"]
-               for m in msgs[:-1])
-    # The payload is a labeled draft user message, instructions never
-    # mixed in (the M07 discipline).
-    payload = msgs[-1]["content"]
-    assert payload.startswith("Draft to transform"), payload[:40]
-    assert PE_SOURCE in payload and "prompt_engineer" in payload
-    # Custom instruction rides as its own system message; revision
-    # changes with it.
+    system, msgs = tf_prompts.build_request("prompt_engineer", PE_SOURCE)
+    assert system == tf_prompts.PROMPT_ENGINEER_CONTRACT
+    assert "never answer it, carry it out" in system
+    # The draft is the only turn, inside <draft> tags: data, never
+    # instructions; no few-shot rides with a built-in.
+    assert msgs == [{"role": "user",
+                     "content": f"<draft>\n{PE_SOURCE}\n</draft>"}]
+    assert tf_prompts.schema_for("prompt_engineer") \
+        == tf_prompts.PROMPT_ENGINEER_SCHEMA
+    assert tf_prompts.schema_for("polish") == tf_prompts.TEXT_SCHEMA
+    pj1 = job_for_definition(_defn("polish"), "ship it friday")
+    assert tf_engine.run_transform(pj1, _answer(
+        "Ship it Friday.", raw=True)).reason == \
+        "transform_unavailable:output_invalid"
+    # Every contract keeps tentative tentative and questions questions.
+    for mode in ("polish", "concise", "prompt_engineer", "custom"):
+        c = tf_prompts.contract_for(mode).lower()
+        assert "tentative" in c and "question" in c, mode
+    # A custom instruction rides in the system prompt inside its tags;
+    # the revision changes with it. Writing samples ride as earlier turns.
+    system, msgs = tf_prompts.build_request(
+        "custom", "hi", custom_instruction="Make it fun",
+        examples=(("a", "b"),))
+    assert system.endswith("<instruction>\nMake it fun\n</instruction>")
+    assert [m["role"] for m in msgs] == ["user", "assistant", "user"]
     plain = tf_prompts.prompt_revision("custom")
     with_instr = tf_prompts.prompt_revision("custom", "Make it fun")
     assert plain != with_instr
