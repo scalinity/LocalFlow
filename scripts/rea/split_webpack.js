@@ -3,8 +3,10 @@
 // Parses with REA's own @babel/parser and never executes the bundle.
 //   node scripts/rea/split_webpack.js <bundle.js> <absent-out-dir> [anchor ...]
 // Writes <out-dir>/package.json and <out-dir>/modules/m<id>.js, then prints
-// the module count and which modules contain each anchor string.
-const fs = require("fs"), path = require("path");
+// the module count and which modules contain each anchor string. The bundle
+// is untrusted: an id outside [A-Za-z0-9_-] (a string id such as
+// "./src/x.js", or a hostile "../x") is written under its hash instead.
+const crypto = require("crypto"), fs = require("fs"), path = require("path");
 const { parse } = require("/opt/homebrew/lib/node_modules/rea-agents/node_modules/@babel/parser");
 
 const [src, outDir, ...anchors] = process.argv.slice(2);
@@ -36,7 +38,10 @@ fs.writeFileSync(path.join(outDir, "package.json"), JSON.stringify({ name: "webp
 const hits = {};
 for (const p of table) {
   const id = String(p.key.value), body = code.slice(p.start, p.end);
-  fs.writeFileSync(path.join(outDir, "modules", `m${id}.js`), `module.exports = {${body}};\n`);
-  for (const a of anchors) if (body.includes(a)) (hits[a] = hits[a] || []).push(id);
+  const name = /^[A-Za-z0-9_-]+$/.test(id) ? id
+    : crypto.createHash("sha256").update(id).digest("hex").slice(0, 16);
+  fs.writeFileSync(path.join(outDir, "modules", `m${name}.js`), `module.exports = {${body}};\n`);
+  const label = name === id ? id : `${JSON.stringify(id)}=m${name}.js`;
+  for (const a of anchors) if (body.includes(a)) (hits[a] = hits[a] || []).push(label);
 }
 console.log(JSON.stringify({ modules: table.length, hits }, null, 1));
