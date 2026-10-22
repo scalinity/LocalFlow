@@ -176,6 +176,10 @@ def inline_changes(source, output):
         if removed or added.strip():
             changes += 1
             if removed:
+                # The diff may assign the separating space to the
+                # deletion; a struck word still never touches its neighbour.
+                if pieces and not pieces[-1][1][-1:].isspace():
+                    pieces.append(("equal", " "))
                 pieces.append(("removed", removed))
                 if added.strip():
                     pieces.append(("equal", " "))
@@ -194,6 +198,9 @@ def inline_changes(source, output):
         if tag == "equal" and not (run is not None and not same.strip()
                                    and k + 1 < len(ops)):
             close()
+            if pieces and pieces[-1][0] == "removed" \
+                    and not same[:1].isspace():
+                pieces.append(("equal", " "))
             pieces.append(("equal", same))
             continue
         # A change, or whitespace between two changes: one edited stretch.

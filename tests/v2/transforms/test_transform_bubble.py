@@ -107,6 +107,23 @@ def test_action_variations():
     overlay.hide()
 
 
+def test_removed_words_keep_their_spacing():
+    """A struck word never touches its neighbours, whichever side's space
+    the diff assigns to the deletion; a pure deletion reads as its source."""
+    from localflow.v2.ui.transforms_panel import inline_changes
+    for source, output in [('So um basically I think', 'So basically I think'),
+                           ('Send the um draft today', 'Send the draft today'),
+                           ('Ship it now um', 'Ship it now'),
+                           ('Keep this one, um, okay', 'Keep this one, okay')]:
+        pieces, changes = inline_changes(source, output)
+        assert changes == 1, pieces
+        assert ''.join(text for _kind, text in pieces) == source, pieces
+        for i, (kind, _text) in enumerate(pieces):
+            if kind == 'removed':
+                assert i == 0 or pieces[i - 1][1][-1:].isspace(), pieces
+                assert i == len(pieces) - 1 or pieces[i + 1][1][:1].isspace(), pieces
+
+
 def test_seven_action_paths_keep_candidate_identity():
     c = Coordinator()
     panel = TransformPreviewPanel.alloc().init_panel(c)
@@ -135,4 +152,6 @@ if __name__ == '__main__':
     print('ok all seven action paths retain existing coordinator/candidate binding')
     test_action_variations()
     print('ok button/text variants, hover, sliders accessibility and actual native button routing')
-    print('3/3 passed')
+    test_removed_words_keep_their_spacing()
+    print('ok struck words keep their spacing on either side of a deletion')
+    print('4/4 passed')
