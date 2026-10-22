@@ -112,8 +112,8 @@ Result paths: `applied` (validated) · `needs_review`
 (`requirement_coverage_uncertain` — original spans kept, never
 auto-applied) · `no_changes` (the output equals the source; nothing to
 apply) · `fallback_original` (`transform_unavailable:<code>` — no key,
-no network, timeout, rejected key, rate limit, refusal, length, invalid
-answer — or an engine fault; never the local model). A source over
+no network, timeout, rejected key, rate limit, the account's usage
+limit, refusal, length, invalid answer — or an engine fault; never the local model). A source over
 12,000 characters refuses honestly, never truncates.
 
 ## The gate on the transform path (revision `claude-gate-1`)

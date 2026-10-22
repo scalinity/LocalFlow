@@ -134,7 +134,7 @@ parameters and no prefill.
 The result is `fallback_original` with
 `transform_unavailable:<code>` — `no_api_key`, `sdk_missing`,
 `network_unavailable`, `timeout`, `api_key_rejected`, `rate_limited`,
-`request_rejected`, `api_error_<status>`, `model_refused`,
+`usage_limit_reached` (the account's spending cap), `request_rejected`, `api_error_<status>`, `model_refused`,
 `output_limit`, `output_invalid` — which the panel states in words. The
 local model is never used: its no-ops read as success.
 

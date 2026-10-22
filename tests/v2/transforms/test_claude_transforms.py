@@ -108,6 +108,11 @@ def test_every_non_answer_has_a_reason():
         (anthropic.BadRequestError(
             "x", response=httpx2.Response(400, request=REQ), body=None),
          "request_rejected"),
+        (anthropic.BadRequestError(
+            "You have reached your specified API usage limits. You will"
+            " regain access on 2026-11-01 at 00:00 UTC.",
+            response=httpx2.Response(400, request=REQ), body=None),
+         "usage_limit_reached"),
         (anthropic.InternalServerError(
             "x", response=httpx2.Response(529, request=REQ), body=None),
          "api_error_529"),
@@ -121,8 +126,8 @@ def test_every_non_answer_has_a_reason():
         assert res.path == "fallback_original" and res.output == \
             _job().source, (code, res.path)
         assert res.reason == f"transform_unavailable:{code}", res.reason
-    print("ok  reasons: network, timeout, key, rate, request, status,"
-          " refusal and length each named")
+    print("ok  reasons: network, timeout, key, rate, usage limit, request,"
+          " status, refusal and length each named")
 
 
 def test_fallback_block_text_is_skipped():

@@ -157,6 +157,10 @@ def call(client, *, model, reasoning, system, messages, schema) -> dict:
     except anthropic.APIConnectionError as e:
         raise TransformUnavailable("network_unavailable") from e
     except anthropic.BadRequestError as e:
+        # A spending cap set on the account answers 400 like a malformed
+        # request; no SDK type tells them apart, only the error message.
+        if "usage limit" in str(getattr(e, "message", "")).lower():
+            raise TransformUnavailable("usage_limit_reached") from e
         raise TransformUnavailable("request_rejected") from e
     except anthropic.APIStatusError as e:
         raise TransformUnavailable(f"api_error_{e.status_code}") from e

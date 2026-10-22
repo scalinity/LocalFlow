@@ -49,6 +49,9 @@ _UNAVAILABLE = {
     "rate_limited": "Anthropic is rate-limiting requests; try again"
                     " shortly.",
     "request_rejected": "Anthropic rejected the request.",
+    "usage_limit_reached": "The Anthropic account has reached its usage"
+                           " limit. Raise it in the Anthropic Console or"
+                           " wait for it to reset.",
     "model_refused": "Claude declined to transform this text.",
     "output_limit": "Claude's answer ran past its length limit.",
     "output_invalid": "Claude's answer was not in the expected shape.",
