@@ -53,11 +53,10 @@ Each time one grader passed it and the other fell short, and the rule needs both
       evidence: ['amendment-2', 'open-decisions', 'results-stage2', 'stage2-logs'],
       levels: {
         1: `In order:
-- Sonnet’s grades are compared with the human check.
 - The paper is written around what the final set confirmed, and what it did not.
 - A decision: whether this Mac, and LocalFlow, should move from C to M2.`,
-        2: `None of these changes a result: the claims are decided. The human check can show how far to trust Sonnet’s stricter verdicts; it cannot reverse an outcome, because the rule was fixed before any final answer existed.`,
-        3: `Sonnet’s 150-case annotation pass is graded; its agreement analysis has not run {ev:amendment-2}. Open decisions for the author: venue, which model to ship, a policy-neutral evaluation, more seeds {ev:open-decisions}. The final analysis is committed as 6946892 {ev:results-stage2}.`,
+        2: `Neither changes a result: the claims are decided. Sonnet’s human check is done: of the four graders it agreed least with the person, and it reversed no outcome, because the rule was fixed before any final answer existed.`,
+        3: `Sonnet’s agreement with the human check ran on October 21: 43% overall over 150 pairs, kappa 0.19, no verdict missing; where the frozen rule picks a side it matches the person on 65 of 91 {ev:amendment-2} {ev:evidence-map}. Open decisions for the author: venue, which model to ship, a policy-neutral evaluation, more seeds {ev:open-decisions}. The final analysis is committed as 6946892 {ev:results-stage2}.`,
         4: `- Status as of the snapshot time shown at the foot of the page; the run logs are local {ev:stage2-logs}.`,
       },
     },
@@ -75,7 +74,6 @@ Each time one grader passed it and the other fell short, and the rule needs both
 - That the final answer key follows the earlier style is inferred from the shared pipeline, not read from the sealed file {ev:data-cards}.
 - Some documents still say “not sealed” (PREREGISTRATION.md lines 3 and 339; DEVIATIONS.md line 3) {ev:prereg}.`,
         4: `- The analysis plan speaks of “fourteen trained runs”; eleven were trained, and fourteen systems were judged.
-- LIMITATIONS gives 1,704 as the largest update count; A3 ran 1,736.
 - The packet holds only one C–M2 pair, so the human check cannot settle C against M2 directly {ev:evidence-map}.
 - The original “benchmarked best” comparison that chose Qwen3-4B left no record.
 - GPT’s main final-grading log is empty; its counts come from the job’s outcome record.`,
