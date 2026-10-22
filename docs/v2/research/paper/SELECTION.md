@@ -14,15 +14,15 @@
 | Median clean latency within 1.5 times C's | pass (1.76 s) | pass (1.76 s) | fail (2.88 s) |
 | Quantized size within 1.5 times C's | pass | pass | fail (2.1 times) |
 
-The damage gate compares point estimates. C has 2 damaged cases out of 431, M2 averages 2.3 over its seeds: the gate failed by about a third of a case. The exploratory contrast confirms it is noise:
-M2 minus C on Opus semantic damage is 0.08 points worse with a 95 percent interval from −0.77 to +0.62 (`results/RESULTS.md`, exploratory contrasts). gpt-6.1-sol gives C 0 damaged cases and M2 1.3.
+The damage gate compares point estimates. C has 2 damaged cases out of 431, M2 averages 2.3 over its seeds: the gate failed by about a third of a case. The exploratory contrast does not separate them:
+M2 minus C on Opus semantic damage is +0.08 points, with a 95 percent interval from −0.62 to +0.77 (`results/analysis.json`, `exploratory_contrasts`, which stores a damage contrast as C minus M2). gpt-6.1-sol gives C 0 damaged cases and M2 1.3.
 
-## What a noninferiority reading recommends (post hoc, labeled as such)
+## What a post-hoc variant of the rule recommends (labeled as such)
 
-The rule as written was strict. A reading that asks "is the candidate not worse than C within sampling noise" would pass M1 and M2 on the damage gate. Under that reading, with every other gate passed and the OpenAI cross-check satisfied (gpt-6.1-sol judged pass: M2 88.3 percent, C 83.8), the highest-scoring survivor is M1 (89.2) and M2 (88.9) is tied with it within seed spread (SD 1.1 and 0.7), so the tie rule prefers **M2** (it continues C's adapter and has the lowest unwanted-edit rate, 0.1 percent).
+The rule as written was strict. A variant that asks "is the candidate not worse than C within sampling noise" would pass M1 and M2 on the damage gate; it is a changed rule, not a non-inferiority result, because no damage margin was registered. Under that reading, with every other gate passed and the OpenAI cross-check satisfied (gpt-6.1-sol judged pass: M2 88.3 percent, C 83.8), the highest-scoring survivor is M1 (89.2) and M2 (88.9) is tied with it within seed spread (SD 1.1 and 0.7). The plan's first tie-break, the lower median latency, then names **M2** by about 1 ms (1761.3 against 1762.4 ms, within measurement noise; `results/latency.json`), and its second, continuing C's adapter, would name M2 as well.
 
-**Recommendation: M2 (4B continued from C, full v2 data, seed 0, selected checkpoint 426) is the candidate to replace C**, on these grounds: judged pass 3.5 points above C (interval excludes zero), engine damage 0.9 percent against C's 1.6, identical latency and size, consistent across three seeds.
-This is a recommendation beyond the pre-registered rule. It stands only if the author accepts the noninferiority reading, and it should be confirmed by:
+**Recommendation: M2 (4B continued from C, full v2 data, seed 0, selected checkpoint 426) is the candidate to replace C**, on these grounds: judged pass 3.5 points above C (interval excludes zero), engine damage 0.9 percent against C's 1.6, median latency and 4-bit size within 2 percent of C's (1.76 s against 1.79 s; 2.38 GB against 2.39 GB), consistent across three seeds.
+This is a recommendation beyond the pre-registered rule. It stands only if the author accepts the post-hoc variant, and it should be confirmed by:
 
 1. the human annotation packet (165 pairs; C against M2 and the other arms), because the references are not policy-neutral (FINDINGS 5);
 2. a policy-consistent confirmatory evaluation set with more list and question cases (OPEN_DECISIONS 2).

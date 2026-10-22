@@ -11,7 +11,7 @@ Listed with what each costs and what happens if it is left open. A writing sessi
 4. **Sealing and the final set.** Done: sealed 2026-10-17 at 4:47 p.m. EDT at commit 6a40964, before any human annotation existed. The record is
    `docs/v2/research/seal/FREEZE.json` (SHA-256 `f4a1ab44…ffa6`, the content of `seal/FROZEN`). The nine systems of Amendment 1 ran once each on the 955 final cases; the analysis is `results/stage2/analysis.json` (FINDINGS, 2026-10-18).
 7. **Footprint gate in the winner rule.** Closed: the plan allowed a change only before any judged result, and judged results exist, so the gate stands as written (4-bit weights at most 1.5 times C's size).
-10. **Which model to ship.** Decided 2026-10-21: LocalFlow ships M2 (`config.json`, commit d3d55a4), installed in the local model cache as `local/LocalFlow-Cleanup-M2-Qwen3.5-4B-4bit`; it replaced the stock Qwen3-4B-Instruct-2507 the app had been running. The decision was taken on the record as it stands: the pre-registered rule said keep C, the post-hoc noninferiority reading named M2 (SELECTION.md), and the final set did not confirm M2 over C under both graders (C1 passes under gpt-6.1-sol, not under Sonnet).
+10. **Which model to ship.** Decided 2026-10-21: LocalFlow ships M2 (`config.json`, commit d3d55a4), installed in the local model cache as `local/LocalFlow-Cleanup-M2-Qwen3.5-4B-4bit`; it replaced the stock Qwen3-4B-Instruct-2507 the app had been running. The decision was taken on the record as it stands: the pre-registered rule said keep C, the post-hoc variant of the rule named M2 (SELECTION.md), and the final set did not confirm M2 over C under both graders (C1 passes under gpt-6.1-sol, not under Sonnet).
 
 ## Still open
 
