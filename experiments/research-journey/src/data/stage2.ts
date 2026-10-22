@@ -47,7 +47,7 @@ export const TONIGHT: Lane[] = [
     id: 'C',
     label: 'C (installed model)',
     kind: 'local',
-    spans: [{ id: 'gen-C', label: 'Answers 955 cases', start: '2026-10-17T16:50:48-04:00', end: '2026-10-17T19:23:09-04:00', status: 'done', note: 'The model LocalFlow runs today.' }],
+    spans: [{ id: 'gen-C', label: 'Answers 955 cases', start: '2026-10-17T16:50:48-04:00', end: '2026-10-17T19:23:09-04:00', status: 'done', note: 'The installed model the study compared against.' }],
   },
   {
     id: 'M2',

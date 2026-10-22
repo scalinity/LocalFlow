@@ -27,12 +27,11 @@ const PRELIMINARY: Item[] = [
   { text: 'M2 beats C, the installed model', detail: 'GPT: 5.5 points ahead, clearly; Sonnet: 0.5 ahead, a near tie. C1 needs both, so it is not supported. Its safety half passed.', mark: { claim: 'not-supported' }, set: 'Final set, C1', to: { path: ['chapter', 'next'], at: 'preliminary' } },
   { text: 'The 4B is as good as the 9B', detail: 'GPT: level; Sonnet: 1.9 points behind, its interval reaching past the 2-point margin (C5).', mark: { claim: 'not-supported' }, set: 'Final set, C5', to: { path: ['chapter', 'next'], at: 'preliminary' } },
   { text: 'M2 keeps pace with Claude Sonnet', detail: 'GPT: 0.8 ahead, within the margin; Sonnet: 1.6 behind, its interval reaching past −3 points (H5).', mark: { claim: 'not-supported' }, set: 'Final set, H5', to: { path: ['chapter', 'next'], at: 'preliminary' } },
-  { text: 'Replace C with M2', detail: 'The practice-set rule said keep C, by a third of a case, and the final set did not confirm that M2 beats C. The choice is the author’s.', mark: { claim: 'observed' }, set: 'Recommendation', to: { path: ['chapter', 'results'], at: 'keep-c' } },
+  { text: 'Replace C with M2', detail: 'The practice-set rule said keep C, by a third of a case, and the final set did not confirm that M2 beats C. The author shipped M2 on October 21.', mark: { claim: 'observed' }, set: 'Recommendation', to: { path: ['chapter', 'results'], at: 'keep-c' } },
 ]
 
 const UNFINISHED: Item[] = [
   { text: 'The paper', detail: 'Written around what the final set confirmed, and what it did not.', mark: { step: 'pending' }, set: 'After the final results', to: { path: ['chapter', 'next'], at: 'unfinished' } },
-  { text: 'The decision to ship', detail: 'Whether this Mac, and LocalFlow, move from C to M2.', mark: { step: 'pending' }, set: 'After the final results', to: { path: ['chapter', 'next'], at: 'unfinished' } },
 ]
 
 function Column({ title, intro, items }: { title: string; intro: string; items: Item[] }) {

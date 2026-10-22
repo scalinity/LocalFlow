@@ -60,7 +60,7 @@ export const CLAIMS: Claim[] = [
       {
         set: 'development',
         status: 'not-supported',
-        summary: 'Ahead of Opus few-shot under every judge (+8.8, +6.7, +7.0 points; non-inferior). Level with Sonnet few-shot (+1.6, −0.2, −3.3), but the adjusted lower ends (−3.02, −4.64, −8.35) do not clear −3.0, so H5 as a whole is not supported.',
+        summary: 'Ahead of Opus few-shot under every judge (+8.8, +6.7, +7.0 points; non-inferior). Level with Sonnet few-shot (+1.6, −0.2, −3.2), but the adjusted lower ends (−3.02, −4.64, −8.35) do not clear −3.0, so H5 as a whole is not supported.',
         evidence: ['results-h5', 'findings'],
       },
       { set: 'final', status: 'not-supported', summary: 'Against Claude Opus with five examples, supported: M2 +1.3 points under Sonnet (99% interval −1.6 to +4.0) and +5.5 under gpt-6.1-sol (+2.4 to +8.5); its one refused case, counted against the claim, changes nothing (under Sonnet −1.5 to +4.1, under gpt-6.1-sol +2.5 to +8.6). Against Claude Sonnet, not supported: −1.6 under Sonnet (−4.6 to +1.5), whose lower end misses −3.0, and +0.8 under gpt-6.1-sol (−1.7 to +3.4).', evidence: ['results-stage2'] },
@@ -71,7 +71,7 @@ export const CLAIMS: Claim[] = [
     id: 'C1',
     stage: 'stage-2',
     title: 'Better than the installed model, and no less safe',
-    plain: 'Is M2 better than C, the model LocalFlow runs today, without changing meaning more often?',
+    plain: 'Is M2 better than C, the installed model the study compared against, without changing meaning more often?',
     formal: 'M2 − C judged pass above 0 under Sonnet and under gpt-6.1-sol; and C − M2 engine damage above −1.0 point (M2 at most 1 point more damage). Each component on the lower end of its 99% interval.',
     results: [
       { set: 'development', status: 'observed', summary: 'Not the test, which needs the final set: M2 − C judged pass +3.5 points under Opus (95% interval +1.2 to +5.8; exploratory); gpt-6.1-sol 88.3% against 83.8%; engine damage 0.9% against C’s 1.6%.', evidence: ['results-dev'] },

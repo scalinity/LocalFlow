@@ -52,11 +52,11 @@ Each time one grader passed it and the other fell short, and the rule needs both
       provenance: 'observed',
       evidence: ['amendment-2', 'open-decisions', 'results-stage2', 'stage2-logs'],
       levels: {
-        1: `In order:
+        1: `What remains:
 - The paper is written around what the final set confirmed, and what it did not.
-- A decision: whether this Mac, and LocalFlow, should move from C to M2.`,
-        2: `Neither changes a result: the claims are decided. Sonnet’s human check is done: of the four graders it agreed least with the person, and it reversed no outcome, because the rule was fixed before any final answer existed.`,
-        3: `Sonnet’s agreement with the human check ran on October 21: 43% overall over 150 pairs, kappa 0.19, no verdict missing; where the frozen rule picks a side it matches the person on 65 of 91 {ev:amendment-2} {ev:evidence-map}. Open decisions for the author: venue, which model to ship, a policy-neutral evaluation, more seeds {ev:open-decisions}. The final analysis is committed as 6946892 {ev:results-stage2}.`,
+The decision to ship is made: LocalFlow moved to M2 on October 21.`,
+        2: `Nothing that remains changes a result: the claims are decided. Sonnet’s human check is done: of the four graders it agreed least with the person, and it reversed no outcome, because the rule was fixed before any final answer existed.`,
+        3: `Sonnet’s agreement with the human check ran on October 21: 43% overall over 150 pairs, kappa 0.19, no verdict missing; where the frozen rule picks a side it matches the person on 65 of 91 {ev:amendment-2} {ev:evidence-map}. Open decisions for the author: venue, a policy-neutral evaluation, more seeds {ev:open-decisions}. The final analysis is committed as 6946892 {ev:results-stage2}.`,
         4: `- Status as of the snapshot time shown at the foot of the page; the run logs are local {ev:stage2-logs}.`,
       },
     },

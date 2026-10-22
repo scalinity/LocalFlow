@@ -29,7 +29,7 @@ This is a recommendation beyond the pre-registered rule. It stands only if the a
 
 ## What the final set showed
 
-Stage 2 tested M2 against C once on the 955 locked cases (C1, AMENDMENT-1). C1 is not supported: M2 minus C judged pass is +5.5 points under gpt-6.1-sol (99 percent interval +3.5 to +7.9) and +0.5 under Sonnet (−1.5 to +2.6), and the rule needs both graders; the engine-damage component passes (`results/stage2/analysis.json`). The final set therefore did not confirm M2 over C. The rule's outcome above and the post-hoc reading stand as written; choosing between them is OPEN_DECISIONS 10.
+Stage 2 tested M2 against C once on the 955 locked cases (C1, AMENDMENT-1). C1 is not supported: M2 minus C judged pass is +5.5 points under gpt-6.1-sol (99 percent interval +3.5 to +7.9) and +0.5 under Sonnet (−1.5 to +2.6), and the rule needs both graders; the engine-damage component passes (`results/stage2/analysis.json`). The final set therefore did not confirm M2 over C. The rule's outcome above and the post-hoc reading stand as written. M2 was shipped on 2026-10-21 as a product decision on that record (OPEN_DECISIONS 10).
 
 ## What the rule cannot say
 

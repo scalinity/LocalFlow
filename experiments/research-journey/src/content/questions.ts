@@ -48,7 +48,7 @@ export const QUESTIONS: Question[] = [
   },
   {
     q: 'What is established, what is preliminary, what is unfinished?',
-    a: 'Established by the final test: teaching beats size, the engine-checked data cuts meaning damage, the answer key’s style matters, and M2 keeps up with Claude Opus. Preliminary: M2 beating C, the 4B matching the 9B and M2 matching Claude Sonnet, each passed by one grader but not both. Unfinished: the paper and the decision to ship.',
+    a: 'Established by the final test: teaching beats size, the engine-checked data cuts meaning damage, the answer key’s style matters, and M2 keeps up with Claude Opus. Preliminary: M2 beating C, the 4B matching the 9B and M2 matching Claude Sonnet, each passed by one grader but not both. Unfinished: the paper. LocalFlow moved to M2 on October 21.',
     chapter: 'next',
     at: 'established',
   },

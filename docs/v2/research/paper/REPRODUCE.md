@@ -34,6 +34,10 @@ $PY experiments/cleanup-model-v2/tools/research_select.py docs/v2/research/paper
 $PY experiments/cleanup-model-v2/tools/research_report.py docs/v2/research/paper/results
 ```
 
+A re-run of this block also scores the two few-shot systems, whose development outputs now exist: `analysis.json` and the two
+normalized-reference supplementary analyses gain those arms and Holm p-values over all seven contrasts on the engine metrics;
+every other value is unchanged, and `data/manifest.json` records the checkout it ran on (DEVIATIONS, 2026-10-22).
+
 H5 on the development set (pre-registered; its own judge pass shows M2 seed 0 beside the two few-shot systems, see DEVIATIONS):
 
 ```sh

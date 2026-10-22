@@ -34,7 +34,7 @@ From `results/h5_development/analysis.json`: one judge pass showing M2 (seed 0, 
     Judged pass, M2 / Sonnet few-shot / Opus few-shot: Opus judge 90.3 / 88.6 / 81.4 percent; gpt-6.1-sol 88.6 / 88.9 / 81.9; Muse 84.7 / 87.9 / 77.7.
     - Against Opus few-shot, M2 is ahead under every judge (+8.8, +6.7 and +7.0 points); each adjusted interval excludes zero (lower ends +3.7, +2.3 and +1.6), so noninferiority holds.
       H5 registered only noninferiority, so M2's lead is an observation, not a supported superiority claim.
-    - Against Sonnet few-shot the differences are +1.6 (Opus judge), −0.2 (gpt-6.1-sol) and −3.3 points (Muse). The adjusted intervals' lower ends are −3.02, −4.64 and −8.35 against the −3.0 margin: the primary judge misses by 0.02 points, and 431 cases leave the intervals about ±4 to 5 points wide.
+    - Against Sonnet few-shot the differences are +1.6 (Opus judge), −0.2 (gpt-6.1-sol) and −3.2 points (Muse). The adjusted intervals' lower ends are −3.02, −4.64 and −8.35 against the −3.0 margin: the primary judge misses by 0.02 points, and 431 cases leave the intervals about ±4 to 5 points wide.
 14. **On the engine's checks M2 is ahead of both few-shot systems** (seed 0): self-correction success 91.3 percent against 62.3 (Sonnet) and 39.1 (Opus); no-op preserved 97.6 against 84.6 and 95.7; repair success 36.2 against 31.6 and 27.1; engine damage 0.7 against 1.9 and 1.2; Opus-judged unwanted edits 0.5 against 1.9 and 2.3.
     Opus-judged semantic damage is lowest for Sonnet few-shot: 0.2 percent against M2's 0.5 and Opus few-shot's 0.9.
     M2 runs on the device with no per-use cost; the few-shot systems' API costs are in the Claude ledger and not yet in `results/`.

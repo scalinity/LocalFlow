@@ -52,7 +52,7 @@ const LIST: Evidence[] = [
   { id: 'latency', title: 'Latency and memory', kind: 'result', path: `${K}results/latency.json`, visibility: 'public', shows: 'A clean sequential timing pass on the Mac: 4B models about 1.76 s median per cleanup, the 9B 2.88 s.' },
   { id: 'judge-costs', title: 'Recorded costs', kind: 'result', path: `${K}results/judge_costs.json`, visibility: 'public', shows: 'GPU pods $42.89 (billing report), Opus judging $14.25 (five passes), gpt-6.1-sol $3.72, Muse $0.95.' },
   { id: 'limitations', title: 'Limitations', kind: 'document', path: `${K}LIMITATIONS.md`, visibility: 'public', shows: 'The study’s stated limits: synthetic data written and judged by Claude, engine damage being circular for engine-filtered data, too few list and question cases for H2, references that are not policy-neutral.' },
-  { id: 'open-decisions', title: 'Open decisions', kind: 'document', path: `${K}OPEN_DECISIONS.md`, visibility: 'public', shows: 'Decisions that belong to the author: venue, which model to ship, a policy-neutral evaluation, more seeds.' },
+  { id: 'open-decisions', title: 'Open decisions', kind: 'document', path: `${K}OPEN_DECISIONS.md`, visibility: 'public', shows: 'Decisions that belong to the author: venue, a policy-neutral evaluation, more seeds.' },
   { id: 'reproduce', title: 'How to reproduce the results', kind: 'document', path: `${K}REPRODUCE.md`, visibility: 'public', shows: 'Every command that regenerates the result files, with the fixed seed and resample count.' },
 
   // Human check
