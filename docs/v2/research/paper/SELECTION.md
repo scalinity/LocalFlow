@@ -27,6 +27,10 @@ This is a recommendation beyond the pre-registered rule. It stands only if the a
 1. the human annotation packet (165 pairs; C against M2 and the other arms), because the references are not policy-neutral (FINDINGS 5);
 2. a policy-consistent confirmatory evaluation set with more list and question cases (OPEN_DECISIONS 2).
 
+## What the final set showed
+
+Stage 2 tested M2 against C once on the 955 locked cases (C1, AMENDMENT-1). C1 is not supported: M2 minus C judged pass is +5.5 points under gpt-6.1-sol (99 percent interval +3.5 to +7.9) and +0.5 under Sonnet (−1.5 to +2.6), and the rule needs both graders; the engine-damage component passes (`results/stage2/analysis.json`). The final set therefore did not confirm M2 over C. The rule's outcome above and the post-hoc reading stand as written; choosing between them is OPEN_DECISIONS 10.
+
 ## What the rule cannot say
 
 The earlier-data models (A2, A2prime) score as well or better on the judged pass rate and, at the final checkpoint, have no more flagged outputs than the new data; they are not candidates in the rule (they are the ablation of the earlier data). Which data to ship is a choice between more complete repairs (earlier policy) and restraint (new policy); the evidence in hand does not settle it.

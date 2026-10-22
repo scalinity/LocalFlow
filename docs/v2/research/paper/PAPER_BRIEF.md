@@ -21,7 +21,7 @@ dictation-cleanup work (see WRITING_GUIDE).
 
 ## What the evidence can support, in order of strength
 
-Decided by the analysis plan, not by this brief: read `results/RESULTS.md`. A claim without a "supported" status in EVIDENCE_MAP
+Decided by the analysis plan and Amendment 1, not by this brief: read `results/RESULTS.md` (development set) and `results/stage2/analysis.json` (final set). A claim without a "supported" status in EVIDENCE_MAP
 is written as an observation with its interval, or left out.
 
 ## Venues and dates (from the literature scan; verify before relying on them)

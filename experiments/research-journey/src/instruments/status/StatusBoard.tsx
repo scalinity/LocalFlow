@@ -31,7 +31,6 @@ const PRELIMINARY: Item[] = [
 ]
 
 const UNFINISHED: Item[] = [
-  { text: 'Sonnet is compared with the human check', detail: 'Sonnet has graded the 150 annotated practice cases; the agreement analysis has not run. It bears on how far to trust Sonnet’s stricter verdicts.', mark: { step: 'pending' }, set: 'Practice set', to: { path: ['chapter', 'graders'], at: 'human-check' } },
   { text: 'The paper', detail: 'Written around what the final set confirmed, and what it did not.', mark: { step: 'pending' }, set: 'After the final results', to: { path: ['chapter', 'next'], at: 'unfinished' } },
   { text: 'The decision to ship', detail: 'Whether this Mac, and LocalFlow, move from C to M2.', mark: { step: 'pending' }, set: 'After the final results', to: { path: ['chapter', 'next'], at: 'unfinished' } },
 ]

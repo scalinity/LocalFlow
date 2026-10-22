@@ -66,6 +66,25 @@ $PY experiments/cleanup-model-v2/tools/research_analysis.py docs/v2/research/pap
     --rewritten-judge openai=$A/judge/openai/final-c3-openai/verdicts.jsonl
 ```
 
+Judge–human agreement (ANALYSIS_PLAN rule; the three development judges' forward passes, and Sonnet 5.5's 150-case
+pass from AMENDMENT-2 item 3). The first command reproduces `agreement.json` exactly; the second adds Sonnet and writes
+`agreement-sonnet.json`, in which the first three judges are identical to `agreement.json`:
+
+```sh
+H=$A/research/annotation
+J="--judge anthropic=$A/judge/dev-main-anthropic/verdicts.jsonl --judge openai=$A/judge/openai/dev-main-openai/verdicts.jsonl --judge openrouter=$A/judge/openrouter/dev-main-openrouter/verdicts.jsonl"
+$PY -m v2.research_agreement $H/pairs.jsonl $H/pairs-key.json $H/annotations.jsonl --rule $H/agreement-rule.json --stage delivered $J --output $H/agreement.json
+$PY -m v2.research_agreement $H/pairs.jsonl $H/pairs-key.json $H/annotations.jsonl --rule $H/agreement-rule.json --stage delivered $J \
+    --judge sonnet=$A/judge/dev-packet-sonnet/verdicts.jsonl --output $H/agreement-sonnet.json
+```
+
+Agreement between the two final graders (post hoc; see DEVIATIONS):
+
+```sh
+$PY experiments/cleanup-model-v2/tools/research_reliability.py $A/research/results/stage2-judge-reliability.json \
+    --judge anthropic=$A/judge/final-main-anthropic/verdicts.jsonl --judge openai=$A/judge/openai/final-main-openai/verdicts.jsonl
+```
+
 Supplementary analyses (post hoc; see DEVIATIONS):
 
 ```sh

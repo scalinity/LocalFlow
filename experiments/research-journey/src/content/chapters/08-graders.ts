@@ -42,7 +42,7 @@ One honest wrinkle: the graders often called a pair a tie, while the person alwa
         3: `150 blinded pairs plus 15 duplicates, judged on October 17 between 5:03 and 7:03 p.m. ET (1 hour 25 minutes of active review), after the seal and before any final-set result existed {ev:commit-annotation}. Agreement where the frozen rule picks a side: Opus 91%, gpt-6.1-sol 98.5%, Muse 94%. Four-way kappa 0.25 to 0.29. The rule calls 72 to 84 of the 150 pairs a tie {ev:evidence-map}.`,
         4: `- Aggregates: docs/v2/research/paper/EVIDENCE_MAP.md, row “Judges agree with humans” {ev:evidence-map}; the annotation files and agreement analysis are local {ev:annotation-results}.
 - The packet holds only one C–M2 pair (the untuned 4B appears in 94 of 150), so it checks the graders but cannot settle C against M2 head to head.
-- Sonnet, a deciding final grader, had never graded a practice answer; it has now graded the 150 annotated cases, and its agreement analysis has not run yet.`,
+- Sonnet, a deciding final grader, had never graded a practice answer; it graded the 150 annotated cases after the seal, and its agreement analysis ran on October 21: kappa 0.19, and where the rule picks a side it matches the person on 65 of 91 pairs (71%), the lowest of the four graders {ev:evidence-map}.`,
       },
     },
     {
