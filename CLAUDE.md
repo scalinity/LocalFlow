@@ -64,3 +64,66 @@
 - The repository is public. Before pushing, scan what is being added for
   credentials and personal identifiers, and keep third-party material and
   private evidence out of the commit.
+
+## Reverse engineering with REA
+
+- REA (`mcp__rea__*`) is how LocalFlow learns how a reference app builds a
+  feature. Wispr Flow is the spec's competitive reference (S04); Your Voice
+  (ADR-0001) and the transforms rework both started from Flow's shipped
+  bundle. Reach for REA before designing or changing a LocalFlow feature
+  that mirrors Flow, and whenever a claim about Flow's behaviour needs
+  checking. LocalFlow's own code is read with ordinary file tools.
+- Record behaviour: endpoints, payload shapes, constants, outcome states,
+  what the user sees. Write LocalFlow's implementation from that record;
+  vendor code and prompt text stay out of this public repository.
+
+### Workflow for an Electron app
+
+Flow's bundle is `/Applications/Wispr Flow.app/Contents/Resources/app.asar`.
+
+1. Read the vendor's help center first with Firecrawl Pi
+   (`mcp__fcpi__firecrawl_scrape`). It names the shortcuts, limits and
+   error strings that become search anchors.
+2. `open_binary` on the asar, then `extract_artifact` with
+   `integrity_policy: "record-and-continue"`. Packaging re-signs the
+   unpacked `.node` modules, so ASAR integrity always contradicts them;
+   those few files are untrusted bytes and the rest extracts clean.
+3. Find anchors with a literal text search of the extracted
+   `.webpack/**/*.js`: endpoint paths, IPC channels, enum values.
+4. Split the bundle: `node scripts/rea/split_webpack.js <bundle>
+   <out-dir> <anchor...>` writes one file per webpack module and prints
+   which modules hold each anchor. Copy those modules into a directory
+   with a `package.json` (add a module they import by id, `n(65744)`, when
+   a trace has to cross into it), then run `analyze_javascript_application`
+   on that directory with `detail: "summary"`. Fifteen modules (300 KB)
+   gave complete application coverage and 23k data-flow relations.
+5. Read the selected modules for the facts. Use `trace_javascript_semantics`
+   or `trace_application_feature` on the retained evidence id when a seed
+   matches a graph node.
+6. Log what the client cannot show (server-side prompts) and any
+   code-versus-docs contradiction with `record_unknown`. Then
+   `export_evidence_bundle` and a `FINDINGS.md` into
+   `~/Library/Application Support/LocalFlow/v2-evidence/research/<app>-<version>-<topic>/`.
+7. `close_binary`, then delete `$TMPDIR/rea-extracted-*` (closing leaves
+   the extraction behind; Flow's is 138 MB) and the split copies.
+
+### Limits and gotchas
+
+- Analysis size is the module subset, never the bundle. The whole 134 MB
+  asar at an 8 GB heap dropped the MCP connection; the 9.8 MB main
+  bundle at 4 GB exhausted the worker heap and returned 0 modules with
+  `coverage: partial`.
+- A trace's `no-match` means the graph has no node for that seed, not that
+  the feature is absent. String-literal seeds miss paths passed as call
+  arguments or built in template literals; read the module for those.
+- `binary_session` (~230K characters) and `extract_artifact` (~280K)
+  overflow the tool result into a file. Query it with `jq`
+  (`.result.server_identity`, `.normalized_result.output_root`).
+- Keep the authorities apart in findings: REA labels code facts
+  `shipped-artifact` and reasoning `analyst-inference`, and docs are a
+  third source. Flow 1.6.1147's code caps transforms at 1,000 words while
+  its help center says 3,000; both are recorded as observed.
+- Observe running apps, LocalFlow included, through
+  `screencapture -x -o -l <window-id>`, Quartz window lists and the app's
+  own stores and logs. Claude Code's computer-use tools swallow the Escape
+  key system-wide until the turn ends.
