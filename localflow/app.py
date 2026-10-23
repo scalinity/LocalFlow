@@ -1788,10 +1788,15 @@ class AppDelegate(NSObject):
 
     @objc.python_method
     def tfRestoreReview(self, result, capture):
-        if not capture.get("_apply_started") and self._tf_active is None:
-            self._tf_arm_review(capture["operation_id"], capture, ready=True,
-                enabled=result.path in ("applied", "needs_review")
-                    and capture.get("can_replace", True) and not result.blocking_issues)
+        panel = self._tf_panel
+        if self._tf_active is None and panel is not None and panel._state.get("result") is result:
+            enabled = bool(not capture.get("_apply_started")
+                    and panel._buttons["panelAccept:"].isEnabled()
+                    and result.path in ("applied", "needs_review")
+                    and capture.get("can_replace", True) and not result.blocking_issues
+                    and (capture.get("buffer_edit") is None or capture["buffer_edit"].active))
+            panel._buttons["panelAccept:"].setEnabled_(enabled)
+            self._tf_arm_review(capture["operation_id"], capture, ready=True, enabled=enabled)
 
     @objc.python_method
     def tfRefineTransform(self, result, capture, defn):
@@ -2266,6 +2271,9 @@ class AppDelegate(NSObject):
         pack = self._tf_result_context(result)
         service = getattr(self, "_tf_intelligence", None)
         if pack and (service is None or not service.pack_valid(pack)):
+            review = getattr(self, "_tf_review", None)
+            if review is not None:
+                review["enabled"] = False
             self._tf_status("Context changed or was forgotten. Regenerate with current context before copying.")
             return False
         if not self._guarded_copy(result.output):

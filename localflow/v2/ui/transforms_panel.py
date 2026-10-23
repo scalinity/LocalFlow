@@ -549,6 +549,8 @@ class TransformPreviewPanel(NSObject):
         self.count.setStringValue_(f"Not applied: {message}")
         self._buttons["panelAccept:"].setEnabled_(False)
         self.panel.orderFrontRegardless()
+        if self._state.get("capture") is not None:
+            self.coordinator.tfRestoreReview(result, self._state["capture"])
 
     # ---- actions (main thread; the generation runs off it) -------------
 
@@ -562,12 +564,12 @@ class TransformPreviewPanel(NSObject):
             st["result"], st["capture"], st["candidate_id"])
 
     def panelCopy_(self, sender):
-        if hasattr(self.coordinator, "tfDismissReview"):
-            self.coordinator.tfDismissReview()
         st = self._state
         if st["result"] is not None:
             if self.coordinator.tfCopyTransform(st["result"]) is False:
                 return
+        if hasattr(self.coordinator, "tfDismissReview"):
+            self.coordinator.tfDismissReview()
         self.panel.orderOut_(None)
 
     def panelRetry_(self, sender):
@@ -616,6 +618,8 @@ class TransformPreviewPanel(NSObject):
         self._buttons["panelAccept:"].setEnabled_(False)
         self.count.setStringValue_(f"Replacement was not confirmed ({reason}). Copy or save the result.")
         self.panel.orderFrontRegardless()
+        if self._state.get("capture") is not None:
+            self.coordinator.tfRestoreReview(result, self._state["capture"])
 
     def panelApplyOther_(self, sender):
         self._choose_definition(sender, "panelOtherChosen:")
@@ -637,6 +641,8 @@ class TransformPreviewPanel(NSObject):
         if self._state.get("result") is result:
             self.count.setStringValue_(message)
             self.panel.orderFrontRegardless()
+            if self._state.get("capture") is not None:
+                self.coordinator.tfRestoreReview(result, self._state["capture"])
 
     @objc.python_method
     def reoffer_save(self, message, result):
@@ -651,6 +657,8 @@ class TransformPreviewPanel(NSObject):
                              f" Save to Scratchpad: {message}")
         self.count.setStringValue_(f"Save to Scratchpad: {message}")
         self.panel.orderFrontRegardless()
+        if self._state.get("capture") is not None:
+            self.coordinator.tfRestoreReview(result, self._state["capture"])
 
     def panelResultChosen_(self, sender):
         st = self._state

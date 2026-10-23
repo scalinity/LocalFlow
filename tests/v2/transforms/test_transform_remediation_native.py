@@ -181,9 +181,11 @@ def preview_copy_checks_context_and_preserves_source_recovery():
         result = replace(result, job=replace(result.job, context_pack=pack))
         notices, copies = [], []
         h.d._tf_intelligence = SimpleNamespace(pack_valid=lambda value: False)
+        h.d._tf_review = {"enabled": True}
         h.d._tf_status = notices.append
         h.d._guarded_copy = lambda text: copies.append(text) or True
         assert h.d.tfCopyTransform(result) is False
+        assert h.d._tf_review["enabled"] is False
         assert not copies and "forgotten" in notices[-1]
         source = replace(result, output=result.job.source, path="fallback_original")
         assert h.d.tfCopyTransform(source) is True
@@ -281,6 +283,44 @@ def preview_save_refuses_new_revoked_text_but_reconciles_committed_note():
     finally:
         if service:
             service.close()
+        h.close()
+
+
+@case
+def reopened_apply_and_save_recovery_restore_guard_without_second_apply():
+    from localflow.v2.ui.transforms_panel import TransformPreviewPanel
+    h = tp.Harness([1.0])
+    panel = None
+    try:
+        capture, defn, result = _captured(h, selection_target())
+        capture["operation_id"] = "recovery-review"
+        panel = TransformPreviewPanel.alloc().init_panel(h.d)
+        h.d._tf_panel = panel
+        restored = []
+        h.d._tf_arm_review = lambda token, snapshot, **state: restored.append((token, snapshot, state))
+        panel.show(result, capture, defn, None)
+        capture["_apply_started"] = True
+        h.d._tfApplyDone_({"state": "refused", "reason_code": "target_changed"}, result, capture)
+        assert panel.panel.isVisible() and not panel._buttons["panelAccept:"].isEnabled()
+        assert restored[-1] == ("recovery-review", capture, {"ready": True, "enabled": False})
+        # An unknown/failed save reopens the same unsent result with its guard.
+        capture.pop("_apply_started")
+        panel.show(result, capture, defn, None)
+        h.d._notes_store = None
+        panel.panelSaveToScratchpad_(None)
+        assert panel.panel.isVisible()
+        assert restored[-1] == ("recovery-review", capture, {"ready": True, "enabled": True})
+        # A disabled result cannot gain Enter-to-apply from recovery or menu close.
+        panel.reoffer("source changed", result)
+        assert restored[-1][2] == {"ready": True, "enabled": False}
+        panel.show(result, capture, defn, None)
+        capture["buffer_edit"] = SimpleNamespace(active=False)
+        h.d.tfRestoreReview(result, capture)
+        assert restored[-1][2] == {"ready": True, "enabled": False}
+        assert not panel._buttons["panelAccept:"].isEnabled()
+    finally:
+        if panel:
+            panel.panelDismiss_(None)
         h.close()
 
 

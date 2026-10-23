@@ -2,7 +2,7 @@
 
 Date: 2026-10-23 (US Eastern). Verdict: **IMPLEMENTED_WITH_BLOCKED_VERIFICATION**. Product implementation and the scoped primary workflow checks are complete. Eight old NativePeers worktrees are now fully archived and verified. Deletion remains blocked until a normal Mac reboot proves that their unrecorded old descendants ended. All recorded process births are dead; their original missing output-closure evidence remains unproved. No active coding session was stopped.
 
-Qualification build 26 is installed in `/Applications/LocalFlow.app`. The completion audit added the visible, cancellable semantic-search setup path, inherited-context revocation checks for saved prompt refinement/copy/apply, and local Git identity in frozen project context. Existing limitations and earlier blocked attempts remain recorded below. This verdict does not claim universal application compatibility or empirically perfect model output.
+Qualification build 28 is installed in `/Applications/LocalFlow.app`. The completion audit added the visible, cancellable semantic-search setup path, inherited-context revocation checks for saved prompt refinement/copy/apply, and local Git identity in frozen project context. Existing limitations and earlier blocked attempts remain recorded below. This verdict does not claim universal application compatibility or empirically perfect model output.
 
 ## Revisions and deployment
 
@@ -14,12 +14,12 @@ Qualification build 26 is installed in `/Applications/LocalFlow.app`. The comple
 - Completion-audit implementation: `8513e2397c02d15fd2e476954b0c9f81a958890b`, merged/pushed to main.
   The native-preview follow-up in the containing commit adds Copy, new-note Save and native-to-Hub publication validation. Installed production/frontend files match the combined committed source; the build
   retains its honest pre-commit identity. The finished follow-up branch was removed locally and remotely after ancestry and open-PR checks.
-- Qualification build-time HEAD: `965da12c9ae0a54200dae7cf6df42522392d5fe4`
+- Qualification build-time HEAD: `116ffba52cebf46a92bd0fb793008c176d0650d4`
   plus the implementation snapshot. The containing source commit records that
   snapshot; BUILD.json retains the honest pre-commit dirty build identity.
   Runtime and frontend content hashes above identify the deployed bytes.
-- Installed bundle: `/Applications/LocalFlow.app`, qualification build 26.
-- Production SHA-256: `088587e70845d75b281b1d678fb9ee5361d6bd97761d06bebd282adbbec5659c`.
+- Installed bundle: `/Applications/LocalFlow.app`, qualification build 28.
+- Production SHA-256: `f787f6e6760622fb41e639bb7e976f32468183f82597aa8a59bfb169f283c31e`.
 - Frontend source SHA-256: `1ad0bb2776f422362777dd015976872b71e0cc0c142286acfb711c417f4508b5`.
 - Frontend build SHA-256: `571abba5e96a96af5dcada3add91b7d62cbcf557d2bbfe07e2689b328871a871`.
 - Native executable SHA-256: `ca60bbbadb12e32838956c83b992753b35fa2f86e57773f9bb67b593ae68f6d9`.
@@ -245,6 +245,28 @@ PASS refers to stated scope. A blocked or unrun check is not counted as a pass.
 
 ## Verification and private records
 
+Build 28 additionally keeps the scoped review guard when Copy is refused and
+restores it when failed Apply/Save reopens the preview. A claimed application,
+disabled action or inactive logical buffer gets a disabled lease, which consumes
+Return without applying again. No generating/capture/insertion/provider module
+changed in this follow-up.
+
+- `installed-native28-tests.log`: 21/21 actual AppDelegate cases using installed
+  modules, including failed Apply/Save recovery and disabled/inactive-buffer checks.
+- `installed-panel28-tests.log`: 5/5 actual AppKit panel cases, including Copy
+  refusal driving the production ReviewKeyLease through Return/keypad down, repeat
+  and up. The desktop is isolated; this is not a new live event-tap run.
+- `copy-recovery-key-lease-regressions27.log`: 5/5 press/hold/disabled/IME/race
+  regressions; `installed-memory28-tests.log`: 20/20; packaging28 and installed28:
+  16/16 each. Static cross-vendor review findings and explicit dispositions remain
+  private; no review output is treated as runtime proof.
+- `native24-to-build28-key-source-parity.json`: nine full tap/lease/focus/
+  insertion/compiler/provider modules and four core native arm/dismiss/key/apply
+  functions are identical to the actual build-24 native event checks. Recovery
+  UI callbacks and review restoration are covered by the new native object tests.
+
+Earlier build-26 checks remain recorded as performed:
+
 Build 26 adds native Copy, new-note Save and Refine publication guards. Chained
 model sources retain context on initial workspace creation; unchanged original
 user text remains copyable. A prior committed note survives forgetting and an
@@ -454,9 +476,9 @@ passing. This is a scoped cleanup change, not a new whole-product NativePeers
 qualification.
 
 The only indexed LocalFlow application is `/Applications/LocalFlow.app`; the
-separate LocalFlow Annotate research app remains. The build-26 duplicate was
+separate LocalFlow Annotate research app remains. Build duplicates through 28 were
 unregistered and removed after checking all 16,251 non-bytecode files/links
-against the installed app. Prior app/data recovery snapshots remain compressed
+against their installed app snapshot. Prior app/data recovery snapshots remain compressed
 in ignored storage while the archive volume is disconnected. The unrelated
 paper branch/research files, dirty orchestration page and other active
 NativePeers review worktree remain owned by their existing sessions.

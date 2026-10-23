@@ -77,20 +77,20 @@
       "state": "IMPLEMENTED_WITH_BLOCKED_VERIFICATION",
       "baseline_head": "96a65f86c5ae7a0844b95a68d5008e91ff5a6393",
       "source_state": "Core implementation committed on main. Completion-audit follow-up source is recorded in the containing commit; installed production/frontend manifests match the checked-in files.",
-      "installed_state": "Qualification build26 in /Applications/LocalFlow.app; production 088587e70845d75b281b1d678fb9ee5361d6bd97761d06bebd282adbbec5659c; schema16; packaging16/16.",
+      "installed_state": "Qualification build28 in /Applications/LocalFlow.app; production f787f6e6760622fb41e639bb7e976f32468183f82597aa8a59bfb169f283c31e; schema16; packaging16/16.",
       "ownership": "Integrator owns compiler/schema/app/insertion/key routing. Implementation lanes and native qualification completed within recorded test scopes.",
       "source_contract": "docs/v2/contracts/transforms.md",
       "private_spec": "retained in ignored docs/v2/private/transforms-intelligence; not public",
-      "verified": "Transforms170, integrations109, memory42, installed backend20, native coordinator20, frontend41, Svelte0/0, bundle16/16. Build26 native Copy/new-note Save/Refine guards tested against installed modules with desktop isolation. Earlier actual keyboard/app checks retain their exact build and scope in the qualification report.",
+      "verified": "Transforms170, earlier integrations109/memory42/frontend41/Svelte0/0 retained; installed build28 native coordinator21, panel5, memory20, packaging16/16. Production key lease tests5 and current Codex0.164 actual editor roundtrip pass. Nine key/focus/insertion/provider/compiler modules plus four core native functions remain byte/AST-identical to actual native build24 event checks; recovery callbacks tested with installed modules and desktop isolation.",
       "remaining": [
         "A normal Mac reboot is required before retiring eight archived NativePeers worktrees: old descendant captures and output EOF were not retained; current boot predates their launches. All eight archives verified; all eight real retirement attempts refused before deletion.",
-        "ORCHESTRATION.html remains dirty under existing ownership. Its owner should reflect build26, completed native preview-context audit and archived worktrees waiting for reboot."
+        "ORCHESTRATION.html remains dirty under existing ownership. Its owner should reflect build28, completed native preview-context audit and archived worktrees waiting for reboot."
       ],
       "permission_regression": "Native executable owns LocalFlow identity and permission grant; tap readiness blocks shortcuts until active. Correct original source/range and terminal pane are revalidated; actual installed ChatGPT and terminal key/apply checks now pass within documented scopes.",
       "unrelated_work": "Existing paper build outputs and original branches preserved.",
       "qualification_record": "docs/v2/acceptance/TRANSFORMS-INTELLIGENCE-QUALIFICATION.md",
       "evaluation_budget": {
-        "known_token_priced_usd": 32.5750533,
+        "known_token_priced_usd": 32.6097813,
         "unknown_reserved_usd": 29.91948,
         "unknown_calls": 20,
         "working_ceiling_usd": 80,
@@ -134,7 +134,8 @@
         "worker_archive_location": ".worktrees/.archives/<worker-id>/",
         "nativepeers_cleanup_commit": "c1f1b1f148d11afddbfcd819b084fa632d6cbf5a",
         "followup_builds_22_through_26_removed": true,
-        "private_worker_archive_record": "build/transforms-intelligence/nativepeers-real8-archive-report.json"
+        "private_worker_archive_record": "build/transforms-intelligence/nativepeers-real8-archive-report.json",
+        "followup_builds_22_through_28_removed": true
       },
       "qualification_report": "docs/v2/acceptance/TRANSFORMS-INTELLIGENCE-QUALIFICATION.md",
       "implementation_commit": "16c50dc846b94c8a6d21e2f7afb3623fdc72b939",
@@ -152,7 +153,8 @@
       },
       "native_preview_context": "Copy rejects revoked grounding; new Scratchpad saves and native-to-Hub assistant publication validate on the Store writer. Chained model sources keep initial grounding. Prior committed notes and ordinary source-text recovery remain available.",
       "native_preview_context_commit": "422fa9bb340199bb829aeb7ea9a81c5e7719945b",
-      "current_codex_editor_qualification": "0.164.0 actual external-editor accept/reopen/cancel PASS; no model call, raw Return or unframed newline; owned PTY closed."
+      "current_codex_editor_qualification": "0.164.0 actual external-editor accept/reopen/cancel PASS; no model call, raw Return or unframed newline; owned PTY closed.",
+      "recovery_key_guard": "Refused Copy retains/restores its scoped lease. Failed Apply/Save reopens with a guard; claimed applications, disabled results and inactive logical buffers cannot apply again. Down/repeat/up tested for Return and keypad; held-key latches survive disarm."
     }
   },
   "historical_implementation": {

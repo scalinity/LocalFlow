@@ -132,7 +132,8 @@ def test_seven_action_paths_keep_candidate_identity():
     for method, expected in [('panelAccept_', 'tfAcceptTransform'), ('panelCopy_', 'tfCopyTransform'), ('panelRetry_', 'tfRetryOriginal'), ('panelSaveToScratchpad_', 'tfSaveToScratchpad'), ('panelConfigure_', 'openHub_')]:
         panel.show(r, capture, defn, candidate)
         getattr(panel, method)(None)
-        assert c.calls[-1][0] == expected
+        action = next(call for call in reversed(c.calls) if call[0] != 'tfDismissReview')
+        assert action[0] == expected
         if expected == 'tfAcceptTransform':
             assert c.calls[-1][1] == (r, capture, candidate)
     sender = Obj(representedObject=lambda: 'other-transform')
@@ -146,15 +147,35 @@ def test_seven_action_paths_keep_candidate_identity():
 
 
 def test_copy_refusal_keeps_its_visible_recovery_message():
+    from localflow.v2.transforms.review_keys import ReviewKeyLease
     class RefusingCoordinator(Coordinator):
+        def __init__(self):
+            super().__init__()
+            self.review = ReviewKeyLease(lambda action, token: self.calls.append((action, token)))
+            self.restorations = 0
+        def tfRestoreReview(self, value, source):
+            self.restorations += 1
+            self.review.arm('candidate', 123, ready=True, enabled=panel._buttons['panelAccept:'].isEnabled())
+        def tfDismissReview(self):
+            self.calls.append(('tfDismissReview', ()))
+            self.review.disarm()
         def tfCopyTransform(self, value):
             panel.reoffer_copy('Wait for the current paste, then try Copy again.', value)
             return False
     panel = TransformPreviewPanel.alloc().init_panel(RefusingCoordinator())
     r = result('Source.', 'Output.')
     panel.show(r, {'source': 'Source.'}, Obj(name='Polish'), 'candidate')
+    panel.coordinator.review.arm('candidate', 123, ready=True, enabled=True)
     panel.panelCopy_(None)
     assert panel.panel.isVisible()
+    assert not any(name == 'tfDismissReview' for name, _args in panel.coordinator.calls)
+    assert panel.coordinator.review.lease is not None
+    assert panel.coordinator.restorations == 1
+    for code in (36, 76):
+        assert panel.coordinator.review.handle('down', code, pid=123)
+        assert panel.coordinator.review.handle('down', code, repeat=True, pid=123)
+        assert panel.coordinator.review.handle('up', code, pid=123)
+    assert panel.coordinator.calls == [('accept', 'candidate'), ('accept', 'candidate')]
     assert panel._state['result'] is r
     assert 'try Copy again' in panel.count.stringValue()
     panel.panelDismiss_(None)
