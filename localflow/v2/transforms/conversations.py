@@ -205,15 +205,33 @@ class PromptSessions:
                 raise ValueError("stale_revision")
             if revision_id not in {r["revision_id"] for r in session["revisions"]}:
                 raise ValueError("revision_not_found")
-            selected = next(r for r in session["revisions"]
-                            if r["revision_id"] == revision_id)
-            if validate is not None and not validate(db, selected["context"]):
+            branch = {**session, 'canonical_revision': revision_id}
+            if validate is not None and not all(validate(db, pack) for pack in self.contexts(branch)):
                 raise ValueError("context_revoked")
             db.execute("UPDATE prompt_sessions SET canonical_revision=?,"
                        "revision=revision+1,updated_at=? WHERE session_id=?",
                        (revision_id, ids.now_utc_iso(), session_id))
             return self._read(db, session_id)
         return submit(self.store, op)
+
+    @staticmethod
+    def contexts(session):
+        """Grounding inherited by the canonical text since its last user revision.
+
+        A refinement can retain facts even when its own retrieval finds nothing.
+        Its parent contexts therefore remain dependencies. Deliberate manual
+        text is an independent user document; forgetting does not rewrite it.
+        """
+        by_id = {r['revision_id']: r for r in session['revisions']}
+        current = by_id[session['canonical_revision']]
+        contexts = []
+        while current:
+            if current.get('context'):
+                contexts.append(current['context'])
+            if current['kind'] in ('source', 'manual'):
+                break
+            current = by_id.get(current['parent_revision'])
+        return tuple(contexts)
 
     @staticmethod
     def instructions(session):

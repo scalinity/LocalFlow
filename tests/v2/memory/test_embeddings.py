@@ -19,6 +19,20 @@ class DownloadResponse(io.BytesIO):
 
 
 class EmbeddingBoundaryTests(unittest.TestCase):
+    def test_complete_owned_cache_precedes_shared_huggingface_cache(self):
+        with tempfile.TemporaryDirectory() as td, patch.object(Path, 'home', return_value=Path(td)):
+            owned = MiniLMEmbedding.cache_dir()
+            shared = Path(td) / '.cache/huggingface/hub' / (
+                'models--' + MiniLMEmbedding.model_id.replace('/', '--')) / 'snapshots' / MiniLMEmbedding.revision
+            for root, value in ((owned, b'owned'), (shared, b'shared')):
+                for local, remote in MiniLMEmbedding.artifacts.items():
+                    path = root / (local if root == owned else remote)
+                    path.parent.mkdir(parents=True, exist_ok=True)
+                    path.write_bytes(value)
+            self.assertEqual(MiniLMEmbedding().model_dir, owned)
+            (owned / 'model.onnx').unlink()
+            self.assertEqual(MiniLMEmbedding().model_dir, shared)
+
     def test_existing_complete_cache_is_reused_without_network(self):
         with tempfile.TemporaryDirectory() as td:
             path = Path(td)
@@ -27,6 +41,22 @@ class EmbeddingBoundaryTests(unittest.TestCase):
             with patch('urllib.request.urlopen', side_effect=AssertionError('unexpected_download')):
                 result = MiniLMEmbedding.download(path)
             self.assertTrue(all(item['cached'] for item in result.values()))
+
+    def test_corrupt_tokenizer_generic_sdk_error_retains_lexical_fallback(self):
+        with tempfile.TemporaryDirectory() as td:
+            root = Path(td)
+            for name in MiniLMEmbedding.artifacts:
+                (root / name).write_bytes(b'corrupt fixture')
+            runtime = types.SimpleNamespace(SessionOptions=lambda: types.SimpleNamespace(),
+                InferenceSession=lambda *args, **kwargs: object())
+            tokenizer = types.SimpleNamespace(Tokenizer=types.SimpleNamespace(
+                from_file=lambda _: (_ for _ in ()).throw(Exception('invalid tokenizer JSON'))))
+            with patch.dict('sys.modules', onnxruntime=runtime, tokenizers=tokenizer):
+                embedding = MiniLMEmbedding(root)
+                self.assertIsNone(embedding.encode('Keep keyword search available.'))
+            self.assertEqual(embedding.unavailable_reason, 'local_embedding_model_unavailable')
+            self.assertIsNone(embedding._session)
+            self.assertFalse(embedding.status()['ready'])
 
     def test_download_is_explicit_cancellable_and_preserves_existing_model(self):
         with tempfile.TemporaryDirectory() as td:
@@ -61,6 +91,13 @@ class EmbeddingBoundaryTests(unittest.TestCase):
             response.headers['Content-Length'] = '1000'
             with patch('urllib.request.urlopen', return_value=response):
                 with self.assertRaisesRegex(ValueError, 'incomplete'):
+                    MiniLMEmbedding.download(td)
+            self.assertEqual([], list(Path(td).iterdir()))
+
+    def test_unexpected_model_bytes_are_not_published(self):
+        with tempfile.TemporaryDirectory() as td:
+            with patch('urllib.request.urlopen', return_value=DownloadResponse(b'unexpected model')):
+                with self.assertRaisesRegex(ValueError, 'checksum_mismatch'):
                     MiniLMEmbedding.download(td)
             self.assertEqual([], list(Path(td).iterdir()))
 

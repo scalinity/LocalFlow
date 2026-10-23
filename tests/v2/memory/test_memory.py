@@ -87,6 +87,21 @@ class MemoryTests(unittest.TestCase):
         with self.assertRaises(ValueError):
             self.memory.search('server', project_id='invented')
 
+    def test_scoped_pack_records_available_git_identity_without_importing_files(self):
+        import subprocess
+        root = self.root / 'one'
+        for args in (('init', '-q'), ('remote', 'add', 'origin', 'git@example.test:team/one.git')):
+            subprocess.run(['/usr/bin/git', '-C', str(root), *args], check=True, capture_output=True)
+        self.memory.remember('The server uses Python.', project_id=self.one)
+        pack = self.memory.search('server', project_id=self.one)
+        self.assertEqual(len(pack.workspaces), 1)
+        self.assertEqual(pack.workspaces[0].remote, 'example.test/team/one')
+        self.assertEqual(pack.workspaces[0].root, str(root.resolve()))
+        self.assertEqual(pack.workspaces[0].observed_at, self.now[0])
+        self.assertEqual(ContextPack.from_dict(pack.to_dict()), pack)
+        self.assertEqual(self.count('memory_sources'), 1)
+        self.assertFalse(self.memory.search('server', project_id=self.two).workspaces)
+
     def test_conflict_correction_and_stale_revision(self):
         old = self.memory.remember('The backend uses Python.', project_id=self.one, key='stack')
         new = self.memory.remember('The backend uses Rust.', project_id=self.one, key='stack')

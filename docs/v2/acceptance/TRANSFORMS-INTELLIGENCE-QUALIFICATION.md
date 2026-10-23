@@ -1,30 +1,23 @@
 # Transforms intelligence qualification
 
-Date: 2026-10-23 (US Eastern). Verdict: **COMPLETE_VERIFIED** for AC01–AC22 within the recorded test scopes.
+Date: 2026-10-23 (US Eastern). Verdict: **IMPLEMENTED_WITH_BLOCKED_VERIFICATION**. Product implementation and the scoped primary workflow checks are complete. The separate cleanup request remains blocked: NativePeers refuses eight retained worktrees because resumed ownership or owned-process/output closure is unproved. Those refusals are not passes and no forced removal was performed.
 
-The implementation and rebuilt frontend are installed in qualification build 21.
-The primary ChatGPT, zsh and Codex paths have real installed-app acceptance
-records. Canonical refinement/apply-back, a physical Fn speech sample into
-ChatGPT, Scratchpad Enter, and real native focus/menu/IME delivery have also been
-checked. Counts, failures and earlier blocked attempts are retained separately.
-This verdict does not claim universal application compatibility or perfect model
-output. Tool-owned worktree cleanup remains refused, independently of the product
-gates; the exact retained work is listed below.
+Qualification build 25 is installed in `/Applications/LocalFlow.app`. The completion audit added the visible, cancellable semantic-search setup path, inherited-context revocation checks for saved prompt refinement/copy/apply, and local Git identity in frozen project context. Existing limitations and earlier blocked attempts remain recorded below. This verdict does not claim universal application compatibility or empirically perfect model output.
 
 ## Revisions and deployment
 
 - Repository: `scalinity/LocalFlow`; integrated branch `main`.
 - Implementation commit: `16c50dc846b94c8a6d21e2f7afb3623fdc72b939`, pushed to origin/main.
-- Qualification build-time HEAD: `96a65f86c5ae7a0844b95a68d5008e91ff5a6393`
+- Qualification build-time HEAD: `4a6d7624cdd24e28d38efa18d09f44f82c4121a7`
   plus the implementation snapshot. The containing source commit records that
   snapshot; BUILD.json retains the honest pre-commit dirty build identity.
   Runtime and frontend content hashes above identify the deployed bytes.
-- Installed bundle: `/Applications/LocalFlow.app`, qualification build 21.
-- Production SHA-256: `69147d51c3d1ff1e4fa2c5fa0c1617252bc468a080770ddce45a8821c3026933`.
-- Frontend source SHA-256: `a3b569543ebbd59a4ac62b06028722d110405982daa25ff9b152f725aff91000`.
-- Frontend build SHA-256: `172826803fbba1ea899427aaa510a6ccc5a6092c394563e6e0153794ee5fc4db`.
+- Installed bundle: `/Applications/LocalFlow.app`, qualification build 25.
+- Production SHA-256: `8e10636d55a130da59324c09f43a370ab4993f1763d137539ec373d6225a81a9`.
+- Frontend source SHA-256: `1ad0bb2776f422362777dd015976872b71e0cc0c142286acfb711c417f4508b5`.
+- Frontend build SHA-256: `571abba5e96a96af5dcada3add91b7d62cbcf557d2bbfe07e2689b328871a871`.
 - Native executable SHA-256: `ca60bbbadb12e32838956c83b992753b35fa2f86e57773f9bb67b593ae68f6d9`.
-- Store schema 16. Installed bundle passes all 16 packaging/provenance checks.
+- Store schema 16. Installed bundle passes all 16 packaging/provenance checks. The build-time dirty identity is retained; content hashes identify the deployed source.
 
 The specification and kickoff files were moved from Downloads into descriptively
 named files under ignored `docs/v2/private/transforms-intelligence/`. Original
@@ -92,7 +85,24 @@ credentials and recovery data remain outside public source.
     AXMenuOpened now permanently invalidates that candidate's focus lease. An
     actual menu received Return and ran a harmless counter action, with no preview
     acceptance. Native input-method composition also received Return normally.
-14. Definition authoring sometimes changed task nesting, audience/actor roles or
+14. A cached semantic model had no user-facing setup path when absent. Memories
+    now exposes a native background setup job with progress and cancellation.
+    It checks existing data locally, stages missing/corrupt assets, verifies the
+    pinned artifact hashes, validates CPU inference and publishes a complete cache
+    generation under the cancellation lock. Failed publication restores the prior
+    cache. Cancel/failure refreshes actual status; it does not claim to undo a
+    cache generation whose publication already completed.
+15. Later prompt refinements could retain facts from an ancestor even when their
+    own retrieval pack was empty. Copy/refine/select/apply and cached job reads now
+    validate that entire selected branch. Provider admission, writer publication
+    and queued insertion recheck it. Revoked context previews are removed from
+    outbound session views. Saved prompt text stays as a document; using that
+    assistant branch again requires Original or a deliberate manual revision.
+16. Approved project paths omitted available Git identity. Frozen context now
+    records separate resolved workspaces, sanitized remote identity, HEAD and
+    observation time using bounded local Git reads. It contacts no remote and
+    imports no files. Missing roots retain notes/source-only operation.
+17. Definition authoring sometimes changed task nesting, audience/actor roles or
     quantity scope. Its generic contract, independent definition review and custom
     verifier now cover those relations. Completed repairs compact repeated history
     while retaining the frozen intention, reviewed candidate, user constraints and
@@ -154,7 +164,7 @@ No silent shortcut binding, auto-apply or overwriting is introduced. Evaluation
 uses immutable request/fixture/context/compiler/validator/model/judge identities,
 explicit attempt IDs, preflight reservations and SDK retries disabled.
 
-Known token-priced usage is **$31.6939933**; unknown or
+Known token-priced usage is **$32.0991873**; unknown or
 unfinished calls retain **$29.91948** in conservative reservations
 (**20** calls). Reservations are not charges. Additional frugal API
 spending is authorized; the $80 working tranche is an internal resumable bound.
@@ -206,7 +216,7 @@ PASS refers to stated scope. A blocked or unrun check is not counted as a pass.
 | AC01 Baseline | PASS | Remote/HEAD/worktrees/ownership/build manifests recorded; unrelated research preserved |
 | AC02 Prompt quality | PASS | Frozen final and matched comparisons; timing target miss disclosed |
 | AC03 Independence | PASS | All-source independent verification, literal/grounding and omission fixtures |
-| AC04 Native flow | PASS | Installed ChatGPT build 21, Claude build 18, Chrome build 18 core flow; TextEdit native helper; exact scope and cleanup limits above |
+| AC04 Native flow | PASS | Installed ChatGPT build 24 ordinary/full-screen and separate native status-menu path; earlier Claude/Chrome/TextEdit scopes retained; cleanup limits recorded |
 | AC05 Source accuracy | PASS | Exact native selections and ZLE/Codex composer readbacks; wrong-source strings excluded |
 | AC06 Terminal | PASS | Actual installed Ghostty ZLE and Codex editor round trips; PTY stale/region/Unicode cases, no execution |
 | AC07 Enter apply | PASS | Installed ChatGPT Return/keypad, terminal repeats, instrumented zero-Return counters; scope limits above |
@@ -218,9 +228,9 @@ PASS refers to stated scope. A blocked or unrun check is not counted as a pass.
 | AC13 AI authoring | PASS | Real tool loop, production sample tests, refine/save/reload/idempotence; final 12/12 families on fresh samples |
 | AC14 Suggestions | PASS | General/personalized pipeline, eligibility, dismissals, category filtering and source deletion |
 | AC15 Conversation | PASS | Live canonical refinement/manual edit/apply-back; actual UI clearing of four sessions, persistent CAS/version tests, cleared-session route-remount regression |
-| AC16 Context | PASS | Two-project/off generation, measured semantic retrieval, isolation/freshness/conflict tests |
+| AC16 Context | PASS | Installed build 25 real CPU setup/reuse; cancellable staged downloads/repair verified through real Store jobs with HTTP fixtures and four UI variants; two-project/off generation, measured retrieval, Git identity/isolation/freshness/conflict checks |
 | AC17 Memory | PASS | Capture/confirm/correct/scope/pause/forget/restart tests; eligible extraction measured |
-| AC18 Forgetting | PASS | Extraction/index/retrieval/publication races and atomic source-derived purging |
+| AC18 Forgetting | PASS | Extraction/index/retrieval/publication races, inherited assistant context checked before provider/copy/select/apply and on publication; atomic source-derived purging. Deliberate user documents remain independent |
 | AC19 Agent boundary | PASS | Bounded native tools, cancellation, source revocation before subsequent admission, explicit saves |
 | AC20 Model choice | PASS | Separate role pipelines, measured model/effort selection, cost/latency, final sample exposure disclosed |
 | AC21 Dock | PASS | Native app name/icon/menu/lifecycle and own permissions; no duplicate native instance |
@@ -228,7 +238,44 @@ PASS refers to stated scope. A blocked or unrun check is not counted as a pass.
 
 ## Verification and private records
 
-Records are in ignored `build/transforms-intelligence/`, including:
+Records are in ignored `build/transforms-intelligence/`, including the following
+completion-audit checks (suites overlap and are not summed):
+
+- `final25-transforms-unittest.log`: 168 passing cases;
+  `final25-integrations-unittest.log`: 109 passing cases;
+  `final25-memory-unittest.log`: 42 passing cases, actual MiniLM recall 33/36
+  and zero cross-scope disclosures.
+- `installed-memory25-tests.log`: 18 passing real Store/bridge/job cases importing
+  the installed modules; no live desktop calls, clipboard changes or paid calls.
+  `completion-audit-native-remediation.log`: 17/17 actual coordinator cases,
+  including refusal before any write for a forgotten ancestor.
+- `packaging25.log` / `packaging-installed25.log`: 16/16 each; frontend Node
+  41/41, Svelte 0 errors/warnings and four light/dark responsive browser variants.
+  The UI fixtures cover setup progress/cancel/timeout/retry and repository identity;
+  native setup in build 25 checks and reuses the real cached CPU encoder without a
+  model call or download. A native cold-download/cancel was not run against the
+  installed cache; its real Store job/HTTP boundary and UI cancellation are tested
+  separately rather than mislabeled as a live-network UI run.
+- `installed-chatgpt-24.json`: exact source, displayed result, flanks and Return,
+  zero tail interceptions, owned window cleared/closed. `installed-chatgpt-24-fullscreen-4.json`
+  additionally verifies full-screen Space entry, an onscreen preview, apply and
+  restoration. Earlier window-set/layout/readiness refusals are retained.
+- `installed-native-menu24.json`: actual installed status-menu capture/provider/
+  preview/apply with exact readback and zero target Return events. Overall report
+  remains BLOCKED on its final AX window-count read after closing the window;
+  `installed-native-menu24-independent-cleanup.json` independently confirms empty
+  target, zero Returns, process exit and removed owned bundle. It is a native
+  AppKit control, not a new claim that every third-party menu was qualified.
+- `native24-to-build25-content-delta.json`: all UI/key/insertion/provider/frontend
+  modules are byte-identical between the native build-24 checks and build 25.
+  The sole runtime delta handles a missing project root in local Git metadata;
+  filesystem tests and the installed backend suite cover it. The ChatGPT runs
+  are retained as build-24 records, not relabeled as new build-25 tests.
+- `completion-audit-context-lineage-review-off.json` and the explicit finding
+  dispositions. The extra-high attempt hit its output cap and gave no verdict;
+  its measured usage remains accounted. Static review is not test certification.
+
+Earlier qualification records remain unchanged, including:
 
 - `final21-transforms-unittest-2.log`: 155 passing unittest cases;
   `final-selection-m06-seam.log`: 8 isolated seam checks;
@@ -263,7 +310,8 @@ are required; window titles, model-written text and quoted third-party claims do
 not establish truth. Retrieval/learning/training consent remain separate. Context
 is inspectable, optional, scoped, correctable, excludable and forgettable. Missing
 MiniLM assets preserve source-only transforms and explicitly degraded lexical
-retrieval. No cloud embedding key or subscription is required.
+retrieval. Memories → Local semantic search provides visible/cancellable setup.
+Downloads use pinned public Hugging Face assets and local CPU inference. No cloud embedding key or subscription is required.
 
 The user-scoped terminal integration lives in the application support directory.
 Its marked `.zshrc` block preserves unrelated configuration and existing bindings.
@@ -306,3 +354,24 @@ The orchestration page has uncommitted changes and is left alone under its
 ownership rule. Its next realignment should show terminal, authoring and core Hub
 apply-back, microphone, Scratchpad and keyboard qualification complete, with the
 scoped limits in this report. Other M07/M14/M15/paper work is outside this slice.
+
+
+## Completion-audit close-out
+
+Follow-up launchable builds 22–25 were also removed after verifying their source
+snapshots, prior recovery archive or identical installed bytes. The installed
+build 25 and verified recovery ZIP/database pairs remain.
+
+The follow-up source remediation is complete and deployed; remaining teardown
+verification belongs to the NativePeers controller. Its fresh read-only plan
+still refuses four resumed generations (OWNERSHIP_CONFLICT) and four unproved
+owned-process/output closures (CLEANUP_UNCERTAIN). No additional API credential or
+subscription is needed for the implemented product. Removing those eight worktrees
+requires controller-owned release/closure proof; their branches and local data are
+retained until that exists. Earlier failed Claude authentication/quota attempts are
+worker-admission failures, not proof that their tasks were implemented. Their
+replacement implementations and actual qualification results are the records above.
+
+The original generic handoff files remain privately relocated under descriptive
+titles. The orchestration page, unrelated caller inventory and paper outputs remain
+under their existing ownership. This slice does not edit those dirty files.

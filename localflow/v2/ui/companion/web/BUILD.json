@@ -1,5 +1,5 @@
 {
- "source_sha256": "a3b569543ebbd59a4ac62b06028722d110405982daa25ff9b152f725aff91000",
+ "source_sha256": "1ad0bb2776f422362777dd015976872b71e0cc0c142286acfb711c417f4508b5",
  "vite": "8.3.1",
  "svelte": "5.57.1",
  "note": "Built by `npm run build` in frontend/. Do not edit files here by hand."

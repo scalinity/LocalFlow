@@ -1,10 +1,8 @@
-"""Local CPU sentence embeddings from macOS NaturalLanguage, pinned to en/r1.
+"""Pinned CPU encoders; downloading and inference require background jobs.
 
-Uses the existing PyObjC runtime, without loading an MLX model, requesting an
-asset download, or taking the audio GPU lock. Initialization/encode belong on
-the caller's background job, never an AppKit callback. Missing OS assets or
-PyObjC yield an explicitly degraded lexical mode. No substitute semantic model
-is silently selected. A different model/revision requires an index rebuild.
+MiniLM is the selected encoder. Missing assets retain lexical search until an
+explicit, cancellable setup. The Apple encoder remains a measured alternative;
+no encoder downloads or takes the audio GPU lock during construction.
 """
 
 from __future__ import annotations
@@ -72,13 +70,22 @@ class MiniLMEmbedding:
     implementation = 'minilm-l6-v2-c9745ed-int8-arm64-mean384-cpu-v1'
     dimensions = 384
     artifacts = {'model.onnx': 'onnx/model_qint8_arm64.onnx', 'tokenizer.json': 'tokenizer.json'}
+    # Exact public assets used by the measured CPU retrieval fixture.
+    artifact_sha256 = {
+        'model.onnx': '4278337fd0ff3c68bfb6291042cad8ab363e1d9fbc43dcb499fe91c871902474',
+        'tokenizer.json': 'be50c3628f2bf5bb5e3a7f17b1f74611b2561a3a27eeab05e5aa30f411572037',
+    }
+
+    @classmethod
+    def cache_dir(cls):
+        return Path.home() / '.cache/localflow/embeddings' / cls.implementation
 
     def __init__(self, model_dir=None):
-        self.model_dir = Path(model_dir) if model_dir else (
-            Path.home() / '.cache/localflow/embeddings' / self.implementation)
+        self.model_dir = Path(model_dir) if model_dir else self.cache_dir()
         cached = (Path.home() / '.cache/huggingface/hub' /
                   ('models--' + self.model_id.replace('/', '--')) / 'snapshots' / self.revision)
-        if model_dir is None and all((cached / remote).is_file() for remote in self.artifacts.values()):
+        if model_dir is None and not all(p.is_file() for p in self._paths().values()) \
+                and all((cached / remote).is_file() for remote in self.artifacts.values()):
             self.model_dir = cached
         self._lock = threading.Lock()
         self._attempted = False
@@ -88,6 +95,14 @@ class MiniLMEmbedding:
     def _paths(self):
         return {name: self.model_dir / (name if (self.model_dir / name).is_file() else remote)
                 for name, remote in self.artifacts.items()}
+
+    def status(self):
+        """Inspect cache presence without loading a model or starting network work."""
+        installed = all(path.is_file() for path in self._paths().values())
+        return {'installed': installed, 'ready': self._session is not None,
+                'implementation': self.implementation,
+                'reason': self.unavailable_reason or (
+                    None if installed else 'local_embedding_model_not_downloaded')}
 
     @classmethod
     def download(cls, model_dir=None, *, progress=lambda name, received, total: None,
@@ -134,6 +149,8 @@ class MiniLMEmbedding:
                         os.fsync(output.fileno())
                 if total is not None and received != total:
                     raise ValueError('embedding_download_incomplete')
+                if checksum.hexdigest() != cls.artifact_sha256[filename]:
+                    raise ValueError('embedding_download_checksum_mismatch')
                 if cancelled():
                     raise InterruptedError('embedding_download_cancelled')
                 os.replace(temporary, target / filename)
@@ -163,7 +180,7 @@ class MiniLMEmbedding:
             self._tokenizer.enable_truncation(max_length=256, stride=32)
         except ImportError:
             self.unavailable_reason = 'local_embedding_runtime_unavailable'
-        except (OSError, RuntimeError, ValueError):
+        except Exception:
             self._session = self._tokenizer = None
             self.unavailable_reason = 'local_embedding_model_unavailable'
 

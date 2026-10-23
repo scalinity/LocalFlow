@@ -20,6 +20,7 @@ import pathlib
 import sys
 import time
 import traceback
+from types import SimpleNamespace
 
 HERE = pathlib.Path(__file__).resolve()
 sys.path.insert(0, str(HERE.parents[3]))
@@ -146,6 +147,28 @@ def _captured(h, tgt, output="rewrite this refined sentence"):
                                     source_kind="selection",
                                     selection=capture["range"])
     return capture, defn, result
+
+
+@case
+def forgotten_workspace_ancestor_blocks_apply_before_any_write():
+    target = selection_target()
+    h = tp.Harness([1.0])
+    try:
+        capture, _, result = _captured(h, target)
+        old = {'fingerprint': 'forgotten-ancestor'}
+        capture['_apply_contexts'] = (old, {})
+        checks, notices = [], []
+        h.d._tf_intelligence = SimpleNamespace(pack_valid=lambda pack: checks.append(pack) or pack != old)
+        h.d._tf_status = notices.append
+        before = target.content
+        h.d.tfAcceptTransform(result, capture, None)
+        assert checks == [old], checks
+        assert notices and 'forgotten' in notices[0]
+        assert target.content == before
+        assert not capture.get('_apply_started')
+        assert not h.d._insertion.pending
+    finally:
+        h.close()
 
 
 @case

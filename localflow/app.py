@@ -1838,10 +1838,8 @@ class AppDelegate(NSObject):
         if not reacquire_target or self._hub_blocks_show() or self._tf_pipeline_busy():
             return {"outcome": "pipeline_active"}
         service = self._tf_services()
-        session = service.sessions.read(session_id)
+        session = service.session_for_use(session_id, expected_revision)
         revision = selected_revision(session, expected_revision, revision_id)
-        if not service.pack_valid(revision.get("context") or {}):
-            raise ValueError("context_revoked")
         binding = self._tf_destinations.get(session_id)
         if binding is None:
             raise ValueError("original_destination_unavailable")
@@ -1872,9 +1870,9 @@ class AppDelegate(NSObject):
         from types import SimpleNamespace
         binding = self._tf_destinations.get(session_id)
         try:
-            session = self._tf_intelligence.sessions.read(session_id)
+            session = self._tf_intelligence.session_for_use(session_id, expected_revision)
             revision = selected_revision(session, expected_revision, revision_id)
-            if not binding or not self._tf_intelligence.pack_valid(revision.get("context") or {}):
+            if not binding:
                 raise ValueError("context_or_destination_revoked")
             capture = binding["capture"]
             host = self._insertion.host
@@ -1889,7 +1887,7 @@ class AppDelegate(NSObject):
                     raise ValueError("original_terminal_pane_changed")
             result = dataclasses.replace(binding["result"], output=revision["prompt"],
                 path=v2_transforms.PATH_NEEDS_REVIEW, blocking_issues=())
-            capture["_apply_context"] = revision.get("context") or {}
+            capture["_apply_contexts"] = self._tf_intelligence.sessions.contexts(session)
             capture["_workspace_apply"] = {"session_id": session_id,
                 "expected_revision": expected_revision, "revision_id": revision_id}
             self.tfAcceptTransform(result, capture, None)
@@ -2163,8 +2161,9 @@ class AppDelegate(NSObject):
             return
         if capture.get("_apply_started"):
             return
-        pack = capture.get("_apply_context", result.job.context_pack if result.job else None)
-        authority = (lambda: self._tf_intelligence.pack_valid(pack)) if pack \
+        pack = result.job.context_pack if result.job else None
+        packs = capture.get('_apply_contexts', (pack,) if pack else ())
+        authority = (lambda: all(self._tf_intelligence.pack_valid(value) for value in packs)) if packs \
             and getattr(self, "_tf_intelligence", None) is not None else None
         if authority is not None and not authority():
             self._tf_status("Context changed or was forgotten. Regenerate with current context; the original is unchanged.")

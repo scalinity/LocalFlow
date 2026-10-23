@@ -74,23 +74,23 @@
     "transforms_intelligence": {
       "as_of": "2026-10-23",
       "branch": "main",
-      "state": "COMPLETE_VERIFIED",
+      "state": "IMPLEMENTED_WITH_BLOCKED_VERIFICATION",
       "baseline_head": "96a65f86c5ae7a0844b95a68d5008e91ff5a6393",
-      "source_state": "Implementation committed, fast-forwarded to main and pushed. Installed build21 retains its build-time baseline+dirty identity; all150 production/frontend manifest files match the committed implementation.",
-      "installed_state": "Qualification build 21 in /Applications/LocalFlow.app; production 69147d51c3d1ff1e4fa2c5fa0c1617252bc468a080770ddce45a8821c3026933; schema16; packaging16/16.",
+      "source_state": "Core implementation committed on main. Completion-audit follow-up source is recorded in the containing commit; installed production/frontend manifests match the checked-in files.",
+      "installed_state": "Qualification build25 in /Applications/LocalFlow.app; production 8e10636d55a130da59324c09f43a370ab4993f1763d137539ec373d6225a81a9; schema16; packaging16/16.",
       "ownership": "Integrator owns compiler/schema/app/insertion/key routing. Implementation lanes and native qualification completed within recorded test scopes.",
       "source_contract": "docs/v2/contracts/transforms.md",
       "private_spec": "retained in ignored docs/v2/private/transforms-intelligence; not public",
-      "verified": "Installed ChatGPT21 Return exact replacement, Claude18 held-key flow, Chrome18 core flow, Ghostty ZLE15, Codex16 external editor, Hub manual/edit/apply-back, physical Fn speech independent readback (native resize outcome unverified), Scratchpad20 Enter once; native focus/menu/Japanese IME with restoration. Transforms155, integrations109, memory35, frontend41, Svelte0/0, bundle16/16. Quality/role results and limits in qualification report.",
+      "verified": "Transforms168, integrations109, memory42, installed backend18, native coordinator17, frontend41, Svelte0/0, bundle16/16. Native build24 ChatGPT ordinary/full-screen Return and status-menu AppKit control; build25 UI/key/provider/frontend bytes identical. Installed build25 real CPU semantic setup/reuse. Earlier terminal, held-key, Hub apply-back, microphone and Scratchpad scopes retained in qualification report.",
       "remaining": [
-        "NativePeers cleanup refuses eight owned worktrees: four resumed histories and four unproved process/output closures. Product gates are complete; retained work is preserved.",
-        "ORCHESTRATION.html already has uncommitted changes and is left under its ownership rule. Its stale qualification strip needs a separate ownership-safe realignment."
+        "NativePeers controller refuses eight retained histories: four resumed ownership conflicts and four unproved owned-process/output closures. Cleanup remains blocked; no forced removal.",
+        "ORCHESTRATION.html is dirty under its existing ownership; realignment remains with that owner under the project rule. It should reflect build25, completed setup/context audit and retained controller-owned worktrees."
       ],
       "permission_regression": "Native executable owns LocalFlow identity and permission grant; tap readiness blocks shortcuts until active. Correct original source/range and terminal pane are revalidated; actual installed ChatGPT and terminal key/apply checks now pass within documented scopes.",
       "unrelated_work": "Existing paper build outputs and original branches preserved.",
       "qualification_record": "docs/v2/acceptance/TRANSFORMS-INTELLIGENCE-QUALIFICATION.md",
       "evaluation_budget": {
-        "known_token_priced_usd": 31.6939933,
+        "known_token_priced_usd": 32.0991873,
         "unknown_reserved_usd": 29.91948,
         "unknown_calls": 20,
         "working_ceiling_usd": 80,
@@ -123,10 +123,14 @@
         ],
         "removed_finished_local_branches": [
           "feat/transforms-intelligence"
-        ]
+        ],
+        "followup_builds_22_23_removed": true,
+        "followup_builds_22_through_25_removed": true,
+        "private_followup_record": "build/transforms-intelligence/completion-audit-final-app-cleanup.json"
       },
       "qualification_report": "docs/v2/acceptance/TRANSFORMS-INTELLIGENCE-QUALIFICATION.md",
-      "implementation_commit": "16c50dc846b94c8a6d21e2f7afb3623fdc72b939"
+      "implementation_commit": "16c50dc846b94c8a6d21e2f7afb3623fdc72b939",
+      "completion_audit": "Visible/cancellable semantic setup, complete ancestor-context revocation fencing, sanitized local Git workspace identity and missing-root fallback. Deliberate manual documents remain independent; revoked assistant branches cannot be reused as current grounded context."
     }
   },
   "historical_implementation": {

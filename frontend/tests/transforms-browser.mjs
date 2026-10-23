@@ -48,10 +48,11 @@ try {
         const { useTransport } = await import('/src/bridge/bridge.ts');
         const { app } = await import('/src/stores/app.svelte.ts');
         const jobs = new Map();
+        let embeddingReady = false;
         let seq = 0;
         const calls = window.__lfTestCalls = [];
         const memory = { id: 'memory-one', revision: 1, kind: 'terminology', scope_kind: 'personal', text: 'Synthetic terminology note.', status: 'active', origin: 'explicit_user', evidence_refs: [], updated_at: '2026-10-22T10:00:00-04:00' };
-        const pack = { project_id: null, retrieval_mode: 'lexical_degraded', items: [{ id: 'memory-one', revision: 1, text: memory.text, kind: 'note', reason: 'Approved synthetic note.', updated_at: '2026-10-22T10:00:00-04:00' }] };
+        const pack = { project_id: null, retrieval_mode: 'lexical_degraded', workspaces: [{ root: '/synthetic/project', repository_root: '/synthetic/project', remote: 'example.test/team/project', head: 'abcdef1234567890', observed_at: 1792692000 }], items: [{ id: 'memory-one', revision: 1, text: memory.text, kind: 'note', reason: 'Approved synthetic note.', updated_at: '2026-10-22T10:00:00-04:00' }] };
         const session = { session_id: 'session-one', revision: 1, canonical_revision: 1, source: 'Synthetic saved prompt', policy: { project_id: null, use_memory: false }, revisions: [{ revision_id: 1, prompt: 'Synthetic canonical prompt', context: { items: [] } }] };
         const start = (result) => { const job_id = `synthetic-job-${++seq}`; jobs.set(job_id, { result, reads: 0 }); return { job_id, status: 'pending' }; };
         useTransport({ async send(envelope) {
@@ -61,6 +62,12 @@ try {
             case 'context.projects': result = { projects: [{ id: 'project-one', name: 'Synthetic project with a complete readable title', revision: 1, roots: ['/synthetic/project'] }] }; break;
             case 'memories.list': result = { memories: [memory], learning_enabled: true }; break;
             case 'memories.search': result = start({ memories: [memory], learning_enabled: true, context: pack }); break;
+            case 'memories.embedding_status': result = { installed: embeddingReady, ready: embeddingReady }; break;
+            case 'memories.setup_embedding': {
+              result = start({ installed: true, ready: true });
+              jobs.get(result.job_id).embeddingSetup = true;
+              break;
+            }
             case 'context.preview': result = start(pack); break;
             case 'context.import_files': result = start({ imported: envelope.payload.paths.length }); break;
             case 'transforms.inspect': {
@@ -77,7 +84,9 @@ try {
               const job = jobs.get(envelope.payload.job_id);
               if (!job) return JSON.stringify({ request_id: envelope.request_id, status: 'refusal', reason_code: 'job_not_found' });
               job.reads++;
-              result = { job_id: envelope.payload.job_id, status: job.reads === 1 ? 'running' : 'succeeded', phase: 'retrieving_context', sequence: job.reads, ...(job.reads === 1 ? {} : { result: job.result }) };
+              const running = job.reads === 1 || (job.embeddingSetup && window.__lfPauseSetup);
+              if (job.embeddingSetup && !running) embeddingReady = true;
+              result = { job_id: envelope.payload.job_id, status: running ? 'running' : 'succeeded', phase: job.embeddingSetup ? 'Downloading search model · 50%' : 'retrieving_context', sequence: job.reads, ...(running ? {} : { result: job.result }) };
               break;
             }
             case 'prompt_sessions.pending_open': result = { session_id: window.__lfPendingSession ?? null }; window.__lfPendingSession = null; break;
@@ -149,6 +158,9 @@ try {
       await page.getByText('Context inspection cancelled.', { exact: true }).waitFor();
       await page.getByRole('button', { name: 'Inspect context', exact: true }).click();
       await page.getByText('Semantic retrieval is unavailable; keyword search is active.', { exact: true }).waitFor();
+      await page.getByText('Repository: example.test/team/project', { exact: true }).click();
+      await page.getByText('Workspace: /synthetic/project', { exact: true }).waitFor();
+      await page.getByText('Revision: abcdef1234567890', { exact: true }).waitFor();
       await page.screenshot({ path: `${output}/${theme}-${width}-context.png` });
       await page.getByLabel('Original prompt', { exact: true }).fill('');
       await page.getByText('Previous prompts', { exact: true }).click();
@@ -179,6 +191,26 @@ try {
       await page.getByLabel('Original prompt', { exact: true }).waitFor();
       const readsBeforeRemount = await page.evaluate(() => window.__lfTestCalls.filter((c) => c.command === 'prompt_sessions.list' && c.payload.session_id).length);
       await page.getByRole('tab', { name: 'Memories', exact: true }).click();
+      await page.getByRole('button', { name: 'Set up semantic search', exact: true }).waitFor();
+      const cancellationsBeforeSetup = await page.evaluate(() => window.__lfTestCalls.filter((c) => c.command === 'intelligence.cancel').length);
+      await page.evaluate(() => window.__lfPauseSetup = true);
+      await page.getByRole('button', { name: 'Set up semantic search', exact: true }).click();
+      await page.getByText('Downloading search model · 50%', { exact: true }).waitFor();
+      await page.getByRole('button', { name: 'Cancel setup', exact: true }).click();
+      await page.getByText('Semantic search setup cancelled. Keyword search is still available.', { exact: true }).waitFor();
+      assert.ok(await page.evaluate(() => window.__lfTestCalls.some((c) => c.command === 'intelligence.cancel')));
+      await page.evaluate(() => {
+        window.__lfOriginalSetTimeout = window.setTimeout;
+        window.setTimeout = (callback, ms, ...args) => window.__lfOriginalSetTimeout(callback, ms === 600 ? 0 : ms, ...args);
+      });
+      await page.getByRole('button', { name: 'Set up semantic search', exact: true }).click();
+      await page.getByText(/This job is taking longer than expected.*Cancellation was requested/).waitFor();
+      assert.equal(await page.evaluate(() => window.__lfTestCalls.filter((c) => c.command === 'intelligence.cancel').length), cancellationsBeforeSetup + 2, 'A polling timeout must also request native cancellation');
+      await page.evaluate(() => window.setTimeout = window.__lfOriginalSetTimeout);
+      await page.evaluate(() => window.__lfPauseSetup = false);
+      await page.getByRole('button', { name: 'Set up semantic search', exact: true }).click();
+      await page.getByText('Semantic search is ready. Eligible memories are indexed when searched.', { exact: true }).waitFor();
+      assert.equal(await page.evaluate(() => window.__lfTestCalls.filter((c) => c.command === 'memories.setup_embedding').length), 3, 'Cancelled or timed-out setup is retried only by an explicit action');
       await page.getByRole('tab', { name: 'Prompt workspace', exact: true }).click();
       await page.getByLabel('Original prompt', { exact: true }).waitFor();
       await page.waitForTimeout(100);

@@ -436,25 +436,35 @@ class IntelligenceService:
         return compiled["system"]
 
     def _run_preview(self, definition, source, policy, ctx, *, model=None,
-                     reasoning=None, followup="", constraints=(), pack=None, budget=None):
+                     reasoning=None, followup="", constraints=(), pack=None, budget=None,
+                     source_contexts=()):
         bounded_text(source)
+        def source_current():
+            return all(self.pack_valid(value) for value in source_contexts)
+        if not source_current():
+            raise ValueError('context_revoked')
         ctx.progress("retrieving_context")
         pack = self._context(source, policy) if pack is None else pack
         ctx.validators.append(lambda db: self.validate_pack(db, pack))
+        ctx.validators.append(lambda db: all(self.validate_pack(db, value) for value in source_contexts))
         model, reasoning = self._choice(definition, model, reasoning)
-        job = self._job(definition, source, pack=pack, depth=policy["depth"],
+        request_pack = pack
+        if source_contexts:
+            request_pack = {**pack, 'source_context_fingerprints': list(dict.fromkeys(
+                fingerprint(value) for value in source_contexts))}
+        job = self._job(definition, source, pack=request_pack, depth=policy["depth"],
                         followup=followup, constraints=constraints)
         request = self._request(job)
         ctx.progress("generating_preview")
         bounds = {"request_guard": budget.before_request,
                   "response_observer": budget._account} if budget is not None else {}
         result = self.transformer.run(job, model=model, reasoning=reasoning,
-            context_current=lambda _pack: self.pack_valid(pack),
+            context_current=lambda _pack: self.pack_valid(pack) and source_current(),
             cancelled=lambda: ctx.cancelled(), **bounds)
         if budget is not None and budget.failure:
             raise ValueError(budget.failure)
         ctx.check()
-        if not self.pack_valid(pack):
+        if not self.pack_valid(pack) or not source_current():
             raise ValueError("context_revoked")
         if result.path == engine.PATH_FALLBACK_ORIGINAL:
             reason = result.reason or "preview_failed"
@@ -485,15 +495,38 @@ class IntelligenceService:
                        project_id=None, use_memory=False, depth="auto",
                        excluded_context_ids=(), pinned_context_ids=()):
         definition = self._definition(transform_id)
-        return self.sessions.create(source, definition.to_json(),
-                                    self._policy(project_id, use_memory, depth,
-                                        excluded_context_ids, pinned_context_ids), operation_id)
+        session = self.sessions.create(source, definition.to_json(),
+                                       self._policy(project_id, use_memory, depth,
+                                           excluded_context_ids, pinned_context_ids), operation_id)
+        return self._session_view(session)
 
-    def refine(self, session_id, expected_revision, instruction, *, model=None, reasoning=None):
-        bounded_text(instruction, 8000)
+    def session_for_use(self, session_id, expected_revision):
         session = self.sessions.read(session_id)
         if session["revision"] != expected_revision:
             raise ValueError("stale_revision")
+        if not all(self.pack_valid(pack) for pack in self.sessions.contexts(session)):
+            raise ValueError('context_revoked')
+        return session
+
+    def session_view(self, session_id):
+        """Keep saved user text, but do not redisclose revoked memory previews."""
+        return self._session_view(self.sessions.read(session_id))
+
+    def _session_view(self, session):
+        revoked = set()
+        for revision in session['revisions']:
+            inherited = revision['kind'] not in ('source', 'manual') and revision['parent_revision'] in revoked
+            if inherited or not self.pack_valid(revision.get('context') or {}):
+                revoked.add(revision['revision_id'])
+                revision['context'] = {'items': [], 'retrieval_mode': 'revoked', 'warnings': [
+                    'This version used context that changed or was forgotten. Start from the original version or save a deliberate manual edit.']}
+                revision['result'] = {}
+        return session
+
+    def refine(self, session_id, expected_revision, instruction, *, model=None, reasoning=None):
+        bounded_text(instruction, 8000)
+        session = self.session_for_use(session_id, expected_revision)
+        source_contexts = self.sessions.contexts(session)
         definition = TransformDefinition.from_json(session["definition"])
         model, reasoning = self._choice(definition, model, reasoning)
 
@@ -501,7 +534,8 @@ class IntelligenceService:
             pack = self._context(session["prompt"] + "\n" + instruction, session["policy"], "refinement")
             result = self._run_preview(definition, session["prompt"], session["policy"], ctx,
                                        model=model, reasoning=reasoning, followup=instruction,
-                                       constraints=self.sessions.instructions(session), pack=pack)
+                                       constraints=self.sessions.instructions(session), pack=pack,
+                                       source_contexts=source_contexts)
             ctx.progress("publishing_revision")
             activity = getattr(self, "activity", None)
             if activity is not None and self.patterns is not None:
@@ -512,13 +546,16 @@ class IntelligenceService:
                 session_id, expected_revision, result["output"],
                 base_revision=session["canonical_revision"], instruction=instruction,
                 context=pack, result=result, kind="assistant", keep_alternative=True,
-                validate=self.validate_pack))
+                validate=lambda db, value: self.validate_pack(db, value) and all(
+                    self.validate_pack(db, source) for source in source_contexts)))
         return self.jobs.start("refinement", work, target_id=session_id, priority=0,
                                manifest={"session_revision": expected_revision,
                                          "instruction_hash": fingerprint(instruction)})
 
     def edit(self, session_id, expected_revision, prompt):
-        return self.sessions.append(session_id, expected_revision, prompt, kind="manual")
+        result = self.sessions.append(session_id, expected_revision, prompt, kind="manual")
+        result['session'] = self._session_view(result['session'])
+        return result
 
     def set_session_policy(self, session_id, expected_revision, **changes):
         with self.jobs._lock:
@@ -527,15 +564,15 @@ class IntelligenceService:
                 raise ValueError("stale_revision")
             policy = self._policy(**{**old["policy"], **changes})
             self.jobs.cancel_target(session_id)
-            return self.sessions.set_policy(session_id, expected_revision, policy)
+            return self._session_view(self.sessions.set_policy(session_id, expected_revision, policy))
 
     def clear_session(self, session_id, expected_revision):
         self.jobs.cancel_target(session_id)
         return self.sessions.clear(session_id, expected_revision)
 
     def select_revision(self, session_id, expected_revision, revision_id):
-        return self.sessions.select(session_id, expected_revision, revision_id,
-                                    validate=self.validate_pack)
+        return self._session_view(self.sessions.select(session_id, expected_revision, revision_id,
+                                                       validate=self.validate_pack))
 
     def author(self, intention, *, examples=(), project_id=None, use_memory=False,
                model=None, reasoning=None, draft_id=None, expected_revision=None, instruction="",
@@ -610,6 +647,14 @@ class IntelligenceService:
         result = self.jobs.read(job_id, after_sequence)
         payload = result.get("result") or {}
         context = payload.get("context") or (payload if "revocation_revision" in payload else None)
-        if context and not all(self.pack_valid(p) for p in context.get("packs", [context])):
+        session = payload.get('session')
+        inherited = ()
+        if session is not None:
+            branch = {**session, 'canonical_revision': payload.get('revision_id', session['canonical_revision'])}
+            inherited = self.sessions.contexts(branch)
+        if (context and not all(self.pack_valid(p) for p in context.get("packs", [context]))) \
+                or not all(self.pack_valid(p) for p in inherited):
             result.update(result=None, status="failed", phase="context_revoked", error="context_revoked")
+        elif session is not None:
+            payload['session'] = self._session_view(session)
         return result

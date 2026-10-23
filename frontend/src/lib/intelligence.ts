@@ -7,7 +7,8 @@ export interface Definition {
 }
 export interface ContextPolicy { project_id: string | null; use_memory: boolean; excluded_context_ids: string[]; pinned_context_ids: string[] }
 export interface ContextItem { id: string; revision: number; text: string; source?: string; reason?: string; updated_at?: string; scope?: string }
-export interface ContextPack { items: ContextItem[]; project_id?: string | null; fingerprint?: string; warnings?: string[]; retrieval_mode?: string }
+export interface ContextPack { items: ContextItem[]; project_id?: string | null; fingerprint?: string; warnings?: string[]; retrieval_mode?: string;
+  workspaces?: { root: string; repository_root: string; remote: string | null; head: string | null; observed_at: number }[] }
 export interface Project { id: string; name: string; revision: number; brief?: string; roots?: string[] }
 export interface Revision { id: string; parent_id?: string | null; prompt: string; instruction?: string; commentary?: string; context?: ContextPack; superseded?: boolean }
 export interface PromptSession {
@@ -60,6 +61,8 @@ export async function request<T>(command: string, payload: object = {}): Promise
   return displayResult(command, reply.result);
 }
 export function errorText(error: unknown): string {
+  const reason = error instanceof NativeError ? error.reply.reason_code : error instanceof Error ? error.message : '';
+  if (reason === 'context_revoked') return 'The context changed or was forgotten. Refresh it and generate again; for an existing prompt, start from the original version or save a deliberate manual edit.';
   if (error instanceof NativeError && error.reply.status === 'outcome_unknown') return 'The request may still complete. Check its status before starting it again.';
   if (error instanceof NativeError && error.reply.status === 'stale') return 'This changed while the request was running. Reload the latest version; your edits are still here.';
   return error instanceof Error ? error.message : 'The request could not complete.';
@@ -100,6 +103,7 @@ export async function runJob<T>(command: string, payload: object, signal: AbortS
       }
       await delay(600, signal);
     }
-    throw new Error(`This job is taking longer than expected (${started.job_id}). Check its status in Diagnostics before starting another request.`);
+    cancel();
+    throw new Error(`This job is taking longer than expected (${started.job_id}). Cancellation was requested. Check its status in Diagnostics before starting another request.`);
   } finally { signal.removeEventListener('abort', cancel); }
 }

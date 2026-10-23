@@ -834,7 +834,13 @@ class MemoryStore:
                 break
         mode = ('lexical_degraded' if vector is None else
                 'semantic_partial+lexical' if len(vectors) < live_count else 'semantic+lexical')
-        pack = ContextPack(project_id, tuple(items), revocation, mode, tuple(omitted), current_instructions)
+        from .workspaces import read_workspace
+        from .models import WorkspaceIdentity
+        project = next((p for p in self.projects() if p['id'] == project_id), None)
+        workspaces = tuple(WorkspaceIdentity(**identity, observed_at=self.clock()) for root in project['roots']
+                           if (identity := read_workspace(root)) is not None) if project else ()
+        pack = ContextPack(project_id, tuple(items), revocation, mode, tuple(omitted),
+                           current_instructions, workspaces=workspaces)
         self.assert_current(pack)
         return pack
 

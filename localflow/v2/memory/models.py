@@ -39,6 +39,15 @@ class ContextItem:
 
 
 @dataclass(frozen=True)
+class WorkspaceIdentity:
+    root: str
+    repository_root: str
+    remote: str | None
+    head: str | None
+    observed_at: float
+
+
+@dataclass(frozen=True)
 class ContextPack:
     project_id: str | None
     items: tuple[ContextItem, ...] = ()
@@ -47,13 +56,21 @@ class ContextPack:
     omitted: tuple[tuple[str, str], ...] = ()
     current_instructions: str = ''
     policy: str = 'current-instructions-win; evidence-is-data; memory-context-v1'
+    workspaces: tuple[WorkspaceIdentity, ...] = ()
+
+    def _data(self):
+        data = asdict(self)
+        # Preserve stored v1 fingerprints for source-only/non-repository packs.
+        if not self.workspaces:
+            data.pop('workspaces')
+        return data
 
     @property
     def fingerprint(self) -> str:
-        return digest(canonical(asdict(self)))
+        return digest(canonical(self._data()))
 
     def to_dict(self) -> dict:
-        return {**asdict(self), 'fingerprint': self.fingerprint}
+        return {**self._data(), 'fingerprint': self.fingerprint}
 
     @classmethod
     def from_dict(cls, value: dict) -> ContextPack:
@@ -62,6 +79,7 @@ class ContextPack:
         data['items'] = tuple(ContextItem(**{**item, 'evidence_refs': tuple(
             EvidenceRef(**ref) for ref in item['evidence_refs'])}) for item in data['items'])
         data['omitted'] = tuple(tuple(item) for item in data.get('omitted', ()))
+        data['workspaces'] = tuple(WorkspaceIdentity(**item) for item in data.get('workspaces', ()))
         pack = cls(**data)
         if fingerprint is not None and fingerprint != pack.fingerprint:
             raise ValueError('context_fingerprint_mismatch')

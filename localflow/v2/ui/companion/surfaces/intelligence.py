@@ -8,6 +8,9 @@ from __future__ import annotations
 
 import datetime
 import json
+import tempfile
+import time
+from pathlib import Path
 from zoneinfo import ZoneInfo
 
 from .. import bridge as B
@@ -134,7 +137,7 @@ def register(ctl):
             lambda s, p: s.set_session_policy(**p))
     command("prompt_sessions.clear", SESSION, lambda s, p: s.clear_session(**p))
     command("prompt_sessions.list", {"session_id": Str(max_len=100, optional=True)},
-            lambda s, p: s.sessions.read(p["session_id"]) if p.get("session_id")
+            lambda s, p: s.session_view(p["session_id"]) if p.get("session_id")
             else {"sessions": s.sessions.list()})
     command("prompt_sessions.copy", {"session_id": Str(max_len=100),
             "expected_revision": Int(lo=1)}, lambda s, p: copy_text(_copy(s, p)["prompt"]))
@@ -160,9 +163,7 @@ def register(ctl):
 
 
 def _copy(service, payload):
-    session = service.sessions.read(payload["session_id"])
-    if session["revision"] != payload["expected_revision"]:
-        raise ValueError("stale_revision")
+    session = service.session_for_use(payload['session_id'], payload['expected_revision'])
     return {"prompt": session["prompt"], "revision": session["revision"]}
 
 
@@ -208,6 +209,83 @@ def _register_memory(ctl, intelligence):
         return {"memories": rows, "learning_enabled": memory.learning()}
 
     command("memories.list", filters, listing)
+
+    def embedding_status(memory, payload):
+        return memory.embedding.status()
+    command("memories.embedding_status", {}, embedding_status)
+
+    def setup_embedding(memory, payload):
+        def work(ctx):
+            from ....memory.embeddings import MiniLMEmbedding
+            # The target is host-owned cache state, never a WebView-supplied path.
+            previous = memory.embedding
+            last = [0.0]
+
+            def progress(name, received, total):
+                ctx.check()
+                now = time.monotonic()
+                if received and now - last[0] < .1 and received != total:
+                    return
+                last[0] = now
+                label = 'search model' if name == 'model.onnx' else 'search data'
+                amount = f'{received / 1_000_000:.1f} MB'
+                if total:
+                    amount = f'{received * 100 // total}% · {amount} of {total / 1_000_000:.1f} MB'
+                ctx.progress(f'Downloading {label} · {amount}')
+
+            ctx.progress('Preparing semantic search')
+
+            def validate(model_dir):
+                ctx.check()
+                ctx.progress('Checking semantic search locally')
+                candidate = MiniLMEmbedding(model_dir)
+                vector = candidate.encode('Local semantic search.', cancelled=ctx.cancelled)
+                ctx.check()
+                if candidate.unavailable_reason == 'local_embedding_runtime_unavailable':
+                    raise ValueError(candidate.unavailable_reason)
+                return candidate if vector is not None else None
+
+            if previous.status()['installed']:
+                candidate = validate(previous.model_dir)
+                if candidate is not None:
+                    ctx.publish(lambda: setattr(memory, 'embedding', candidate))
+                    return candidate.status()
+            # Repair incomplete/corrupt assets in LocalFlow's own cache. Never
+            # overwrite a Hugging Face cache shared with other applications.
+            target = MiniLMEmbedding.cache_dir()
+            if target.is_symlink():
+                raise ValueError('local_embedding_cache_is_symlink')
+            target.parent.mkdir(parents=True, exist_ok=True)
+            with tempfile.TemporaryDirectory(prefix='.search-setup-', dir=target.parent) as temporary:
+                staged = Path(temporary) / 'model'
+                MiniLMEmbedding.download(staged, progress=progress, cancelled=ctx.cancelled)
+                candidate = validate(staged)
+                if candidate is None:
+                    raise ValueError('local_embedding_model_unavailable')
+                backup = Path(temporary) / 'previous'
+
+                def publish():
+                    if target.exists():
+                        target.rename(backup)
+                    try:
+                        staged.rename(target)
+                    except OSError:
+                        if backup.exists():
+                            backup.rename(target)
+                        raise
+                    candidate.model_dir = target
+                    memory.embedding = candidate
+                # Inference may still reference the old cache paths. Wait away
+                # from AppKit, then make the two-file generation visible together.
+                while not previous._lock.acquire(timeout=.1):
+                    ctx.check()
+                try:
+                    ctx.publish(publish)
+                finally:
+                    previous._lock.release()
+                return candidate.status()
+        return intelligence().jobs.start('semantic_search_setup', work, priority=0)
+    command("memories.setup_embedding", {}, setup_embedding)
 
     def search(memory, payload):
         def work(ctx):

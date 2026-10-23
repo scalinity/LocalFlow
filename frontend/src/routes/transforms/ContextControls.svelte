@@ -58,11 +58,19 @@
     {#if checking}<Button size="sm" onclick={() => controller?.abort()}>Cancel inspection</Button><span class="disclosure" role="status">{phase}</span>{/if}
   </div>
   <p class="disclosure">Generation sends the selected text and included context to Anthropic. Learning and training collection are separate choices.</p>
+  <p class="disclosure">Turning memory off stops new retrieval. Text already in the prompt stays; choose the original version to start again without it.</p>
   {#if query.length > 8000}<p class="disclosure">Context inspection accepts up to 8,000 characters. Use a shorter excerpt to inspect relevant context; the source text has not been shortened.</p>{/if}
   {#if error}<Note tone="warning" text={error} />{/if}
   {#if pack}
     <details open>
       <summary>Context {inspected ? 'available for the next request' : 'used for this revision'}</summary>
+      {#each pack.workspaces ?? [] as workspace}
+        <details><summary>Repository: {workspace.remote ?? workspace.repository_root}</summary>
+          <p class="disclosure selectable">Workspace: {workspace.root}</p>
+          {#if workspace.head}<p class="disclosure selectable">Revision: {workspace.head}</p>{/if}
+          <p class="disclosure">Observed {new Date(workspace.observed_at * 1000).toLocaleString('en-US', { timeZone: 'America/New_York', timeZoneName: 'short' })}. This identifies the selected workspace; it does not import repository contents.</p>
+        </details>
+      {/each}
       {#if pack.retrieval_mode === 'lexical_degraded'}<p class="disclosure">Semantic retrieval is unavailable; keyword search is active.</p>{/if}
       <div class="chips">
         {#each pack.items ?? [] as item (item.id)}

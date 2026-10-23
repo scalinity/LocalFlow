@@ -31,6 +31,12 @@
   let searchController: AbortController | null = null;
   let alive = true;
   let epoch = 0;
+  type EmbeddingStatus = { installed: boolean; ready: boolean; reason?: string | null };
+  let embedding = $state<EmbeddingStatus | null>(null);
+  let settingUpSearch = $state(false);
+  let setupPhase = $state('');
+  let setupController: AbortController | null = null;
+  let setupEpoch = 0;
   const kinds = [{ value: '', label: 'All types' }, { value: 'preference', label: 'Preference' }, { value: 'project_fact', label: 'Project fact' }, { value: 'workflow', label: 'Workflow' }, { value: 'terminology', label: 'Terminology / alias' }, { value: 'decision', label: 'Decision' }, { value: 'volatile', label: 'Current state' }, { value: 'historical_claim', label: 'Historical claim' }, { value: 'note', label: 'Note' }];
   async function load() {
     const seq = ++epoch; searchController?.abort(); error = ''; retrievalMode = '';
@@ -52,8 +58,32 @@
   }
   onMount(() => {
     void load(); request<{ projects: Project[] }>('context.projects').then((r) => { if (alive) projects = r.projects; }).catch((e) => { if (alive) error = errorText(e); });
-    return () => { alive = false; epoch++; searchController?.abort(); };
+    const statusEpoch = setupEpoch;
+    request<EmbeddingStatus>('memories.embedding_status').then((r) => { if (alive && statusEpoch === setupEpoch) embedding = r; }).catch((e) => { if (alive && statusEpoch === setupEpoch) error = errorText(e); });
+    return () => { alive = false; epoch++; searchController?.abort(); setupController?.abort(); };
   });
+  async function setupSearch() {
+    if (settingUpSearch) return;
+    const seq = ++setupEpoch;
+    settingUpSearch = true; error = ''; notice = ''; setupPhase = 'Queued';
+    setupController = new AbortController();
+    try {
+      const result = await runJob<EmbeddingStatus>('memories.setup_embedding', {}, setupController.signal,
+        (job) => { if (alive) setupPhase = (job.phase || job.status).replaceAll('_', ' '); });
+      if (alive) { embedding = result; notice = 'Semantic search is ready. Eligible memories are indexed when searched.'; }
+    } catch (e) {
+      if (alive) error = e instanceof DOMException && e.name === 'AbortError'
+        ? 'Semantic search setup cancelled. Keyword search is still available.' : errorText(e);
+    } finally {
+      if (alive) {
+        try {
+          const status = await request<EmbeddingStatus>('memories.embedding_status');
+          if (alive && seq === setupEpoch) embedding = status;
+        } catch { /* Keep the original setup outcome when status is unavailable. */ }
+        if (alive && seq === setupEpoch) settingUpSearch = false;
+      }
+    }
+  }
   async function change(command: string, payload: object, message: string) {
     busy = true; error = ''; notice = '';
     try { await request(command, payload); if (alive) { notice = message; await load(); return true; } }
@@ -84,6 +114,16 @@
   </form>
   {#if searching}<div class="actions" role="status"><span>{searchPhase}</span><Button size="sm" onclick={() => searchController?.abort()}>Cancel search</Button></div>{/if}
   {#if retrievalMode === 'lexical_degraded'}<p class="disclosure">Semantic retrieval is unavailable; keyword search is active.</p>{/if}
+  <details class="search-setup" open={embedding?.installed === false || settingUpSearch}>
+    <summary>Local semantic search</summary>
+    <p class="disclosure">Find related meanings as well as matching words. Setup downloads search data from Hugging Face only when it is missing, then checks it on this Mac. It runs on the CPU and makes no API calls. Keyword search remains available.</p>
+    {#if embedding?.ready}<p class="disclosure">Semantic search is ready.</p>
+    {:else if embedding?.installed}<p class="disclosure">Search data is downloaded. Check it locally to enable semantic search.</p>{/if}
+    <div class="actions">
+      <Button size="sm" busy={settingUpSearch} disabled={embedding?.ready === true} onclick={setupSearch}>Set up semantic search</Button>
+      {#if settingUpSearch}<span role="status" aria-live="polite">{setupPhase}</span><Button size="sm" onclick={() => setupController?.abort()}>Cancel setup</Button>{/if}
+    </div>
+  </details>
   <details class="add"><summary>Remember something</summary><form onsubmit={(e) => { e.preventDefault(); void remember(); }}>
     <TextArea label="Preference or fact" rows={3} bind:value={newText} disabled={busy} placeholder="Add a short work profile, project fact, or writing preference." />
     <div class="add-fields"><Select label="Scope" value={newScope} options={[{ value: '', label: 'Personal' }, ...projects.map((p) => ({ value: p.id, label: p.name }))]} onchange={(v) => newScope = v} disabled={busy} />
@@ -137,6 +177,7 @@
   .record details { margin-top: 14px; color: var(--text-2); } .record details p { margin-top: 8px; font-size: var(--text-sm); overflow-wrap: anywhere; }
   .empty { padding: 24px 0; } .empty p, .forget-all p { color: var(--text-2); font-size: var(--text-base); line-height: 1.5; margin: 10px 0; }
   .exclusions { border-top: 1px solid var(--hairline); margin-top: 20px; padding-top: 20px; }
+  .search-setup { margin: 20px 0; padding: 16px; background: var(--surface); border: 1px solid var(--hairline); border-radius: var(--radius-md); }
   .forget-all { border-top: 1px solid var(--hairline); margin-top: 20px; padding-top: 20px; }
   @media (max-width: 1050px) { .filters { grid-template-columns: 1fr 1fr; } }
 </style>
