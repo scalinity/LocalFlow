@@ -20,6 +20,7 @@ import pathlib
 import sys
 import time
 import traceback
+from dataclasses import replace
 from types import SimpleNamespace
 
 HERE = pathlib.Path(__file__).resolve()
@@ -168,6 +169,118 @@ def forgotten_workspace_ancestor_blocks_apply_before_any_write():
         assert not capture.get('_apply_started')
         assert not h.d._insertion.pending
     finally:
+        h.close()
+
+
+@case
+def preview_copy_checks_context_and_preserves_source_recovery():
+    h = tp.Harness([1.0])
+    try:
+        _, _, result = _captured(h, selection_target())
+        pack = {"fingerprint": "forgotten-preview"}
+        result = replace(result, job=replace(result.job, context_pack=pack))
+        notices, copies = [], []
+        h.d._tf_intelligence = SimpleNamespace(pack_valid=lambda value: False)
+        h.d._tf_status = notices.append
+        h.d._guarded_copy = lambda text: copies.append(text) or True
+        assert h.d.tfCopyTransform(result) is False
+        assert not copies and "forgotten" in notices[-1]
+        source = replace(result, output=result.job.source, path="fallback_original")
+        assert h.d.tfCopyTransform(source) is True
+        assert copies == [source.output]
+        chained = replace(source, job=replace(source.job, source_kind="result"))
+        assert h.d.tfCopyTransform(chained) is False
+        assert copies == [source.output]
+        h.d._tf_intelligence = SimpleNamespace(pack_valid=lambda value: True)
+        assert h.d.tfCopyTransform(result) is True
+        assert copies[-1] == result.output
+    finally:
+        h.close()
+
+
+@case
+def native_workspace_checks_forget_on_its_publication_writer():
+    from localflow.v2.memory import MemoryStore
+    from localflow.v2.transforms.intelligence import IntelligenceService, memory_callbacks
+    from test_intelligence_memory import LexicalFixture
+    h = tp.Harness([1.0])
+    service = None
+    try:
+        capture, defn, result = _captured(h, selection_target())
+        capture["operation_id"] = "native-forget-before-publication"
+        memory = MemoryStore(h.d.store, embedding=LexicalFixture())
+        record = memory.remember("The preview uses the cedar encoder.")
+        pack = memory.search("cedar encoder").to_dict()
+        assert pack["items"]
+        result = replace(result, job=replace(result.job, context_pack=pack))
+        service = IntelligenceService(h.d.store, h.d._tf_store, object(), **memory_callbacks(memory))
+        h.d._tf_services = lambda: service
+        notices, opened = [], []
+        h.d._tf_status = notices.append
+        h.d._tf_open_workspace = lambda *args: opened.append(args)
+        append = service.sessions.append
+        def forget_before_append(*args, **kwargs):
+            memory.forget(record["id"])
+            return append(*args, **kwargs)
+        service.sessions.append = forget_before_append
+        with Deferred() as q:
+            h.d.tfRefineTransform(result, capture, defn)
+            assert wait_until(lambda: bool(q.queue))
+            q.flush()
+        assert not opened and "forgotten" in notices[-1]
+        saved = service.sessions.list()
+        assert len(saved) == 1
+        session = service.sessions.read(saved[0]["id"])
+        assert session["prompt"] == capture["source"] and session["revision"] == 1
+        # A chained model source must not be saved as independent user text.
+        capture = dict(capture, operation_id="revoked-chain", source=result.output)
+        result = replace(result, job=replace(result.job, source_kind="result", source=result.output))
+        with Deferred() as q:
+            h.d.tfRefineTransform(result, capture, defn)
+            assert wait_until(lambda: bool(q.queue))
+            q.flush()
+        assert len(service.sessions.list()) == 1 and not opened
+    finally:
+        if service:
+            service.close()
+        h.close()
+
+
+@case
+def preview_save_refuses_new_revoked_text_but_reconciles_committed_note():
+    from localflow.v2.memory import MemoryStore
+    from localflow.v2.notes import NoteStore
+    from localflow.v2.transforms.intelligence import IntelligenceService, memory_callbacks
+    from test_intelligence_memory import LexicalFixture
+    h = tp.Harness([1.0])
+    service = None
+    try:
+        _, defn, result = _captured(h, selection_target())
+        memory = MemoryStore(h.d.store, embedding=LexicalFixture())
+        record = memory.remember('Cedar uses the serial encoder.')
+        pack = memory.search('Cedar encoder').to_dict()
+        result = replace(result, job=replace(result.job, context_pack=pack))
+        service = IntelligenceService(h.d.store, h.d._tf_store, object(), **memory_callbacks(memory))
+        h.d._tf_intelligence = service
+        h.d._notes_store = NoteStore(h.d.store)
+        notices = []
+        h.d._tf_panel = SimpleNamespace(reoffer_save=lambda message, value: notices.append(message))
+        h.d.tfSaveToScratchpad(result, defn)
+        saved = h.d._notes_store.notes()
+        assert len(saved) == 1
+        memory.forget(record['id'])
+        # A lost response to a save that already committed resolves to that note.
+        key = (result.job.task_key(), app_mod.v2.ids.sha256_text(result.output))
+        h.d._tf_pending_saves[key] = saved[0]['note_id']
+        h.d.tfSaveToScratchpad(result, defn)
+        assert not notices and not h.d._tf_pending_saves
+        h.d.tfSaveToScratchpad(result, defn)
+        assert 'forgotten' in notices[-1]
+        assert len(h.d._notes_store.notes()) == 1
+        assert h.d._notes_store.open_note(saved[0]['note_id'])['revision']['content'] == result.output
+    finally:
+        if service:
+            service.close()
         h.close()
 
 

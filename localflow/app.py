@@ -1803,16 +1803,20 @@ class AppDelegate(NSObject):
         token = capture["operation_id"] + ":workspace"
         def work():
             try:
+                pack = self._tf_result_context(result)
+                source_context = pack if result.job and result.job.source_kind == "result" else None
                 session = service.create_session(capture["source"], token,
-                    transform_id=defn.transform_id)
-                if session["revision"] == 1 and result.output != session["prompt"]:
+                    transform_id=defn.transform_id, source_context=source_context)
+                if session["revision"] == 1 and (result.output != session["prompt"] or pack):
                     session = service.sessions.append(session["id"], 1, result.output,
-                        context=(result.job.context_pack if result.job else None),
+                        context=pack, validate=service.validate_pack,
                         result={"validation": result.to_json()}, kind="assistant")["session"]
                 AppHelper.callAfter(self._tf_open_workspace, session["id"], result, capture, defn)
             except Exception as e:
                 AppHelper.callAfter(self._tf_status,
-                    "Could not open the prompt workspace (" + type(e).__name__ + "). Copy the result to keep it.")
+                    "Context changed or was forgotten. Regenerate with current context."
+                    if str(e) == "context_revoked" else
+                    "Could not open the prompt workspace (" + type(e).__name__ + "). Check Diagnostics and retry.")
         threading.Thread(target=work, name="localflow-prompt-session", daemon=True).start()
 
     @objc.python_method
@@ -2248,12 +2252,30 @@ class AppDelegate(NSObject):
                 self._tf_panel.reoffer_apply(state or "unavailable", result)
 
     @objc.python_method
+    def _tf_result_context(self, result):
+        job = result.job
+        # Recovering an unchanged user-authored source has no memory dependency.
+        # Chained model output keeps its grounding even when this turn is unchanged.
+        if job is None or (job.source_kind != "result" and result.output == job.source
+                           and result.path in ("fallback_original", "no_changes")):
+            return None
+        return job.context_pack
+
+    @objc.python_method
     def tfCopyTransform(self, result):
+        pack = self._tf_result_context(result)
+        service = getattr(self, "_tf_intelligence", None)
+        if pack and (service is None or not service.pack_valid(pack)):
+            self._tf_status("Context changed or was forgotten. Regenerate with current context before copying.")
+            return False
         if not self._guarded_copy(result.output):
             self.v2log.emit("transforms.copy_refused", level="INFO",
                             reason_code="clipboard_payload_pending")
-            return
+            if self._tf_panel is not None:
+                self._tf_panel.reoffer_copy("Copy is waiting for the current paste to finish. Try Copy again.", result)
+            return False
         self.v2log.emit("transforms.copied", level="INFO")
+        return True
 
     @objc.python_method
     def _guarded_copy(self, text) -> bool:
@@ -2608,6 +2630,8 @@ class AppDelegate(NSObject):
             if pending and self._notes_store.open_note(note_id) is not None:
                 out = {"note_id": note_id}  # the earlier save committed
             else:
+                pack = self._tf_result_context(result)
+                service = getattr(self, "_tf_intelligence", None)
                 out = self._notes_store.create_note(
                     result.output, origin=v2_notes.ORIGIN_TRANSFORM,
                     source_job_id=(job.parent_job_id if job is not None
@@ -2617,7 +2641,8 @@ class AppDelegate(NSObject):
                                   else None),
                     transform_revision=(job.transform_revision
                                         if job is not None else None),
-                    title=defn.name, note_id=note_id)
+                    title=defn.name, note_id=note_id,
+                    validate=(lambda db: service is not None and service.validate_pack(db, pack)) if pack else None)
         except Exception as e:
             # The panel closed for the save: it comes back with the
             # outcome so the same result can be saved again (D09).
@@ -2636,7 +2661,9 @@ class AppDelegate(NSObject):
             self.v2log.emit("notes.note_create_failed", level="WARNING",
                             reason_code=type(e).__name__)
             if panel is not None:
-                panel.reoffer_save(f"not saved ({type(e).__name__})",
+                panel.reoffer_save("not saved — context changed or was forgotten; regenerate with current context"
+                                   if str(e) in ("context_revoked", "ValueError: context_revoked") else
+                                   f"not saved ({type(e).__name__})",
                                    result)
             return
         self._tf_pending_saves.pop(key, None)

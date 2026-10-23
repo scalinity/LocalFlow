@@ -480,7 +480,7 @@ class NoteStore:
 
     def create_note(self, content="", *, origin=ORIGIN_CREATED,
                     source_job_id=None, task_key=None, transform_id=None,
-                    transform_revision=None, title=None, note_id=None):
+                    transform_revision=None, title=None, note_id=None, validate=None):
         """Create a note. ``note_id`` may be preallocated by a caller that
         must reconcile an unknown outcome by reading it back; a timeout
         raises ``NoteOutcomeUnknown`` carrying that id."""
@@ -492,7 +492,7 @@ class NoteStore:
                                task_key=task_key,
                                transform_id=transform_id,
                                transform_revision=transform_revision,
-                               title_override=title)
+                               title_override=title, validate=validate)
         except TimeoutError:
             raise NoteOutcomeUnknown("create_note", note_id) from None
         return {"note_id": note_id, "revision": rev["revision_id"]}
@@ -869,7 +869,7 @@ class NoteStore:
                 restore_of=None, spans_override=None,
                 inserted_at_chars=None, inserted_text=None,
                 title_override=None, revision_id=None, preimage=None,
-                clear_dirty=None):
+                clear_dirty=None, validate=None):
         if origin not in ORIGINS:
             raise ValueError(f"unknown note revision origin: {origin}")
         if trigger not in TRIGGERS:
@@ -886,6 +886,8 @@ class NoteStore:
                 # The retry of an admitted append whose answer was lost:
                 # the revision is already committed — one logical effect.
                 return {"_already": True}
+            if validate is not None and not validate(db):
+                raise ValueError("context_revoked")
             if create:
                 db.execute(
                     "INSERT INTO notes(note_id, title, pinned,"

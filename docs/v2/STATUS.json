@@ -77,11 +77,11 @@
       "state": "IMPLEMENTED_WITH_BLOCKED_VERIFICATION",
       "baseline_head": "96a65f86c5ae7a0844b95a68d5008e91ff5a6393",
       "source_state": "Core implementation committed on main. Completion-audit follow-up source is recorded in the containing commit; installed production/frontend manifests match the checked-in files.",
-      "installed_state": "Qualification build25 in /Applications/LocalFlow.app; production 8e10636d55a130da59324c09f43a370ab4993f1763d137539ec373d6225a81a9; schema16; packaging16/16.",
+      "installed_state": "Qualification build26 in /Applications/LocalFlow.app; production 088587e70845d75b281b1d678fb9ee5361d6bd97761d06bebd282adbbec5659c; schema16; packaging16/16.",
       "ownership": "Integrator owns compiler/schema/app/insertion/key routing. Implementation lanes and native qualification completed within recorded test scopes.",
       "source_contract": "docs/v2/contracts/transforms.md",
       "private_spec": "retained in ignored docs/v2/private/transforms-intelligence; not public",
-      "verified": "Transforms168, integrations109, memory42, installed backend18, native coordinator17, frontend41, Svelte0/0, bundle16/16. Native build24 ChatGPT ordinary/full-screen Return and status-menu AppKit control; build25 UI/key/provider/frontend bytes identical. Installed build25 real CPU semantic setup/reuse. Earlier terminal, held-key, Hub apply-back, microphone and Scratchpad scopes retained in qualification report.",
+      "verified": "Transforms170, integrations109, memory42, installed backend20, native coordinator20, frontend41, Svelte0/0, bundle16/16. Build26 native Copy/new-note Save/Refine guards tested against installed modules with desktop isolation. Earlier actual keyboard/app checks retain their exact build and scope in the qualification report.",
       "remaining": [
         "NativePeers controller refuses eight retained histories: four resumed ownership conflicts and four unproved owned-process/output closures. Cleanup remains blocked; no forced removal.",
         "ORCHESTRATION.html is dirty under its existing ownership; realignment remains with that owner under the project rule. It should reflect build25, completed setup/context audit and retained controller-owned worktrees."
@@ -90,7 +90,7 @@
       "unrelated_work": "Existing paper build outputs and original branches preserved.",
       "qualification_record": "docs/v2/acceptance/TRANSFORMS-INTELLIGENCE-QUALIFICATION.md",
       "evaluation_budget": {
-        "known_token_priced_usd": 32.0991873,
+        "known_token_priced_usd": 32.1865933,
         "unknown_reserved_usd": 29.91948,
         "unknown_calls": 20,
         "working_ceiling_usd": 80,
@@ -143,7 +143,8 @@
         "target_p95_ms": 250,
         "target_met": false,
         "record": "build/transforms-intelligence/final25-git-workspace-scale.json"
-      }
+      },
+      "native_preview_context": "Copy rejects revoked grounding; new Scratchpad saves and native-to-Hub assistant publication validate on the Store writer. Chained model sources keep initial grounding. Prior committed notes and ordinary source-text recovery remain available."
     }
   },
   "historical_implementation": {

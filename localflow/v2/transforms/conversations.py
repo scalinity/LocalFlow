@@ -108,13 +108,15 @@ class PromptSessions:
                 "revision": row[4], "canonical_revision": row[5],
                 "prompt": current["prompt"], "revisions": revisions}
 
-    def create(self, source, definition, policy, operation_id):
+    def create(self, source, definition, policy, operation_id, *, context=None, validate=None):
         bounded_text(source)
         bounded_text(operation_id, 100)
         session_id = "ps:" + fingerprint(operation_id)[:32]
         now = ids.now_utc_iso()
 
         def op(db):
+            if validate is not None and not validate(db, context or {}):
+                raise ValueError("context_revoked")
             have = db.execute("SELECT session_id FROM prompt_sessions WHERE"
                               " operation_id=?", (operation_id,)).fetchone()
             if have:
@@ -127,7 +129,7 @@ class PromptSessions:
                        (session_id, operation_id, source, encode(definition),
                         encode(policy), now, now))
             db.execute("INSERT INTO prompt_revisions VALUES(?,1,NULL,0,?,'','',"
-                       "'{}','{}','source',?)", (session_id, source, now))
+                       "?,'{}','source',?)", (session_id, source, encode(context or {}), now))
             return self._read(db, session_id)
         return submit(self.store, op)
 

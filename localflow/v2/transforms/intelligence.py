@@ -493,11 +493,12 @@ class IntelligenceService:
 
     def create_session(self, source, operation_id, *, transform_id="builtin:prompt_engineer",
                        project_id=None, use_memory=False, depth="auto",
-                       excluded_context_ids=(), pinned_context_ids=()):
+                       excluded_context_ids=(), pinned_context_ids=(), source_context=None):
         definition = self._definition(transform_id)
         session = self.sessions.create(source, definition.to_json(),
                                        self._policy(project_id, use_memory, depth,
-                                           excluded_context_ids, pinned_context_ids), operation_id)
+                                           excluded_context_ids, pinned_context_ids), operation_id,
+                                       context=source_context, validate=self.validate_pack)
         return self._session_view(session)
 
     def session_for_use(self, session_id, expected_revision):

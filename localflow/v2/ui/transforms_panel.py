@@ -566,7 +566,8 @@ class TransformPreviewPanel(NSObject):
             self.coordinator.tfDismissReview()
         st = self._state
         if st["result"] is not None:
-            self.coordinator.tfCopyTransform(st["result"])
+            if self.coordinator.tfCopyTransform(st["result"]) is False:
+                return
         self.panel.orderOut_(None)
 
     def panelRetry_(self, sender):
@@ -630,6 +631,12 @@ class TransformPreviewPanel(NSObject):
 
     def panelTransformResult_(self, sender):
         self._choose_definition(sender, "panelResultChosen:")
+
+    @objc.python_method
+    def reoffer_copy(self, message, result):
+        if self._state.get("result") is result:
+            self.count.setStringValue_(message)
+            self.panel.orderFrontRegardless()
 
     @objc.python_method
     def reoffer_save(self, message, result):

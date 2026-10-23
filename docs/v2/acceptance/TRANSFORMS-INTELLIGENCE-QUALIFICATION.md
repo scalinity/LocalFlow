@@ -2,21 +2,21 @@
 
 Date: 2026-10-23 (US Eastern). Verdict: **IMPLEMENTED_WITH_BLOCKED_VERIFICATION**. Product implementation and the scoped primary workflow checks are complete. The separate cleanup request remains blocked: NativePeers refuses eight retained worktrees because resumed ownership or owned-process/output closure is unproved. Those refusals are not passes and no forced removal was performed.
 
-Qualification build 25 is installed in `/Applications/LocalFlow.app`. The completion audit added the visible, cancellable semantic-search setup path, inherited-context revocation checks for saved prompt refinement/copy/apply, and local Git identity in frozen project context. Existing limitations and earlier blocked attempts remain recorded below. This verdict does not claim universal application compatibility or empirically perfect model output.
+Qualification build 26 is installed in `/Applications/LocalFlow.app`. The completion audit added the visible, cancellable semantic-search setup path, inherited-context revocation checks for saved prompt refinement/copy/apply, and local Git identity in frozen project context. Existing limitations and earlier blocked attempts remain recorded below. This verdict does not claim universal application compatibility or empirically perfect model output.
 
 ## Revisions and deployment
 
 - Repository: `scalinity/LocalFlow`; integrated branch `main`.
 - Implementation commit: `16c50dc846b94c8a6d21e2f7afb3623fdc72b939`, pushed to origin/main.
 - Completion-audit implementation: `8513e2397c02d15fd2e476954b0c9f81a958890b`, merged/pushed to main.
-  Installed production/frontend files match this committed source; the build
+  The native-preview follow-up in the containing commit adds Copy, new-note Save and native-to-Hub publication validation. Installed production/frontend files match the combined committed source; the build
   retains its honest pre-commit identity. The finished follow-up branch was removed locally and remotely after ancestry and open-PR checks.
-- Qualification build-time HEAD: `4a6d7624cdd24e28d38efa18d09f44f82c4121a7`
+- Qualification build-time HEAD: `965da12c9ae0a54200dae7cf6df42522392d5fe4`
   plus the implementation snapshot. The containing source commit records that
   snapshot; BUILD.json retains the honest pre-commit dirty build identity.
   Runtime and frontend content hashes above identify the deployed bytes.
-- Installed bundle: `/Applications/LocalFlow.app`, qualification build 25.
-- Production SHA-256: `8e10636d55a130da59324c09f43a370ab4993f1763d137539ec373d6225a81a9`.
+- Installed bundle: `/Applications/LocalFlow.app`, qualification build 26.
+- Production SHA-256: `088587e70845d75b281b1d678fb9ee5361d6bd97761d06bebd282adbbec5659c`.
 - Frontend source SHA-256: `1ad0bb2776f422362777dd015976872b71e0cc0c142286acfb711c417f4508b5`.
 - Frontend build SHA-256: `571abba5e96a96af5dcada3add91b7d62cbcf557d2bbfe07e2689b328871a871`.
 - Native executable SHA-256: `ca60bbbadb12e32838956c83b992753b35fa2f86e57773f9bb67b593ae68f6d9`.
@@ -234,13 +234,31 @@ PASS refers to stated scope. A blocked or unrun check is not counted as a pass.
 | AC15 Conversation | PASS | Live canonical refinement/manual edit/apply-back; actual UI clearing of four sessions, persistent CAS/version tests, cleared-session route-remount regression |
 | AC16 Context | PASS | Installed build 25 real CPU setup/reuse; cancellable staged downloads/repair verified through real Store jobs with HTTP fixtures and four UI variants; two-project/off generation, measured retrieval, Git identity/isolation/freshness/conflict checks |
 | AC17 Memory | PASS | Capture/confirm/correct/scope/pause/forget/restart tests; eligible extraction measured |
-| AC18 Forgetting | PASS | Extraction/index/retrieval/publication races, inherited assistant context checked before provider/copy/select/apply and on publication; atomic source-derived purging. Deliberate user documents remain independent |
+| AC18 Forgetting | PASS | Extraction/index/retrieval/publication races, inherited assistant context checked before provider/copy/select/apply and on publication; atomic source-derived purging; native Copy/new-note Save/Refine and chained-source publication now validate. Deliberate user documents remain independent |
 | AC19 Agent boundary | PASS | Bounded native tools, cancellation, source revocation before subsequent admission, explicit saves |
 | AC20 Model choice | PASS | Separate role pipelines, measured model/effort selection, cost/latency, final sample exposure disclosed |
 | AC21 Dock | PASS | Native app name/icon/menu/lifecycle and own permissions; no duplicate native instance |
 | AC22 Upgrade/regression | PASS | Migration/restart/frontend/store/deletion/notes/history, physical Fn speech/readback and Scratchpad Enter; native resize outcome retains its unverified label |
 
 ## Verification and private records
+
+Build 26 adds native Copy, new-note Save and Refine publication guards. Chained
+model sources retain context on initial workspace creation; unchanged original
+user text remains copyable. A prior committed note survives forgetting and an
+unknown-outcome retry reconciles that same note. This does not rewrite saved text.
+
+- `final26-transforms-unittest.log`: 170 passing tests.
+- `native-preview-remediation26.log` and `installed-native26-tests.log`: 20/20
+  native AppDelegate cases each; installed cases import the bundle modules and
+  isolate desktop access. They are callback/store tests, not new live keyboard runs.
+- `installed-memory26-tests.log`: 20 actual Store/bridge/context cases against
+  installed modules; zero desktop calls or paid calls.
+- `native-preview-panel26.log`: 5/5 actual AppKit panel cases, including visible
+  Copy recovery; `final26-note-store.log` retains all note-store regressions.
+- `packaging26.log` and `packaging-installed26.log`: 16/16 each.
+- Two static cross-vendor native-preview reviews and their finding dispositions
+  are retained privately. Unsupported scenarios were checked against complete
+  call sites; no static review is presented as native runtime certification.
 
 Records are in ignored `build/transforms-intelligence/`, including the following
 completion-audit checks (suites overlap and are not summed):

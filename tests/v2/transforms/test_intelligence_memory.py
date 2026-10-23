@@ -88,6 +88,32 @@ class MemoryIntegrationTests(unittest.TestCase):
         root.mkdir()
         return self.memory.create_project(name, str(root))
 
+    def test_chained_source_creation_retains_grounding_and_refuses_revocation(self):
+        record = self.memory.remember('Cedar uses the serial encoder.')
+        pack = self.memory.search('Cedar encoder').to_dict()
+        self.assertTrue(pack['items'])
+        session = self.service.create_session('Use the serial Cedar encoder.', 'native-chain', source_context=pack)
+        self.assertEqual(self.service.sessions.contexts(session), (json.loads(json.dumps(pack)),))
+        self.memory.forget(record['id'])
+        with self.assertRaisesRegex(ValueError, 'context_revoked'):
+            self.service.session_for_use(session['id'], session['revision'])
+        with self.assertRaisesRegex(ValueError, 'context_revoked'):
+            self.service.create_session('Use the serial Cedar encoder.', 'forgotten-native-chain', source_context=pack)
+        self.assertEqual(len(self.service.sessions.list()), 1)
+
+    def test_new_note_save_validates_on_writer_but_committed_note_remains(self):
+        from localflow.v2.notes import NoteStore, ORIGIN_TRANSFORM
+        notes = NoteStore(self.store)
+        record = self.memory.remember('Cedar uses the serial encoder.')
+        pack = self.memory.search('Cedar encoder').to_dict()
+        guard = lambda db: self.service.validate_pack(db, pack)
+        saved = notes.create_note('Use the serial Cedar encoder.', origin=ORIGIN_TRANSFORM, validate=guard)
+        self.memory.forget(record['id'])
+        with self.assertRaisesRegex(RuntimeError, 'context_revoked'):
+            notes.create_note('Use the serial Cedar encoder.', origin=ORIGIN_TRANSFORM, validate=guard)
+        self.assertEqual(len(notes.notes()), 1)
+        self.assertEqual(notes.open_note(saved['note_id'])['revision']['content'], 'Use the serial Cedar encoder.')
+
     def test_context_scope_pinning_exclusion_and_memory_off(self):
         a, b = self.project("Project A"), self.project("Project B")
         first = self.memory.remember("The encoder is serial.", kind="project_fact", project_id=a)

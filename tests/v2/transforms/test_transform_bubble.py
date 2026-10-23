@@ -145,6 +145,21 @@ def test_seven_action_paths_keep_candidate_identity():
     panel.panelDismiss_(None)
 
 
+def test_copy_refusal_keeps_its_visible_recovery_message():
+    class RefusingCoordinator(Coordinator):
+        def tfCopyTransform(self, value):
+            panel.reoffer_copy('Wait for the current paste, then try Copy again.', value)
+            return False
+    panel = TransformPreviewPanel.alloc().init_panel(RefusingCoordinator())
+    r = result('Source.', 'Output.')
+    panel.show(r, {'source': 'Source.'}, Obj(name='Polish'), 'candidate')
+    panel.panelCopy_(None)
+    assert panel.panel.isVisible()
+    assert panel._state['result'] is r
+    assert 'try Copy again' in panel.count.stringValue()
+    panel.panelDismiss_(None)
+
+
 if __name__ == '__main__':
     test_native_geometry_states_and_focus()
     print('ok native geometry, themes, bounded scroll, needs review, fallback and no activation')
@@ -154,4 +169,5 @@ if __name__ == '__main__':
     print('ok button/text variants, hover, sliders accessibility and actual native button routing')
     test_removed_words_keep_their_spacing()
     print('ok struck words keep their spacing on either side of a deletion')
-    print('4/4 passed')
+    test_copy_refusal_keeps_its_visible_recovery_message()
+    print('5/5 passed')
