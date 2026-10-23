@@ -147,7 +147,7 @@ separately; authoring model selection does not silently change execution.
 | PE verifier, 20 clean + 20 adversarial | 1 false positive, 0 false negatives | Exact request equivalence checked; historical cohort summaries retained |
 | Custom verifier final, 20 clean + 20 adversarial | 40/40, 0 false positives/negatives; $0.378020; p50 2.142 s, p95 2.980 s | Fixed synthetic labels, custom verifier revision 4 |
 | Scoped local retrieval | 33/36 top-five relevant hits, zero cross-scope disclosures | Actual MiniLM CPU retrieval; lexical fallback labeled degraded |
-| Retrieval at 10,000 records | p50 181.47 ms, p95 205.6 ms | Synthetic scale fixture |
+| Retrieval at 10,000 records | Earlier fixture: p50 181.47 ms, p95 205.6 ms. Fresh Git-identity fixture: p50 291.86 ms, p95 339.62 ms | Latest end-to-end Git variant misses the initial 250 ms p95 target. Separate host runs; no isolated overhead estimate |
 | Contextual generation | 12/12 across two projects/off; 8 scope contrasts, zero leaks | Four synthetic tasks |
 | Downstream outcomes | Baseline 8/8, current 8/8, delta 0 | No improvement claim |
 | Refinement | Sonnet extra high 6/6, low 5/6 | Small role set |
@@ -245,6 +245,9 @@ PASS refers to stated scope. A blocked or unrun check is not counted as a pass.
 Records are in ignored `build/transforms-intelligence/`, including the following
 completion-audit checks (suites overlap and are not summed):
 
+- `final25-git-workspace-scale.json`: 10,000 actual stored synthetic records,
+  36 queries with fresh local Git identity, p50 291.86 ms / p95 339.62 ms.
+  The initial 250 ms p95 target is missed and retained as such.
 - `final25-transforms-unittest.log`: 168 passing cases;
   `final25-integrations-unittest.log`: 109 passing cases;
   `final25-memory-unittest.log`: 42 passing cases, actual MiniLM recall 33/36

@@ -133,7 +133,17 @@
       "qualification_report": "docs/v2/acceptance/TRANSFORMS-INTELLIGENCE-QUALIFICATION.md",
       "implementation_commit": "16c50dc846b94c8a6d21e2f7afb3623fdc72b939",
       "completion_audit": "Visible/cancellable semantic setup, complete ancestor-context revocation fencing, sanitized local Git workspace identity and missing-root fallback. Deliberate manual documents remain independent; revoked assistant branches cannot be reused as current grounded context.",
-      "completion_audit_commit": "8513e2397c02d15fd2e476954b0c9f81a958890b"
+      "completion_audit_commit": "8513e2397c02d15fd2e476954b0c9f81a958890b",
+      "retrieval_timing": {
+        "records": 10000,
+        "queries": 36,
+        "fresh_git_identity": true,
+        "p50_ms": 291.86,
+        "p95_ms": 339.62,
+        "target_p95_ms": 250,
+        "target_met": false,
+        "record": "build/transforms-intelligence/final25-git-workspace-scale.json"
+      }
     }
   },
   "historical_implementation": {
