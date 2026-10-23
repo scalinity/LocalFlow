@@ -1,10 +1,13 @@
 # Transforms intelligence qualification
 
-Date: 2026-10-23 (US Eastern). Verdict: **IMPLEMENTED_WITH_BLOCKED_VERIFICATION**. Product implementation and the scoped primary workflow checks are complete. The separate cleanup request remains blocked: NativePeers refuses eight retained worktrees because resumed ownership or owned-process/output closure is unproved. Those refusals are not passes and no forced removal was performed.
+Date: 2026-10-23 (US Eastern). Verdict: **IMPLEMENTED_WITH_BLOCKED_VERIFICATION**. Product implementation and the scoped primary workflow checks are complete. Eight old NativePeers worktrees are now fully archived and verified. Deletion remains blocked until a normal Mac reboot proves that their unrecorded old descendants ended. All recorded process births are dead; their original missing output-closure evidence remains unproved. No active coding session was stopped.
 
 Qualification build 26 is installed in `/Applications/LocalFlow.app`. The completion audit added the visible, cancellable semantic-search setup path, inherited-context revocation checks for saved prompt refinement/copy/apply, and local Git identity in frozen project context. Existing limitations and earlier blocked attempts remain recorded below. This verdict does not claim universal application compatibility or empirically perfect model output.
 
 ## Revisions and deployment
+
+- Native-preview implementation: `422fa9bb340199bb829aeb7ea9a81c5e7719945b`, pushed/merged to main and deployed as build 26.
+- Current Codex external-editor qualification: `2cc8dc32d974ed43241de2920e652d253d647d2c`, pushed/merged to main. The short-lived follow-up branches were removed after ancestry and open-PR checks.
 
 - Repository: `scalinity/LocalFlow`; integrated branch `main`.
 - Implementation commit: `16c50dc846b94c8a6d21e2f7afb3623fdc72b939`, pushed to origin/main.
@@ -411,3 +414,49 @@ replacement implementations and actual qualification results are the records abo
 The original generic handoff files remain privately relocated under descriptive
 titles. The orchestration page, unrelated caller inventory and paper outputs remain
 under their existing ownership. This slice does not edit those dirty files.
+
+## Remaining cleanup and the completion step
+
+The NativePeers safe cleanup implementation is pushed on that repository's main
+in `8431361e051160146070e0b478fbb100da98ce14` and
+`c1f1b1f148d11afddbfcd819b084fa632d6cbf5a`. Its parent-run focused suite has
+74 passing cases and 26 passing subtests. Standalone restore tests cover dirty
+input trees, staged/conflict blobs, private refs and branch/private reflogs. A
+static cross-vendor review produced two useful followups, both implemented and
+covered by regression tests. The earlier adaptive review hit its output limit and
+provided no verdict. An invalid local model/effort preflight sent no provider
+request and is accounted at zero.
+
+All eight exact LocalFlow workspaces have verified private archives under
+`.worktrees/.archives/<worker-id>/`, totaling 268,983,658 bytes. All eight real
+retirement attempts refused before deletion. Archive-only kept their directories,
+branches, native histories, retained results and ownership unchanged.
+
+Older NativePeers records omitted historical child-process sets and output EOF.
+Neither retained results nor an additional model call can reconstruct those
+missing facts. The current OS boot predates the workers. The new cleanup command
+requires current complete capture and CLOSED+EOF proof, or a later OS boot, and
+still refuses any known live or uninspectable writer. This preserves the active
+coding sessions. A normal restart is the one required external state change.
+
+After the restart, resume the same owning conversation. The prepared private
+`finish_real8_after_reboot.py` driver verifies the actual new boot and parent
+identity, rechecks archive hashes, invokes the controller on the exact eight IDs,
+and confirms their worktrees/branches are gone. It makes no model request, does
+not kill a process and leaves the archives/native histories intact. Its pre-reboot
+refusal was tested. The final deletion has not been run or claimed passed.
+
+NativePeers' broader earlier unit run had 455 passing cases, 471 passing
+subtests and three checkpoint/source-receipt failures also reproduced on its
+unchanged baseline. Those independently owned publication receipts are being
+updated in a separate worktree; they were preserved and are not relabeled as
+passing. This is a scoped cleanup change, not a new whole-product NativePeers
+qualification.
+
+The only indexed LocalFlow application is `/Applications/LocalFlow.app`; the
+separate LocalFlow Annotate research app remains. The build-26 duplicate was
+unregistered and removed after checking all 16,251 non-bytecode files/links
+against the installed app. Prior app/data recovery snapshots remain compressed
+in ignored storage while the archive volume is disconnected. The unrelated
+paper branch/research files, dirty orchestration page and other active
+NativePeers review worktree remain owned by their existing sessions.

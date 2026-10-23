@@ -83,14 +83,14 @@
       "private_spec": "retained in ignored docs/v2/private/transforms-intelligence; not public",
       "verified": "Transforms170, integrations109, memory42, installed backend20, native coordinator20, frontend41, Svelte0/0, bundle16/16. Build26 native Copy/new-note Save/Refine guards tested against installed modules with desktop isolation. Earlier actual keyboard/app checks retain their exact build and scope in the qualification report.",
       "remaining": [
-        "NativePeers controller refuses eight retained histories: four resumed ownership conflicts and four unproved owned-process/output closures. Cleanup remains blocked; no forced removal.",
-        "ORCHESTRATION.html is dirty under its existing ownership; realignment remains with that owner under the project rule. It should reflect build25, completed setup/context audit and retained controller-owned worktrees."
+        "A normal Mac reboot is required before retiring eight archived NativePeers worktrees: old descendant captures and output EOF were not retained; current boot predates their launches. All eight archives verified; all eight real retirement attempts refused before deletion.",
+        "ORCHESTRATION.html remains dirty under existing ownership. Its owner should reflect build26, completed native preview-context audit and archived worktrees waiting for reboot."
       ],
       "permission_regression": "Native executable owns LocalFlow identity and permission grant; tap readiness blocks shortcuts until active. Correct original source/range and terminal pane are revalidated; actual installed ChatGPT and terminal key/apply checks now pass within documented scopes.",
       "unrelated_work": "Existing paper build outputs and original branches preserved.",
       "qualification_record": "docs/v2/acceptance/TRANSFORMS-INTELLIGENCE-QUALIFICATION.md",
       "evaluation_budget": {
-        "known_token_priced_usd": 32.1865933,
+        "known_token_priced_usd": 32.5750533,
         "unknown_reserved_usd": 29.91948,
         "unknown_calls": 20,
         "working_ceiling_usd": 80,
@@ -107,7 +107,7 @@
         "installed_app_untouched": false,
         "remote_branch_removed": "fix/transform-panel-spacing",
         "retained_worktrees": 8,
-        "retention_reason": "NativePeers refuses four resumed generations (OWNERSHIP_CONFLICT) and four unproved owned-process/output closures (CLEANUP_UNCERTAIN); no forced tool-owned removal.",
+        "retention_reason": "Historical descendant capture and output EOF are unavailable. Verified archive-only completed for all8; exact retirement is gated on a normal later reboot, without killing active sessions.",
         "private_record": "build/transforms-intelligence/qualification-18-21-cleanup.json",
         "qualification_bundles_14_through_17_removed": 4,
         "qualification_duplicate_logical_bytes_removed": 7451913766,
@@ -128,7 +128,13 @@
         ],
         "followup_builds_22_23_removed": true,
         "followup_builds_22_through_25_removed": true,
-        "private_followup_record": "build/transforms-intelligence/completion-audit-final-app-cleanup.json"
+        "private_followup_record": "build/transforms-intelligence/completion-audit-final-app-cleanup.json",
+        "verified_worker_archives": 8,
+        "worker_archive_bytes": 268983658,
+        "worker_archive_location": ".worktrees/.archives/<worker-id>/",
+        "nativepeers_cleanup_commit": "c1f1b1f148d11afddbfcd819b084fa632d6cbf5a",
+        "followup_builds_22_through_26_removed": true,
+        "private_worker_archive_record": "build/transforms-intelligence/nativepeers-real8-archive-report.json"
       },
       "qualification_report": "docs/v2/acceptance/TRANSFORMS-INTELLIGENCE-QUALIFICATION.md",
       "implementation_commit": "16c50dc846b94c8a6d21e2f7afb3623fdc72b939",
@@ -144,7 +150,9 @@
         "target_met": false,
         "record": "build/transforms-intelligence/final25-git-workspace-scale.json"
       },
-      "native_preview_context": "Copy rejects revoked grounding; new Scratchpad saves and native-to-Hub assistant publication validate on the Store writer. Chained model sources keep initial grounding. Prior committed notes and ordinary source-text recovery remain available."
+      "native_preview_context": "Copy rejects revoked grounding; new Scratchpad saves and native-to-Hub assistant publication validate on the Store writer. Chained model sources keep initial grounding. Prior committed notes and ordinary source-text recovery remain available.",
+      "native_preview_context_commit": "422fa9bb340199bb829aeb7ea9a81c5e7719945b",
+      "current_codex_editor_qualification": "0.164.0 actual external-editor accept/reopen/cancel PASS; no model call, raw Return or unframed newline; owned PTY closed."
     }
   },
   "historical_implementation": {
