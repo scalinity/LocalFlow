@@ -13,7 +13,8 @@ gates; the exact retained work is listed below.
 
 ## Revisions and deployment
 
-- Repository: `scalinity/LocalFlow`; branch `feat/transforms-intelligence`.
+- Repository: `scalinity/LocalFlow`; integrated branch `main`.
+- Implementation commit: `16c50dc846b94c8a6d21e2f7afb3623fdc72b939`, pushed to origin/main.
 - Qualification build-time HEAD: `96a65f86c5ae7a0844b95a68d5008e91ff5a6393`
   plus the implementation snapshot. The containing source commit records that
   snapshot; BUILD.json retains the honest pre-commit dirty build identity.
@@ -292,11 +293,14 @@ Earlier remnant installations were also archived and removed; reproducible nativ
 test bundles and the owned browser profile were removed after process closure.
 The installed app is preserved. Earlier remnant recovery bundles are ZIP archives,
 not launchable app copies. The merged remote spacing branch was deleted after
-ancestry/PR checks. Eight NativePeers-owned worktrees remain because the tool's
+ancestry/PR checks. After main was pushed, the completed Claude-transforms and
+transforms-intelligence remote heads and the local intelligence branch were
+removed after ancestry checks and zero open pull requests. Eight NativePeers-owned worktrees remain because the tool's
 planner refuses four resumed histories (OWNERSHIP_CONFLICT) and four histories
 with unproved owned-process/output closure (CLEANUP_UNCERTAIN). They occupy about
 324 MB. Tool-owned worktrees are not removed behind its controller; no unique or
-dirty work is forced away. Unmerged feature/paper branches remain.
+dirty work is forced away. The separate paper branch and all eight tool-owned
+worktree branches remain.
 
 The orchestration page has uncommitted changes and is left alone under its
 ownership rule. Its next realignment should show terminal, authoring and core Hub

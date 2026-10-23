@@ -73,10 +73,10 @@
     },
     "transforms_intelligence": {
       "as_of": "2026-10-23",
-      "branch": "feat/transforms-intelligence",
+      "branch": "main",
       "state": "COMPLETE_VERIFIED",
       "baseline_head": "96a65f86c5ae7a0844b95a68d5008e91ff5a6393",
-      "source_state": "Qualified source snapshot recorded by the containing commit; installed build21 retains its build-time baseline+dirty identity and exact content hashes.",
+      "source_state": "Implementation committed, fast-forwarded to main and pushed. Installed build21 retains its build-time baseline+dirty identity; all150 production/frontend manifest files match the committed implementation.",
       "installed_state": "Qualification build 21 in /Applications/LocalFlow.app; production 69147d51c3d1ff1e4fa2c5fa0c1617252bc468a080770ddce45a8821c3026933; schema16; packaging16/16.",
       "ownership": "Integrator owns compiler/schema/app/insertion/key routing. Implementation lanes and native qualification completed within recorded test scopes.",
       "source_contract": "docs/v2/contracts/transforms.md",
@@ -115,9 +115,18 @@
         "qualification_bundles_14_through_21_removed": 8,
         "retained_worktree_mib": 324,
         "launchable_qualification_bundles_remaining": 0,
-        "owned_test_browser_profile_removed": true
+        "owned_test_browser_profile_removed": true,
+        "removed_finished_remote_branches": [
+          "fix/transform-panel-spacing",
+          "feat/claude-transforms",
+          "feat/transforms-intelligence"
+        ],
+        "removed_finished_local_branches": [
+          "feat/transforms-intelligence"
+        ]
       },
-      "qualification_report": "docs/v2/acceptance/TRANSFORMS-INTELLIGENCE-QUALIFICATION.md"
+      "qualification_report": "docs/v2/acceptance/TRANSFORMS-INTELLIGENCE-QUALIFICATION.md",
+      "implementation_commit": "16c50dc846b94c8a6d21e2f7afb3623fdc72b939"
     }
   },
   "historical_implementation": {
