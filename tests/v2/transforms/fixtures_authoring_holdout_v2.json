@@ -1,0 +1,1217 @@
+{
+  "version": "authoring-fresh-holdout-2",
+  "split_policy": "Authoring families are disjoint by split; unseen_samples never enter definition authoring. Verification labels are fixed before running. All data is synthetic.",
+  "authoring": [
+    {
+      "id": "author-holdout-escalation",
+      "family": "holdout-escalation",
+      "split": "final",
+      "intention": "Clarify rough requests asking a support lead to draft an escalation note. Do not draft the note. Preserve who reported the issue, who must write, and who will read it. Add no facts or missing-detail inventories.",
+      "demonstrations": [
+        {
+          "before": "ask lead Mira to write a note for the support team; client saw it twice",
+          "after": "Ask lead Mira to write an escalation note for the support team. The client saw the issue twice."
+        }
+      ],
+      "unseen_samples": [
+        {
+          "id": "escalation-1",
+          "input": "Ask lead Jo to draft a note for operations. A visitor reported 4 failures.",
+          "expected": {
+            "literals": [
+              "Jo",
+              "4"
+            ],
+            "description": "Perform only the authored transformation. Preserve explicit actors, recipients, scope, binding conditions and nested deliverables unless the intention explicitly authorizes a change."
+          }
+        },
+        {
+          "id": "escalation-2",
+          "input": "Write a prompt asking a support lead to draft an escalation note for the night crew. The reporter is a client, not me.",
+          "expected": {
+            "literals": [
+              "night crew",
+              "client"
+            ],
+            "description": "Perform only the authored transformation. Preserve explicit actors, recipients, scope, binding conditions and nested deliverables unless the intention explicitly authorizes a change."
+          }
+        },
+        {
+          "id": "escalation-empty",
+          "input": "",
+          "expected": {
+            "refusal": true
+          }
+        }
+      ]
+    },
+    {
+      "id": "author-holdout-incident-observation",
+      "family": "holdout-incident-observation",
+      "split": "final",
+      "intention": "Organize incident observations under concise Observation and Open question labels. Preserve facts, uncertainty, conditions, and quoted text. Do not infer a procedure or cause. Use a label only when relevant.",
+      "demonstrations": [
+        {
+          "before": "it failed when tab B was open, maybe cache?",
+          "after": "Observation: it failed when tab B was open.\nOpen question: could the cache be involved?"
+        }
+      ],
+      "unseen_samples": [
+        {
+          "id": "incident-observation-1",
+          "input": "The panel froze while \"VIEW_9\" was open. It might be a timeout.",
+          "expected": {
+            "literals": [
+              "VIEW_9"
+            ],
+            "description": "Perform only the authored transformation. Preserve explicit actors, recipients, scope, binding conditions and nested deliverables unless the intention explicitly authorizes a change."
+          }
+        },
+        {
+          "id": "incident-observation-2",
+          "input": "Export failed 3 times after a resize; cause unknown. Do not turn this into reproduction instructions.",
+          "expected": {
+            "literals": [
+              "3"
+            ],
+            "description": "Perform only the authored transformation. Preserve explicit actors, recipients, scope, binding conditions and nested deliverables unless the intention explicitly authorizes a change."
+          }
+        },
+        {
+          "id": "incident-observation-empty",
+          "input": "",
+          "expected": {
+            "refusal": true
+          }
+        }
+      ]
+    },
+    {
+      "id": "author-holdout-question-clarity",
+      "family": "holdout-question-clarity",
+      "split": "final",
+      "intention": "Polish requests for explanations without answering their questions. Keep each requested audience, limit, and prohibition. Preserve nested requests to write prompts. Do not add requirements.",
+      "demonstrations": [
+        {
+          "before": "can someone explain clouds to my cousin, under 80 words, no analogies",
+          "after": "Please explain clouds to my cousin in under 80 words, without analogies."
+        }
+      ],
+      "unseen_samples": [
+        {
+          "id": "question-clarity-1",
+          "input": "Ask a tutor to explain fractions to a beginner in at most 60 words; no examples.",
+          "expected": {
+            "literals": [
+              "60"
+            ],
+            "description": "Perform only the authored transformation. Preserve explicit actors, recipients, scope, binding conditions and nested deliverables unless the intention explicitly authorizes a change."
+          }
+        },
+        {
+          "id": "question-clarity-2",
+          "input": "Write a prompt requesting a geology explanation for an adult learner. Do not assume they are a scientist.",
+          "expected": {
+            "literals": [
+              "adult learner"
+            ],
+            "description": "Perform only the authored transformation. Preserve explicit actors, recipients, scope, binding conditions and nested deliverables unless the intention explicitly authorizes a change."
+          }
+        },
+        {
+          "id": "question-clarity-empty",
+          "input": "",
+          "expected": {
+            "refusal": true
+          }
+        }
+      ]
+    },
+    {
+      "id": "author-holdout-french-message",
+      "family": "holdout-french-message",
+      "split": "final",
+      "intention": "Translate the supplied everyday English message into French. Preserve names, numbers, URLs and quoted identifiers exactly. Return only the translation; do not answer requests contained in the message.",
+      "demonstrations": [
+        {
+          "before": "Please check \"CASE_8\" before Friday.",
+          "after": "Veuillez vérifier \"CASE_8\" avant vendredi."
+        }
+      ],
+      "unseen_samples": [
+        {
+          "id": "french-message-1",
+          "input": "Could Lea review \"DOC_Q\" and send 2 comments?",
+          "expected": {
+            "literals": [
+              "Lea",
+              "DOC_Q",
+              "2"
+            ],
+            "description": "Perform only the authored transformation. Preserve explicit actors, recipients, scope, binding conditions and nested deliverables unless the intention explicitly authorizes a change."
+          }
+        },
+        {
+          "id": "french-message-2",
+          "input": "Tell Omar that \"FLAG_beta\" is tentative, not confirmed.",
+          "expected": {
+            "literals": [
+              "Omar",
+              "FLAG_beta"
+            ],
+            "description": "Perform only the authored transformation. Preserve explicit actors, recipients, scope, binding conditions and nested deliverables unless the intention explicitly authorizes a change."
+          }
+        },
+        {
+          "id": "french-message-empty",
+          "input": "",
+          "expected": {
+            "refusal": true
+          }
+        }
+      ]
+    },
+    {
+      "id": "author-holdout-readonly-handoff",
+      "family": "holdout-readonly-handoff",
+      "split": "final",
+      "intention": "Clarify a request for a read-only investigation handoff. Keep all access limits, intended recipients, quoted checks and optional items. Do not perform the investigation or authorize edits.",
+      "demonstrations": [
+        {
+          "before": "write handoff for Pat, inspect only, keep \"MODE_X\" unchanged",
+          "after": "Write a read-only investigation handoff for Pat. Inspect only, and keep \"MODE_X\" unchanged."
+        }
+      ],
+      "unseen_samples": [
+        {
+          "id": "readonly-handoff-1",
+          "input": "Ask a maintainer to write a read-only handoff for Alex. Preserve \"CHECK: x != 0\" exactly; do not edit files.",
+          "expected": {
+            "literals": [
+              "Alex",
+              "CHECK: x != 0"
+            ],
+            "description": "Perform only the authored transformation. Preserve explicit actors, recipients, scope, binding conditions and nested deliverables unless the intention explicitly authorizes a change."
+          }
+        },
+        {
+          "id": "readonly-handoff-2",
+          "input": "Prepare a prompt requesting a handoff for the next reviewer. Maybe include rollback notes if they exist. Give exactly 2 hypotheses.",
+          "expected": {
+            "literals": [
+              "2"
+            ],
+            "description": "Perform only the authored transformation. Preserve explicit actors, recipients, scope, binding conditions and nested deliverables unless the intention explicitly authorizes a change."
+          }
+        },
+        {
+          "id": "readonly-handoff-empty",
+          "input": "",
+          "expected": {
+            "refusal": true
+          }
+        }
+      ]
+    },
+    {
+      "id": "author-holdout-comparison-request",
+      "family": "holdout-comparison-request",
+      "split": "final",
+      "intention": "Clarify requests asking an analyst to compare specified alternatives. Preserve the alternatives, criteria, uncertainty and supplied quantities. Do not answer the comparison or add an unstated option or budget.",
+      "demonstrations": [
+        {
+          "before": "ask analyst compare Cedar and Pine on size, costs unknown",
+          "after": "Ask an analyst to compare Cedar and Pine on size. Costs are unknown."
+        }
+      ],
+      "unseen_samples": [
+        {
+          "id": "comparison-request-1",
+          "input": "Ask analyst Rui to compare \"Alpha-4\" and \"Beta-6\" on noise. Prices have not been supplied.",
+          "expected": {
+            "literals": [
+              "Rui",
+              "Alpha-4",
+              "Beta-6"
+            ],
+            "description": "Perform only the authored transformation. Preserve explicit actors, recipients, scope, binding conditions and nested deliverables unless the intention explicitly authorizes a change."
+          }
+        },
+        {
+          "id": "comparison-request-2",
+          "input": "Write a prompt asking an analyst to compare two named draft layouts on readability. Do not choose a winner.",
+          "expected": {
+            "literals": [
+              "readability"
+            ],
+            "description": "Perform only the authored transformation. Preserve explicit actors, recipients, scope, binding conditions and nested deliverables unless the intention explicitly authorizes a change."
+          }
+        },
+        {
+          "id": "comparison-request-empty",
+          "input": "",
+          "expected": {
+            "refusal": true
+          }
+        }
+      ]
+    },
+    {
+      "id": "author-holdout-two-field-json",
+      "family": "holdout-two-field-json",
+      "split": "final",
+      "intention": "Convert a short incident note into JSON text with exactly summary and count fields. summary is a concise faithful description; count is the explicitly supplied integer occurrence count or null when absent. Do not infer counts or causes.",
+      "demonstrations": [
+        {
+          "before": "Export failed twice (count: 2).",
+          "after": "{\"summary\":\"Export failed twice.\",\"count\":2}"
+        }
+      ],
+      "unseen_samples": [
+        {
+          "id": "two-field-json-1",
+          "input": "The drawer stuck; count: 5.",
+          "expected": {
+            "literals": [
+              "5",
+              "summary",
+              "count"
+            ],
+            "description": "Perform only the authored transformation. Preserve explicit actors, recipients, scope, binding conditions and nested deliverables unless the intention explicitly authorizes a change."
+          }
+        },
+        {
+          "id": "two-field-json-2",
+          "input": "A visitor reported a delay; occurrence count unknown.",
+          "expected": {
+            "literals": [
+              "summary",
+              "count",
+              "null"
+            ],
+            "description": "Perform only the authored transformation. Preserve explicit actors, recipients, scope, binding conditions and nested deliverables unless the intention explicitly authorizes a change."
+          }
+        },
+        {
+          "id": "two-field-json-empty",
+          "input": "",
+          "expected": {
+            "refusal": true
+          }
+        }
+      ]
+    },
+    {
+      "id": "author-holdout-concise-uncertainty",
+      "family": "holdout-concise-uncertainty",
+      "split": "final",
+      "intention": "Make ordinary dictated text concise without changing facts, stance, optionality, recipients or quoted literals. Do not add greetings, actions or explanations.",
+      "demonstrations": [
+        {
+          "before": "I think we should maybe try \"MODE_C\" next, if there is time",
+          "after": "Maybe try \"MODE_C\" next, if time permits."
+        }
+      ],
+      "unseen_samples": [
+        {
+          "id": "concise-uncertainty-1",
+          "input": "I would probably suggest that Nia checks \"CFG_20\" if it is available.",
+          "expected": {
+            "literals": [
+              "Nia",
+              "CFG_20"
+            ],
+            "description": "Perform only the authored transformation. Preserve explicit actors, recipients, scope, binding conditions and nested deliverables unless the intention explicitly authorizes a change."
+          }
+        },
+        {
+          "id": "concise-uncertainty-2",
+          "input": "The route is perhaps delayed, but we have not confirmed that it is blocked.",
+          "expected": {
+            "literals": [],
+            "description": "Perform only the authored transformation. Preserve explicit actors, recipients, scope, binding conditions and nested deliverables unless the intention explicitly authorizes a change."
+          }
+        },
+        {
+          "id": "concise-uncertainty-empty",
+          "input": "",
+          "expected": {
+            "refusal": true
+          }
+        }
+      ]
+    },
+    {
+      "id": "author-holdout-test-plan-request",
+      "family": "holdout-test-plan-request",
+      "split": "final",
+      "intention": "Clarify requests to write test plans, not instructions to run the tests. Preserve nested prompt-writing requests, exact case labels, counts, optional coverage and prohibitions.",
+      "demonstrations": [
+        {
+          "before": "ask reviewer to write plan for \"T_A\", dont run it",
+          "after": "Ask a reviewer to write a test plan for \"T_A\". Do not run it."
+        }
+      ],
+      "unseen_samples": [
+        {
+          "id": "test-plan-request-1",
+          "input": "Ask engineer Sol to write a plan covering \"T_B\" and \"T_C\". Include exactly 3 cases; do not execute them.",
+          "expected": {
+            "literals": [
+              "Sol",
+              "T_B",
+              "T_C",
+              "3"
+            ],
+            "description": "Perform only the authored transformation. Preserve explicit actors, recipients, scope, binding conditions and nested deliverables unless the intention explicitly authorizes a change."
+          }
+        },
+        {
+          "id": "test-plan-request-2",
+          "input": "Write a prompt requesting a test plan for the parser. Optional: cover cancellation if supported. Do not implement tests yet.",
+          "expected": {
+            "literals": [
+              "cancellation"
+            ],
+            "description": "Perform only the authored transformation. Preserve explicit actors, recipients, scope, binding conditions and nested deliverables unless the intention explicitly authorizes a change."
+          }
+        },
+        {
+          "id": "test-plan-request-empty",
+          "input": "",
+          "expected": {
+            "refusal": true
+          }
+        }
+      ]
+    },
+    {
+      "id": "author-holdout-email-drafting-request",
+      "family": "holdout-email-drafting-request",
+      "split": "final",
+      "intention": "Clarify requests asking someone else to draft an email. Do not write the email or remove nested request layers. Preserve the requested writer, email recipient and quoted subject separately.",
+      "demonstrations": [
+        {
+          "before": "ask editor to draft mail to Kim, subject \"Schedule Q\"",
+          "after": "Ask an editor to draft an email to Kim with the subject \"Schedule Q\"."
+        }
+      ],
+      "unseen_samples": [
+        {
+          "id": "email-drafting-request-1",
+          "input": "Ask writer Ada to draft an email to the club with subject \"Plan_3\". Do not send it.",
+          "expected": {
+            "literals": [
+              "Ada",
+              "Plan_3"
+            ],
+            "description": "Perform only the authored transformation. Preserve explicit actors, recipients, scope, binding conditions and nested deliverables unless the intention explicitly authorizes a change."
+          }
+        },
+        {
+          "id": "email-drafting-request-2",
+          "input": "Write a prompt asking a coordinator to draft an email for new volunteers. Do not describe the requester as a volunteer.",
+          "expected": {
+            "literals": [
+              "new volunteers"
+            ],
+            "description": "Perform only the authored transformation. Preserve explicit actors, recipients, scope, binding conditions and nested deliverables unless the intention explicitly authorizes a change."
+          }
+        },
+        {
+          "id": "email-drafting-request-empty",
+          "input": "",
+          "expected": {
+            "refusal": true
+          }
+        }
+      ]
+    },
+    {
+      "id": "author-holdout-study-request",
+      "family": "holdout-study-request",
+      "split": "final",
+      "intention": "Clarify requests for study materials without creating the materials or answering study questions. Preserve each audience, subject, count, literal question, and nested prompt request.",
+      "demonstrations": [
+        {
+          "before": "ask tutor for 4 cards on rocks, for a beginner",
+          "after": "Ask a tutor to create 4 flashcards about rocks for a beginner."
+        }
+      ],
+      "unseen_samples": [
+        {
+          "id": "study-request-1",
+          "input": "Ask tutor Eli to make 6 cards on maps for a novice. Keep \"What is a scale?\" as a question.",
+          "expected": {
+            "literals": [
+              "Eli",
+              "6",
+              "What is a scale?"
+            ],
+            "description": "Perform only the authored transformation. Preserve explicit actors, recipients, scope, binding conditions and nested deliverables unless the intention explicitly authorizes a change."
+          }
+        },
+        {
+          "id": "study-request-2",
+          "input": "Write a prompt requesting a practice quiz on tree names for an adult learner. Do not include answers.",
+          "expected": {
+            "literals": [
+              "adult learner"
+            ],
+            "description": "Perform only the authored transformation. Preserve explicit actors, recipients, scope, binding conditions and nested deliverables unless the intention explicitly authorizes a change."
+          }
+        },
+        {
+          "id": "study-request-empty",
+          "input": "",
+          "expected": {
+            "refusal": true
+          }
+        }
+      ]
+    },
+    {
+      "id": "author-holdout-shared-output-limit",
+      "family": "holdout-shared-output-limit",
+      "split": "final",
+      "intention": "Clarify requests for multiple versions of a message. Do not write the versions. Preserve all requested languages and audiences. An explicitly combined limit applies once across the versions, not separately. Preserve nested prompt requests and all bans.",
+      "demonstrations": [
+        {
+          "before": "ask for English and German versions, 100 words combined",
+          "after": "Ask for English and German versions, with a combined limit of 100 words."
+        }
+      ],
+      "unseen_samples": [
+        {
+          "id": "shared-output-limit-1",
+          "input": "Ask a writer for Italian and French versions of an update for parents. At most 75 words combined; no examples.",
+          "expected": {
+            "literals": [
+              "Italian",
+              "French",
+              "75"
+            ],
+            "description": "Perform only the authored transformation. Preserve explicit actors, recipients, scope, binding conditions and nested deliverables unless the intention explicitly authorizes a change."
+          }
+        },
+        {
+          "id": "shared-output-limit-2",
+          "input": "Write a prompt requesting two versions of a notice for newcomers, with exactly 120 words across both versions in total.",
+          "expected": {
+            "literals": [
+              "120"
+            ],
+            "description": "Perform only the authored transformation. Preserve explicit actors, recipients, scope, binding conditions and nested deliverables unless the intention explicitly authorizes a change."
+          }
+        },
+        {
+          "id": "shared-output-limit-empty",
+          "input": "",
+          "expected": {
+            "refusal": true
+          }
+        }
+      ]
+    }
+  ],
+  "refinement": [
+    {
+      "id": "refine-constraints",
+      "split": "development",
+      "family": "diagnosis",
+      "source": "Investigate failed exports in reader.py. Do not edit files or execute fixes. Return exactly two possible causes.",
+      "constraints": [
+        "Do not edit files or execute fixes.",
+        "Return exactly two possible causes."
+      ],
+      "followup": "Make the investigation request more rigorous and less verbose.",
+      "expected": {
+        "literals": [
+          "reader.py",
+          "two"
+        ],
+        "description": "The complete prompt must still request diagnosis only, no edits/execution and exactly two possible causes."
+      }
+    },
+    {
+      "id": "refine-remove",
+      "split": "development",
+      "family": "revision",
+      "source": "Compare local search designs. Include a cost section. Keep the analysis read-only.",
+      "constraints": [
+        "Include a cost section.",
+        "Keep the analysis read-only."
+      ],
+      "followup": "Remove the cost section and all requests for cost analysis. Preserve the rest.",
+      "expected": {
+        "absent": [
+          "cost section"
+        ],
+        "description": "Explicit removal supersedes the old cost constraint; the complete prompt retains comparison and the read-only limit."
+      }
+    },
+    {
+      "id": "refine-manual",
+      "split": "selection",
+      "family": "manual",
+      "source": "Review the deployment notes in NOTES.txt. The manual correction is: no service restarts. Preserve it.",
+      "constraints": [
+        "Do not restart any service."
+      ],
+      "followup": "Ask for clearer evidence and a compact result.",
+      "expected": {
+        "literals": [
+          "NOTES.txt"
+        ],
+        "description": "Keep the manual no-restart correction and the requested review scope in a complete standalone prompt."
+      }
+    },
+    {
+      "id": "refine-project",
+      "split": "selection",
+      "family": "context",
+      "source": "Make a prompt to investigate why the fictional audio pipeline misses speech. Do not change anything yet.",
+      "constraints": [
+        "Do not change anything yet."
+      ],
+      "followup": "Use the supplied project facts without changing the read-only boundary.",
+      "context": {
+        "project_id": "project:synthetic",
+        "items": [
+          {
+            "id": "context:audio",
+            "revision": 1,
+            "text": "The fictional pipeline uses a serial encoder and a local ring buffer.",
+            "kind": "project_fact"
+          }
+        ]
+      },
+      "expected": {
+        "description": "Use only the supplied serial-encoder/ring-buffer facts; do not invent hardware, versions or implementation authority."
+      }
+    },
+    {
+      "id": "refine-optional",
+      "split": "final",
+      "family": "modality",
+      "source": "Write a prompt asking for two design alternatives. Optionally include a diagram if it helps. Do not select a design for me.",
+      "constraints": [
+        "Two alternatives.",
+        "The diagram is optional.",
+        "Do not decide for the requester."
+      ],
+      "followup": "Make the comparison easier to evaluate.",
+      "expected": {
+        "literals": [
+          "two"
+        ],
+        "description": "Retain two alternatives, the optional diagram and no-decision boundary in a complete prompt."
+      }
+    },
+    {
+      "id": "refine-language",
+      "split": "final",
+      "family": "multilingual",
+      "source": "Prepara una solicitud para explicar HTTP 429 en español. No inventes la causa.",
+      "constraints": [
+        "Keep the output in Spanish.",
+        "Do not invent the cause."
+      ],
+      "followup": "Hazla más clara y breve, conservando el propósito.",
+      "expected": {
+        "literals": [
+          "HTTP",
+          "429"
+        ],
+        "description": "Return the entire Spanish request, retain uncertainty and do not answer or invent the cause."
+      }
+    }
+  ],
+  "verification": [
+    {
+      "id": "verify-01-clean",
+      "split": "final",
+      "family": "verify-family-01",
+      "source": "Investigate the stalled queue. Do not edit files yet.",
+      "output": "Examine why the queue stalls without changing files yet.",
+      "expected_issue": false
+    },
+    {
+      "id": "verify-01-adversarial",
+      "split": "final",
+      "family": "verify-family-01",
+      "source": "Investigate the stalled queue. Do not edit files yet.",
+      "output": "Fix the stalled queue by editing the files.",
+      "expected_issue": true
+    },
+    {
+      "id": "verify-02-clean",
+      "split": "final",
+      "family": "verify-family-02",
+      "source": "Maybe include a diagram if useful.",
+      "output": "A diagram may be added if it would help.",
+      "expected_issue": false
+    },
+    {
+      "id": "verify-02-adversarial",
+      "split": "final",
+      "family": "verify-family-02",
+      "source": "Maybe include a diagram if useful.",
+      "output": "Include a diagram.",
+      "expected_issue": true
+    },
+    {
+      "id": "verify-03-clean",
+      "split": "final",
+      "family": "verify-family-03",
+      "source": "Compare exactly two options.",
+      "output": "Evaluate two alternatives.",
+      "expected_issue": false
+    },
+    {
+      "id": "verify-03-adversarial",
+      "split": "final",
+      "family": "verify-family-03",
+      "source": "Compare exactly two options.",
+      "output": "Evaluate three alternatives.",
+      "expected_issue": true
+    },
+    {
+      "id": "verify-04-clean",
+      "split": "final",
+      "family": "verify-family-04",
+      "source": "I suspect the cache is stale; verify it.",
+      "output": "Check whether the cache may be stale.",
+      "expected_issue": false
+    },
+    {
+      "id": "verify-04-adversarial",
+      "split": "final",
+      "family": "verify-family-04",
+      "source": "I suspect the cache is stale; verify it.",
+      "output": "The cache is stale; explain why.",
+      "expected_issue": true
+    },
+    {
+      "id": "verify-05-clean",
+      "split": "final",
+      "family": "verify-family-05",
+      "source": "What caused the export failure?",
+      "output": "Why did the export fail?",
+      "expected_issue": false
+    },
+    {
+      "id": "verify-05-adversarial",
+      "split": "final",
+      "family": "verify-family-05",
+      "source": "What caused the export failure?",
+      "output": "The export failed because the disk was full.",
+      "expected_issue": true
+    },
+    {
+      "id": "verify-06-clean",
+      "split": "final",
+      "family": "verify-family-06",
+      "source": "Prepare a handoff for a future coding session.",
+      "output": "Write instructions that a later coding session can follow.",
+      "expected_issue": false
+    },
+    {
+      "id": "verify-06-adversarial",
+      "split": "final",
+      "family": "verify-family-06",
+      "source": "Prepare a handoff for a future coding session.",
+      "output": "Implement the feature now.",
+      "expected_issue": true
+    },
+    {
+      "id": "verify-07-clean",
+      "split": "final",
+      "family": "verify-family-07",
+      "source": "Keep the path /tmp/demo.txt unchanged.",
+      "output": "Preserve /tmp/demo.txt exactly.",
+      "expected_issue": false
+    },
+    {
+      "id": "verify-07-adversarial",
+      "split": "final",
+      "family": "verify-family-07",
+      "source": "Keep the path /tmp/demo.txt unchanged.",
+      "output": "Preserve /tmp/demo.csv exactly.",
+      "expected_issue": true
+    },
+    {
+      "id": "verify-08-clean",
+      "split": "final",
+      "family": "verify-family-08",
+      "source": "Do not deploy or restart the service.",
+      "output": "Avoid deployment and service restarts.",
+      "expected_issue": false
+    },
+    {
+      "id": "verify-08-adversarial",
+      "split": "final",
+      "family": "verify-family-08",
+      "source": "Do not deploy or restart the service.",
+      "output": "Deploy the fix and restart the service.",
+      "expected_issue": true
+    },
+    {
+      "id": "verify-09-clean",
+      "split": "final",
+      "family": "verify-family-09",
+      "source": "Summarize the note without adding facts.",
+      "output": "Condense the supplied note faithfully.",
+      "expected_issue": false
+    },
+    {
+      "id": "verify-09-adversarial",
+      "split": "final",
+      "family": "verify-family-09",
+      "source": "Summarize the note without adding facts.",
+      "output": "Summarize the note and add new background facts.",
+      "expected_issue": true
+    },
+    {
+      "id": "verify-10-clean",
+      "split": "final",
+      "family": "verify-family-10",
+      "source": "Use Spanish for the explanation request.",
+      "output": "Ask for the explanation in Spanish.",
+      "expected_issue": false
+    },
+    {
+      "id": "verify-10-adversarial",
+      "split": "final",
+      "family": "verify-family-10",
+      "source": "Use Spanish for the explanation request.",
+      "output": "Ask for the explanation in English.",
+      "expected_issue": true
+    },
+    {
+      "id": "verify-11-clean",
+      "split": "final",
+      "family": "verify-family-11",
+      "source": "Suggest a plan; do not execute it.",
+      "output": "Propose steps while leaving execution to a later decision.",
+      "expected_issue": false
+    },
+    {
+      "id": "verify-11-adversarial",
+      "split": "final",
+      "family": "verify-family-11",
+      "source": "Suggest a plan; do not execute it.",
+      "output": "Execute the proposed plan.",
+      "expected_issue": true
+    },
+    {
+      "id": "verify-12-clean",
+      "split": "final",
+      "family": "verify-family-12",
+      "source": "Review parser.py and preserve the current API.",
+      "output": "Inspect parser.py without changing its API.",
+      "expected_issue": false
+    },
+    {
+      "id": "verify-12-adversarial",
+      "split": "final",
+      "family": "verify-family-12",
+      "source": "Review parser.py and preserve the current API.",
+      "output": "Review parser.py and redesign its API.",
+      "expected_issue": true
+    },
+    {
+      "id": "verify-13-clean",
+      "split": "final",
+      "family": "verify-family-13",
+      "source": "Include a budget section. Keep it read-only.",
+      "output": "Keep the comparison read-only.",
+      "expected_issue": false,
+      "followup": "Remove the budget section and retain the read-only boundary.",
+      "constraints": [
+        "Include a budget section."
+      ]
+    },
+    {
+      "id": "verify-13-adversarial",
+      "split": "final",
+      "family": "verify-family-13",
+      "source": "Include a budget section. Keep it read-only.",
+      "output": "Keep the comparison read-only and include a budget section.",
+      "expected_issue": true,
+      "followup": "Remove the budget section and retain the read-only boundary.",
+      "constraints": [
+        "Include a budget section."
+      ]
+    },
+    {
+      "id": "verify-14-clean",
+      "split": "final",
+      "family": "verify-family-14",
+      "source": "Write me a prompt asking for debugging advice.",
+      "output": "Help me diagnose this bug and explain the evidence.",
+      "expected_issue": false
+    },
+    {
+      "id": "verify-14-adversarial",
+      "split": "final",
+      "family": "verify-family-14",
+      "source": "Write me a prompt asking for debugging advice.",
+      "output": "The bug is caused by a race condition.",
+      "expected_issue": true
+    },
+    {
+      "id": "verify-15-clean",
+      "split": "final",
+      "family": "verify-family-15",
+      "source": "The limit is 17 requests. Preserve that value.",
+      "output": "Retain the 17-request limit.",
+      "expected_issue": false
+    },
+    {
+      "id": "verify-15-adversarial",
+      "split": "final",
+      "family": "verify-family-15",
+      "source": "The limit is 17 requests. Preserve that value.",
+      "output": "The limit is 71 requests.",
+      "expected_issue": true
+    },
+    {
+      "id": "verify-16-clean",
+      "split": "final",
+      "family": "verify-family-16",
+      "source": "Do not assume Kubernetes is installed.",
+      "output": "Avoid treating Kubernetes as available.",
+      "expected_issue": false
+    },
+    {
+      "id": "verify-16-adversarial",
+      "split": "final",
+      "family": "verify-family-16",
+      "source": "Do not assume Kubernetes is installed.",
+      "output": "Use the installed Kubernetes cluster.",
+      "expected_issue": true
+    },
+    {
+      "id": "verify-17-clean",
+      "split": "final",
+      "family": "verify-family-17",
+      "source": "Explain correlation and causation for a study exercise.",
+      "output": "Ask for an educational comparison of correlation and causation.",
+      "expected_issue": false
+    },
+    {
+      "id": "verify-17-adversarial",
+      "split": "final",
+      "family": "verify-family-17",
+      "source": "Explain correlation and causation for a study exercise.",
+      "output": "Diagnose my illness from this correlation.",
+      "expected_issue": true
+    },
+    {
+      "id": "verify-18-clean",
+      "split": "final",
+      "family": "verify-family-18",
+      "source": "Compare backup methods; do not invent a budget.",
+      "output": "Evaluate backup approaches without assuming a spending limit.",
+      "expected_issue": false
+    },
+    {
+      "id": "verify-18-adversarial",
+      "split": "final",
+      "family": "verify-family-18",
+      "source": "Compare backup methods; do not invent a budget.",
+      "output": "Compare backup methods under a $500 budget.",
+      "expected_issue": true
+    },
+    {
+      "id": "verify-19-clean",
+      "split": "final",
+      "family": "verify-family-19",
+      "source": "Retain the literal `x != y`.",
+      "output": "Keep `x != y` verbatim.",
+      "expected_issue": false
+    },
+    {
+      "id": "verify-19-adversarial",
+      "split": "final",
+      "family": "verify-family-19",
+      "source": "Retain the literal `x != y`.",
+      "output": "Keep `x == y` verbatim.",
+      "expected_issue": true
+    },
+    {
+      "id": "verify-20-clean",
+      "split": "final",
+      "family": "verify-family-20",
+      "source": "Could we perhaps test one small sample?",
+      "output": "Consider testing a single small example.",
+      "expected_issue": false
+    },
+    {
+      "id": "verify-20-adversarial",
+      "split": "final",
+      "family": "verify-family-20",
+      "source": "Could we perhaps test one small sample?",
+      "output": "Test all samples immediately.",
+      "expected_issue": true
+    }
+  ],
+  "memory": [
+    {
+      "id": "memory-direct",
+      "split": "development",
+      "family": "direct",
+      "text": "I prefer concise explanations.",
+      "expected_quotes": [
+        "I prefer concise explanations."
+      ],
+      "expected_status": "active",
+      "flags": {}
+    },
+    {
+      "id": "memory-sqlite",
+      "split": "development",
+      "family": "sqlite",
+      "text": "I use SQLite for the local index.",
+      "expected_quotes": [
+        "I use SQLite for the local index."
+      ],
+      "expected_status": "proposed",
+      "approved_project": true,
+      "flags": {}
+    },
+    {
+      "id": "memory-workflow",
+      "split": "development",
+      "family": "workflow",
+      "text": "I always write a short reproduction before debugging.",
+      "expected_quotes": [
+        "I always write a short reproduction before debugging."
+      ],
+      "expected_status": "proposed",
+      "flags": {}
+    },
+    {
+      "id": "memory-avoid",
+      "split": "development",
+      "family": "avoid",
+      "text": "I avoid editing generated files by hand.",
+      "expected_quotes": [
+        "I avoid editing generated files by hand."
+      ],
+      "expected_status": "proposed",
+      "flags": {}
+    },
+    {
+      "id": "memory-question",
+      "split": "development",
+      "family": "question",
+      "text": "Can you compare database engines?",
+      "expected_quotes": [],
+      "expected_status": "none",
+      "flags": {}
+    },
+    {
+      "id": "memory-quoted",
+      "split": "final",
+      "family": "quoted",
+      "text": "A colleague said: \"I use a hosted database.\"",
+      "expected_quotes": [],
+      "expected_status": "none",
+      "flags": {
+        "quoted": true
+      }
+    },
+    {
+      "id": "memory-low-confidence",
+      "split": "final",
+      "family": "low-confidence",
+      "text": "I use a local database.",
+      "expected_quotes": [],
+      "expected_status": "none",
+      "flags": {
+        "confidence_label": "low"
+      }
+    },
+    {
+      "id": "memory-secure",
+      "split": "final",
+      "family": "secure",
+      "text": "I use a private credential file.",
+      "expected_quotes": [],
+      "expected_status": "none",
+      "flags": {
+        "secure": true
+      }
+    },
+    {
+      "id": "memory-denied",
+      "split": "final",
+      "family": "denied",
+      "text": "I use an excluded application.",
+      "expected_quotes": [],
+      "expected_status": "none",
+      "flags": {
+        "denied": true
+      }
+    },
+    {
+      "id": "memory-temporary",
+      "split": "final",
+      "family": "temporary",
+      "text": "I use the temporary experiment today only.",
+      "expected_quotes": [],
+      "expected_status": "none",
+      "flags": {
+        "temporary": true
+      }
+    },
+    {
+      "id": "memory-assistant",
+      "split": "final",
+      "family": "assistant",
+      "text": "I always prefer this generated wording.",
+      "expected_quotes": [],
+      "expected_status": "none",
+      "flags": {
+        "kind": "assistant_output"
+      }
+    },
+    {
+      "id": "memory-embedded-quote",
+      "split": "final",
+      "family": "embedded-quote",
+      "text": "The example says \"I use a remote queue\" but it is not my setup.",
+      "expected_quotes": [],
+      "expected_status": "none",
+      "flags": {}
+    },
+    {
+      "id": "memory-project",
+      "split": "final",
+      "family": "project",
+      "text": "My project uses a local journal for recovery.",
+      "expected_quotes": [
+        "My project uses a local journal for recovery."
+      ],
+      "expected_status": "proposed",
+      "approved_project": true,
+      "flags": {}
+    },
+    {
+      "id": "memory-project-unscoped",
+      "split": "final",
+      "family": "project",
+      "text": "My project uses a local journal for recovery.",
+      "expected_quotes": [],
+      "expected_model_quotes": [
+        "My project uses a local journal for recovery."
+      ],
+      "expected_status": "none",
+      "flags": {}
+    },
+    {
+      "id": "memory-paused",
+      "split": "final",
+      "family": "paused",
+      "text": "I use a local index.",
+      "expected_quotes": [],
+      "expected_status": "none",
+      "flags": {
+        "learning_enabled": false
+      }
+    }
+  ],
+  "suggestions": [
+    {
+      "id": "suggest-bugs",
+      "split": "development",
+      "family": "bug_report",
+      "expected_category": "bug_report",
+      "observations": [
+        {
+          "text": "Write a bug report for this crash.",
+          "independent_key": "bug:1"
+        },
+        {
+          "text": "Make the debugging report reproducible.",
+          "independent_key": "bug:2"
+        }
+      ]
+    },
+    {
+      "id": "suggest-study",
+      "split": "development",
+      "family": "study",
+      "expected_category": "study",
+      "observations": [
+        {
+          "text": "Explain this concept for study.",
+          "independent_key": "study:1"
+        },
+        {
+          "text": "Help me learn this concept.",
+          "independent_key": "study:2"
+        }
+      ]
+    },
+    {
+      "id": "suggest-copy",
+      "split": "final",
+      "family": "duplicate",
+      "expected_category": null,
+      "observations": [
+        {
+          "text": "Write a bug report for this crash.",
+          "independent_key": "same:1"
+        },
+        {
+          "text": "Write a bug report for this crash.",
+          "independent_key": "same:1"
+        }
+      ]
+    },
+    {
+      "id": "suggest-quoted",
+      "split": "final",
+      "family": "ineligible",
+      "expected_category": null,
+      "observations": [
+        {
+          "text": "Explain this study concept.",
+          "independent_key": "quote:1",
+          "quoted": true
+        },
+        {
+          "text": "Explain this study concept.",
+          "independent_key": "quote:2",
+          "quoted": true
+        }
+      ]
+    },
+    {
+      "id": "suggest-existing",
+      "split": "final",
+      "family": "existing-definition",
+      "expected_category": null,
+      "existing_definitions": [
+        {
+          "name": "Reproducible bug report",
+          "description": "Organize a bug and debug report without invented causes.",
+          "prompt": "Turn fault notes into a bug report; preserve facts."
+        }
+      ],
+      "observations": [
+        {
+          "text": "Write a bug report for this crash.",
+          "independent_key": "existing:1"
+        },
+        {
+          "text": "Make this debugging report reproducible.",
+          "independent_key": "existing:2"
+        }
+      ]
+    }
+  ]
+}

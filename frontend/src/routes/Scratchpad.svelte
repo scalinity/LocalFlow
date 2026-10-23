@@ -13,6 +13,7 @@
   import NoteEditor from './scratchpad/NoteEditor.svelte';
   import { app, act } from '../stores/app.svelte';
   import { num, shortDate } from '../stores/format';
+  import { tick } from 'svelte';
   import { outcome, type Outcome } from '../stores/outcome';
 
   const sp = $derived(app.views.scratchpad);
@@ -39,6 +40,7 @@
   let moreOpen = $state(false);
   let tfBtn = $state<HTMLElement | null>(null);
   let tfOpen = $state(false);
+  let noteEditor = $state<NoteEditor | undefined>();
   let verBtn = $state<HTMLElement | null>(null);
   let verOpen = $state(false);
   let confirmDelete = $state(false);
@@ -108,8 +110,11 @@
   }
 
   async function transform(id: string) {
+    const noteId = sp.selected_id;
     tfOpen = false;
-    await run('scratchpad.transform', { note_id: sp.selected_id, transform_id: id }, (x) => ({
+    await tick();
+    noteEditor?.focusForTransform();
+    await run('scratchpad.transform', { note_id: noteId, transform_id: id }, (x) => ({
       tone: 'info',
       text: x.scope === 'selection' ? 'Transforming the selection — review it in the panel that opens.' : 'Transforming the whole note — review it in the panel that opens.',
     }));
@@ -253,7 +258,7 @@
       {/if}
       {#if note}<Note tone={note.tone} text={note.text} ondismiss={() => (note = null)} />{/if}
       <div class="paper">
-        <NoteEditor noteId={sp.selected_id} focus={sp.focus_note === sp.selected_id} onstatus={(s) => (note = { tone: 'warning', text: s })} />
+        <NoteEditor bind:this={noteEditor} noteId={sp.selected_id} focus={sp.focus_note === sp.selected_id} onstatus={(s) => (note = { tone: 'warning', text: s })} />
       </div>
       <footer class="foot">
         {#if detail}

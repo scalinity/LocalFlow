@@ -43,6 +43,20 @@ class Transcriber:
         # M03 (S29.5): the original-sample ranges actually decoded for the
         # last transcribe() call — [[start, end], ...], half-open, exact.
         self.last_decode_ranges = None
+        self.last_learning_signal = None
+
+    @staticmethod
+    def learning_signal(tokens):
+        """Observed token scores, not calibrated transcription correctness."""
+        try:
+            scores = np.asarray([float(t.confidence) for t in tokens], dtype=float)
+            if not len(scores) or not np.isfinite(scores).all() or (scores < 0).any() or (scores > 1).any():
+                return None
+            return {"method": "parakeet_token_scores", "calibrated": False,
+                    "tokens": len(scores), "mean": float(scores.mean()),
+                    "minimum": float(scores.min())}
+        except (AttributeError, TypeError, ValueError):
+            return None
 
     def load(self, on_phase=None):
         """on_phase("loading"|"warming") lets a caller report engine
@@ -90,6 +104,7 @@ class Transcriber:
         self.ready.wait(timeout=600)
         if self._model is None:
             raise RuntimeError(f"model not loaded: {self.load_error}")
+        self.last_learning_signal = None
         if audio.size == 0:
             self.last_decode_ranges = []
             return ""
@@ -105,7 +120,9 @@ class Transcriber:
             if audio.size / cfg.sample_rate <= self.CHUNK_SEC * 1.5:
                 self.last_decode_ranges = [[0, int(audio.size)]]
                 mel = get_logmel(mx.array(audio), cfg)
-                return model.generate(mel)[0].text.strip()
+                result = model.generate(mel)[0]
+                self.last_learning_signal = self.learning_signal(getattr(result, "tokens", ()))
+                return result.text.strip()
             return self._transcribe_chunked(model, cfg, audio).strip()
 
     def _transcribe_chunked(self, model, cfg, audio: np.ndarray) -> str:
@@ -147,5 +164,6 @@ class Transcriber:
                         all_tokens, result.tokens, overlap_duration=self.OVERLAP_SEC
                     )
         self.last_decode_ranges = ranges
+        self.last_learning_signal = self.learning_signal(all_tokens)
         sentences = tokens_to_sentences(all_tokens, DecodingConfig().sentence)
         return sentences_to_result(sentences).text

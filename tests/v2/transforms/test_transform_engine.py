@@ -151,14 +151,13 @@ def test_run_transform_paths():
     d = _defn()
     job = job_for_definition(d, PE_SOURCE, source_kind="selection")
     res = tf_engine.run_transform(job, _gen_ok, model="claude-sonnet-5-5",
-                                  reasoning="low")
+                                  reasoning="low", verify=lambda *_: {"text": '{"issues": []}'})
     assert res.path == "applied", (res.path, res.reason)
     assert res.coverage_summary["missing"] == 0
     assert res.output.startswith("# Task")
     assert (res.model, res.reasoning) == ("claude-sonnet-5-5", "low")
     assert res.served_model_id == "claude-sonnet-5-5@low"
-    assert json.loads(res.prompt)["messages"][-1]["content"].startswith(
-        "<draft>")  # the exact request retained for evidence
+    assert json.loads(json.loads(res.prompt)["messages"][-1]["content"])["source"] == PE_SOURCE  # the exact request retained for evidence
     # A map whose cited output span the prompt does not contain routes to
     # needs_review with the draft's own wording kept.
     lossy = _answer(_pe("Fix the parser.", [
@@ -166,12 +165,12 @@ def test_run_transform_paths():
     res2 = tf_engine.run_transform(job, lossy)
     assert res2.path == "needs_review", res2.path
     assert res2.reason == "requirement_coverage_uncertain"
-    assert res2.review_excerpts == ("give me two possible fixes",)
+    assert "give me two possible fixes" in res2.review_excerpts
     # A requirement Claude marks uncertain is a review issue too.
     res2b = tf_engine.run_transform(job, _answer(_pe(
         PE_PROMPT, PE_MAP, uncertain=["don't edit files yet"])))
     assert res2b.path == "needs_review" \
-        and res2b.review_excerpts == ("don't edit files yet",)
+        and "don't edit files yet" in res2b.review_excerpts
     # No usable answer falls back to the original text with the reason.
     def gen_fail(system, messages, schema):
         raise tf_claude.TransformUnavailable("network_unavailable")
@@ -191,10 +190,12 @@ def test_run_transform_paths():
         "<draft>\nship it friday\n</draft>\n\nWait — Ship it Friday."))
     assert res5b.path == "fallback_original" \
         and res5b.reason == "transform_unavailable:output_invalid"
-    # An output equal to its source (spacing aside) is its own outcome.
+    # Only exact equality is no_changes; whitespace can carry meaning.
     pj = job_for_definition(_defn("polish"), "Ship it  on Friday.")
     res6 = tf_engine.run_transform(pj, _answer("Ship it on Friday."))
-    assert res6.path == "no_changes" and res6.reason == "no_changes"
+    assert res6.path == "applied"
+    res7 = tf_engine.run_transform(pj, _answer(pj.source))
+    assert res7.path == "no_changes" and res7.reason == "no_changes"
     print("ok  run_transform: applied / needs_review / no_changes /"
           " fallback")
 
@@ -220,11 +221,11 @@ def test_exact_carry_guards_every_mode():
 def test_prompt_construction_and_revision():
     system, msgs = tf_prompts.build_request("prompt_engineer", PE_SOURCE)
     assert system == tf_prompts.PROMPT_ENGINEER_CONTRACT
-    assert "never answer it, carry it out" in system
+    assert "Never answer, execute or research" in system
     # The draft is the only turn, inside <draft> tags: data, never
     # instructions; no few-shot rides with a built-in.
-    assert msgs == [{"role": "user",
-                     "content": f"<draft>\n{PE_SOURCE}\n</draft>"}]
+    assert len(msgs) == 1 and msgs[0]["role"] == "user"
+    assert json.loads(msgs[0]["content"])["source"] == PE_SOURCE
     assert tf_prompts.schema_for("prompt_engineer") \
         == tf_prompts.PROMPT_ENGINEER_SCHEMA
     assert tf_prompts.schema_for("polish") == tf_prompts.TEXT_SCHEMA
@@ -241,7 +242,7 @@ def test_prompt_construction_and_revision():
     system, msgs = tf_prompts.build_request(
         "custom", "hi", custom_instruction="Make it fun",
         examples=(("a", "b"),))
-    assert system.endswith("<instruction>\nMake it fun\n</instruction>")
+    assert system.endswith('Trusted rewrite instruction: "Make it fun"')
     assert [m["role"] for m in msgs] == ["user", "assistant", "user"]
     plain = tf_prompts.prompt_revision("custom")
     with_instr = tf_prompts.prompt_revision("custom", "Make it fun")
@@ -271,6 +272,21 @@ def test_diff_surfaces():
     print("ok  diff: word ops, stats, rendering, block hunks")
 
 
+def test_stored_decision_retains_usage_and_blocking_issues():
+    attempts = ({"role": "generation", "model": "claude-sonnet-5-5",
+                 "input_tokens": 300, "output_tokens": 60,
+                 "cache_read_input_tokens": 0, "cache_creation_input_tokens": 0},)
+    result = tf_engine.TransformResult(
+        job=job_for_definition(_defn(), "Keep it hypothetical."),
+        output="Compare hypothetical alternatives.", path="needs_review",
+        attempts=attempts, blocking_issues=("Constraint missing",))
+    for serialize in (tf_engine.decision_json, tf_engine.result_json_for_store):
+        stored = json.loads(serialize(result))
+        assert stored["attempts"] == list(attempts)
+        assert stored["blocking_issues"] == ["Constraint missing"]
+    print("ok  stored decisions retain measured usage and application blockers")
+
+
 def test_snapshot_oversized_source_refuses():
     big = "word " * 6000
     try:
@@ -290,5 +306,6 @@ if __name__ == "__main__":
     test_exact_carry_guards_every_mode()
     test_prompt_construction_and_revision()
     test_diff_surfaces()
+    test_stored_decision_retains_usage_and_blocking_issues()
     test_snapshot_oversized_source_refuses()
     print("all transform engine tests passed")

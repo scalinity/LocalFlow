@@ -87,12 +87,13 @@ def served_text(result):
 
 # Two action rows (title, action, enabled, width, row).
 _ACTIONS = (
-    ("Accept", "panelAccept:", True, 74.0, 0),
+    ("Accept ↵", "panelAccept:", True, 84.0, 0),
     ("Copy", "panelCopy:", True, 62.0, 0),
+    ("Refine…", "panelRefine:", True, 84.0, 0),
     ("Retry Original", "panelRetry:", True, 114.0, 0),
-    ("Apply Another…", "panelApplyOther:", True, 126.0, 0),
-    ("Transform Output…", "panelTransformResult:", True, 146.0, 1),
-    ("Save to Scratchpad", "panelSaveToScratchpad:", True, 158.0, 1),
+    ("Apply Another…", "panelApplyOther:", True, 124.0, 1),
+    ("Transform Output…", "panelTransformResult:", True, 138.0, 1),
+    ("Save to Scratchpad", "panelSaveToScratchpad:", True, 140.0, 1),
 )
 
 
@@ -270,6 +271,14 @@ def action_frames(actions=_ACTIONS):
     return frames
 
 
+def clamped_panel_origin(x, y, frame, visible):
+    """Keep a review card inside the display's usable rectangle."""
+    left, bottom = visible.origin.x + 12, visible.origin.y + 12
+    right = max(left, visible.origin.x + visible.size.width - frame.size.width - 12)
+    top = max(bottom, visible.origin.y + visible.size.height - frame.size.height - 12)
+    return min(max(x, left), right), min(max(y, bottom), top)
+
+
 class TransformPreviewPanel(NSObject):
     """One lazily-constructed panel per process; ``show`` refreshes it
     for the latest result. All calls land on the main thread."""
@@ -324,6 +333,7 @@ class TransformPreviewPanel(NSObject):
         self.text = NSTextView.alloc().initWithFrame_(
             NSMakeRect(24, FOOTER_H, PANEL_W - 48, PANEL_H - FOOTER_H - HEADER_H))
         self.text.setEditable_(False)
+        self.text.setAccessibilityLabel_("Transform changes; struck text will be removed")
         self.text.setRichText_(False)
         self.text.setDrawsBackground_(False)
         self.text.setTextContainerInset_(NSSize(0.0, 4.0))
@@ -413,23 +423,47 @@ class TransformPreviewPanel(NSObject):
     @objc.python_method
     def _anchor(self):
         """Grow upward from the same bottom-center pill anchor."""
+        from Foundation import NSPointInRect
         overlay = getattr(self.coordinator, "overlay", None)
         pill = getattr(overlay, "_panel", None)
         frame = self.panel.frame()
-        if pill is not None:
+        point = NSEvent.mouseLocation()
+        if pill is not None and pill.isVisible():
             anchor = pill.frame()
+            point = (anchor.origin.x + anchor.size.width / 2,
+                     anchor.origin.y + anchor.size.height / 2)
             x = anchor.origin.x + (anchor.size.width - frame.size.width) / 2
             y = anchor.origin.y
         else:
-            from Foundation import NSPointInRect
-            screen = next((s for s in NSScreen.screens() if NSPointInRect(NSEvent.mouseLocation(), s.frame())), NSScreen.mainScreen())
-            visible = screen.visibleFrame()
+            x = y = None
+        screen = next((s for s in NSScreen.screens() if NSPointInRect(point, s.frame())), NSScreen.mainScreen())
+        visible = screen.visibleFrame()
+        if x is None:
             x = visible.origin.x + (visible.size.width - frame.size.width) / 2
             y = visible.origin.y + 20
-        self.panel.setFrameOrigin_((x, y))
+        self.panel.setFrameOrigin_(clamped_panel_origin(x, y, frame, visible))
 
     def panelDismiss_(self, sender):
+        if hasattr(self.coordinator, "tfDismissReview"):
+            self.coordinator.tfDismissReview()
         self.panel.orderOut_(None)
+
+    @objc.python_method
+    def show_status(self, message):
+        self._state = {"result": None, "capture": None, "defn": None,
+                       "candidate_id": None}
+        self.panel.setTitle_("Transform unavailable — original unchanged")
+        self.name.setStringValue_("Transform unavailable")
+        self.count.setStringValue_("Original unchanged · Diagnostics has the reason")
+        text = NSMutableAttributedString.alloc().init()
+        self._append(text, message, "note")
+        self.text.textStorage().setAttributedString_(text)
+        self.text.setAccessibilityHelp_("Original unchanged")
+        for button in self._buttons.values():
+            button.setEnabled_(False)
+        self._fit_height()
+        self._anchor()
+        self.panel.orderFrontRegardless()
 
     def panelConfigure_(self, sender):
         """Open this transform in the Hub (its settings). The Hub opens
@@ -445,6 +479,8 @@ class TransformPreviewPanel(NSObject):
 
     @objc.python_method
     def show(self, result, capture, defn, candidate_id):
+        for button in self._buttons.values():
+            button.setEnabled_(True)
         self._state = {"result": result, "capture": capture,
                        "defn": defn, "candidate_id": candidate_id}
         title = {"applied": "ready to apply",
@@ -463,6 +499,16 @@ class TransformPreviewPanel(NSObject):
         for kind, s in pieces:
             self._append(text, s, kind)
         tail = []
+        pack = getattr(result.job, "context_pack", None) if result.job else None
+        if pack and pack.get("items"):
+            tail.append("\n\nCONTEXT USED — review or exclude items in Refine…:")
+            for item in pack["items"]:
+                tail.append(f"\n  • {item.get('text', '')}")
+        if capture.get("buffer_edit") is not None:
+            tail.append("\n\nSource: " + capture.get("scope", "Logical buffer") +
+                        ". Accept returns text to this buffer without submitting or executing it.")
+        elif not capture.get("can_replace", True):
+            tail.append("\n\nThe source was acquired, but this app does not expose reliable replacement. Copy or refine the result.")
         if result.review_excerpts:
             tail.append("\n\nREVIEW — these source requirements have"
                         " uncertain coverage; their original wording"
@@ -475,11 +521,16 @@ class TransformPreviewPanel(NSObject):
         if tail:
             self._append(text, "".join(tail), "note")
         self.text.textStorage().setAttributedString_(text)
+        # The inline diff includes removed text and visual separator spaces.
+        # Expose the complete accepted text for assistive reading as well.
+        self.text.setAccessibilityHelp_("Replacement text:\n" + result.output)
         self._fit_height()
         # Retry needs a task (a refused job has none to re-run).
         self._buttons["panelRetry:"].setEnabled_(result.job is not None)
         # An unchanged result has nothing to apply.
-        self._buttons["panelAccept:"].setEnabled_(result.path != "no_changes")
+        self._buttons["panelAccept:"].setEnabled_(
+            result.path in ("applied", "needs_review") and capture.get("can_replace", True)
+            and not getattr(result, "blocking_issues", ()))
         self._anchor()
         self.panel.orderFrontRegardless()
 
@@ -503,13 +554,16 @@ class TransformPreviewPanel(NSObject):
 
     def panelAccept_(self, sender):
         st = self._state
-        if st["result"] is None or st["capture"] is None:
+        if st["result"] is None or st["capture"] is None \
+                or not self._buttons["panelAccept:"].isEnabled():
             return
         self.panel.orderOut_(None)
         self.coordinator.tfAcceptTransform(
             st["result"], st["capture"], st["candidate_id"])
 
     def panelCopy_(self, sender):
+        if hasattr(self.coordinator, "tfDismissReview"):
+            self.coordinator.tfDismissReview()
         st = self._state
         if st["result"] is not None:
             self.coordinator.tfCopyTransform(st["result"])
@@ -523,7 +577,15 @@ class TransformPreviewPanel(NSObject):
         self.coordinator.tfRetryOriginal(
             st["result"], st["capture"], st["defn"], st["candidate_id"])
 
+    def panelRefine_(self, sender):
+        st = self._state
+        if st["result"] is not None and st["capture"] is not None:
+            self.panel.orderOut_(None)
+            self.coordinator.tfRefineTransform(st["result"], st["capture"], st["defn"])
+
     def _choose_definition(self, sender, action):
+        if hasattr(self.coordinator, "tfDismissReview"):
+            self.coordinator.tfDismissReview(cancel_buffer=False)
         st = self._state
         if st["result"] is None or st["capture"] is None:
             return
@@ -531,6 +593,7 @@ class TransformPreviewPanel(NSObject):
         defs = [d for d in (snapshot.definitions if snapshot else [])
                 if d.transform_id != st["defn"].transform_id]
         if not defs:
+            self.coordinator.tfRestoreReview(st["result"], st["capture"])
             return
         menu = NSMenu.alloc().init()
         for d in defs:
@@ -542,6 +605,16 @@ class TransformPreviewPanel(NSObject):
         self._other_menu = menu  # keep alive while open
         menu.popUpMenuPositioningItem_atLocation_inView_(
             None, sender.frame().origin, sender.superview())
+        if self.panel.isVisible() and self._state is st:
+            self.coordinator.tfRestoreReview(st["result"], st["capture"])
+
+    @objc.python_method
+    def reoffer_apply(self, reason, result):
+        if self._state.get("result") is not result:
+            return
+        self._buttons["panelAccept:"].setEnabled_(False)
+        self.count.setStringValue_(f"Replacement was not confirmed ({reason}). Copy or save the result.")
+        self.panel.orderFrontRegardless()
 
     def panelApplyOther_(self, sender):
         self._choose_definition(sender, "panelOtherChosen:")

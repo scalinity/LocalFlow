@@ -71,21 +71,33 @@ def surroundings(host, el, start: int, end: int):
     return preceding, following
 
 
-def capture_selection(host, *, denied_apps=()):
+def capture_selection(host, *, denied_apps=(), expected_pid=None, copy_selected=None,
+                      expected_element=None, expected_window=None):
     """Capture the focused selection for a selected-text transform.
     Returns ``(capture, None)`` or ``(None, reason)``; the capture is
     ``{"source", "range", "snapshot", "target"}``."""
     fm = host.frontmost()
     if not fm:
         return None, "no_frontmost_application"
+    if expected_pid is not None and fm.get("pid") != expected_pid:
+        return None, "destination_unverified"
     bundle = fm.get("bundle")
     if app_denied(bundle, denied_apps or ()):
         return None, "app_denied"
+    prepare = getattr(host, "prepare_text_capture", None)
+    if prepare is not None:
+        prepare(fm.get("pid"))
+        if (host.frontmost() or {}).get("pid") != fm.get("pid"):
+            return None, "destination_unverified"
     el, owned = acquire_destination(host, fm.get("pid"))
     if not owned:
         return None, "destination_unverified"
     if el is None:
         return None, "no_focused_element"
+    if expected_element is not None and el != expected_element:
+        return None, "destination_unverified"
+    if expected_window is not None and host.attribute(el, "AXWindow") != expected_window:
+        return None, "destination_unverified"
     role = host.attribute(el, "AXRole")
     subrole = host.attribute(el, "AXSubrole")
     role = role if isinstance(role, str) else None
@@ -98,6 +110,11 @@ def capture_selection(host, *, denied_apps=()):
         # S12: an unclassifiable field gets no content read — an
         # explicit transform needs a classified text field.
         return None, "unclassifiable_field"
+    # A terminal's AX range describes its screen/scrollback, not its
+    # shell or coding-CLI composer. Never generate from those coordinates.
+    # Logical-buffer adapters acquire their source through a separate path.
+    if categorize(bundle) == "terminal":
+        return None, "terminal_buffer_integration_required"
     raw = host.attribute(el, "AXSelectedTextRange")
     if isinstance(raw, tuple) and len(raw) == 2:
         # The repo convention (providers._as_range): a plain tuple is
@@ -108,8 +125,22 @@ def capture_selection(host, *, denied_apps=()):
     if rng is None or rng[1] <= rng[0]:
         return None, "no_selection"
     text = host.string_for_range(el, rng[0], rng[1] - rng[0])
+    direct = host.attribute(el, "AXSelectedText")
+    if isinstance(direct, str) and direct and text is not None and direct != text:
+        return None, "selection_apis_disagree"
+    acquisition = "ax_crosschecked" if direct and text else "ax_range"
+    can_replace = True
+    if text is None and isinstance(direct, str) and direct:
+        text, acquisition = direct, "ax_selected_text"
+    if text is None and copy_selected is not None:
+        text, acquisition = copy_selected(el, fm["pid"]), "fresh_copy"
+        # A fresh copy proves acquisition, not a stable replacement API.
+        # The result remains useful in Copy/workspace without a blind paste.
+        can_replace = False
     if not text or not text.strip():
         return None, "no_selection"
+    if utf16_len(text) != rng[1] - rng[0] or _LONE_SURROGATE.search(text):
+        return None, "selection_range_units_unverified"
     title = window_title(host, el)
     window_el = host.attribute(el, "AXWindow")
     preceding, following = surroundings(host, el, rng[0], rng[1])
@@ -130,11 +161,14 @@ def capture_selection(host, *, denied_apps=()):
         role=role, subrole=subrole, classification=classification,
         selected_text=text, selected_range=cp_range,
         selected_range_utf16=tuple(rng),
-        preceding_text=preceding, following_text=following)
+        preceding_text=preceding, following_text=following,
+        document_url=host.attribute(el, "AXDocument"))
     snap = ContextSnapshot(
         context_snapshot_id=ids.new_id("ctx"),
         stage="transform_selection", target=target, field=field,
         window_title=title, window_element=window_el,
+        field_element=el,
         captured_at_utc=ids.now_utc_iso())
     return {"source": text, "range": tuple(rng), "snapshot": snap,
-            "target": target}, None
+            "target": target, "acquisition": acquisition, "can_replace": can_replace,
+            "review_element": el, "review_window": window_el}, None

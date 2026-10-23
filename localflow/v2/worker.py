@@ -453,6 +453,7 @@ class Worker:
             "sample_count": int(samples.size), "sample_rate": int(rate),
             "decode_ranges": getattr(self.transcriber,
                                      "last_decode_ranges", None),
+            "learning_signal": getattr(self.transcriber, "last_learning_signal", None),
         })
 
     def _clean(self, msg):

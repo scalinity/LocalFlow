@@ -11,6 +11,7 @@
   import { act } from '../../stores/app.svelte';
   import { outcome, type Outcome } from '../../stores/outcome';
   import { untrack } from 'svelte';
+  import Inspector from './Inspector.svelte';
 
   interface Form {
     name: string;
@@ -21,7 +22,7 @@
     auto_apply: boolean;
   }
 
-  let { id = null, rows, onclose }: { id?: string | null; rows: any[]; onclose: () => void } = $props();
+  let { id = null, rows, onclose, onduplicate }: { id?: string | null; rows: any[]; onclose: () => void; onduplicate: (prompt: string) => void } = $props();
 
   const toForm = (t: any): Form => ({
     name: t.name ?? '',
@@ -40,6 +41,8 @@
 
   let edits = $state<Partial<Form>>({});
   let busy = $state(false);
+  let closing = $state(false);
+  function close() { if (Object.keys(touched).length) closing = true; else onclose(); }
   let note = $state<Outcome | null>(null);
 
   const current = $derived(id ? rows.find((t) => t.transform_id === id) ?? null : null);
@@ -93,7 +96,7 @@
   ];
 </script>
 
-<Modal label={id ? form.name || 'Transform' : 'Create a transform'} size="wide" {onclose}>
+<Modal label={id ? form.name || 'Transform' : 'Create a transform'} size="wide" dismissable={!busy} onclose={close}>
   <form onsubmit={save}>
     <h2 class="title">{id ? form.name || 'Transform' : 'Create a transform'}</h2>
     {#if readOnly}
@@ -101,15 +104,15 @@
       {#if start?.prompt}<pre class="prompt selectable">{start.prompt}</pre>{/if}
     {:else}
       <div class="grid">
-        <TextField label="Name" placeholder="e.g. Friendly reply" value={form.name} oninput={(e) => set('name', e.currentTarget.value)} data-autofocus />
-        <Select label="What it does" value={form.mode} options={MODES} disabled={builtin} onchange={(v) => set('mode', v)} />
+        <TextField label="Name" placeholder="e.g. Friendly reply" value={form.name} disabled={busy} oninput={(e) => set('name', e.currentTarget.value)} data-autofocus />
+        <Select label="What it does" value={form.mode} options={MODES} disabled={builtin || busy} onchange={(v) => set('mode', v)} />
       </div>
       {#if form.mode === 'custom'}
         <div class="block">
-          <TextArea label="Instructions" rows={6} placeholder="Describe how the text should change — tone, structure, what to keep." value={form.prompt} oninput={(e) => set('prompt', e.currentTarget.value)} />
+          <TextArea label="Instructions" rows={6} placeholder="Describe how the text should change — tone, structure, what to keep." value={form.prompt} disabled={builtin || busy} oninput={(e) => set('prompt', e.currentTarget.value)} />
         </div>
       {:else}
-        <p class="hint">Uses LocalFlow’s own {MODES.find((m) => m.value === form.mode)?.label} instructions, which keep your meaning and every fact.</p>
+        <p class="hint">Built-in instructions are read-only. Load the effective request below to inspect them or duplicate a custom version.</p>
       {/if}
       <div class="grid">
         <div>
@@ -119,6 +122,7 @@
         <TextField
           label="Only for styles (optional)"
           placeholder="e.g. email, work_messaging"
+          disabled={busy}
           value={form.target_profiles.join(', ')}
           oninput={(e) =>
             set(
@@ -135,13 +139,15 @@
           <p class="opt">Use while dictating</p>
           <p class="hint tight">When a style chooses this mode, apply it before inserting. Off, it runs only when you pick it.</p>
         </div>
-        <Switch label="Use while dictating" checked={form.auto_apply} onchange={(v) => set('auto_apply', v)} />
+        <Switch label="Use while dictating" checked={form.auto_apply} disabled={busy} onchange={(v) => set('auto_apply', v)} />
       </div>
     {/if}
     {#if gone}<div class="note"><Note tone="warning" text="This transform no longer exists." /></div>{/if}
     {#if note}<div class="note"><Note tone={note.tone} text={note.text} /></div>{/if}
+    {#if !readOnly}<Inspector definition={{ id: id ?? '', name: form.name, mode: form.mode, prompt: form.prompt, examples: (current?.examples ?? []).map((e: any) => Array.isArray(e) ? { input: e[0], output: e[1] } : { input: e.input ?? e.before, output: e.output ?? e.after }), revision: current?.revision ?? 0 }} savedTransformId={id && form.prompt === rowForm.prompt && form.mode === rowForm.mode ? id : undefined} model={current?.model} effort={current?.reasoning} {onduplicate} />{/if}
+    {#if closing}<div class="note"><Note tone="warning" text="This transform has unsaved changes." /><div class="buttons"><Button onclick={() => closing = false}>Keep editing</Button><Button variant="danger" onclick={onclose}>Discard and close</Button></div></div>{/if}
     <div class="buttons">
-      <Button onclick={onclose}>{readOnly ? 'Close' : 'Cancel'}</Button>
+      <Button onclick={close}>{readOnly ? 'Close' : 'Cancel'}</Button>
       {#if !readOnly}
         <Button variant="primary" type="submit" {busy} disabled={gone || !form.name.trim() || (!!id && Object.keys(touched).length === 0)}>{id ? 'Save' : 'Create'}</Button>
       {/if}
@@ -157,7 +163,7 @@
   }
   .grid {
     display: grid;
-    grid-template-columns: 1fr 1fr;
+    grid-template-columns: repeat(auto-fit, minmax(min(240px, 100%), 1fr));
     gap: 14px;
     margin-top: 14px;
   }

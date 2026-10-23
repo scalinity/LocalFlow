@@ -152,6 +152,23 @@ def test_bridge_builtin_and_custom_preferences():
         assert w.host.send("transforms.record_shortcut", {"active": True})["status"] == "success"
 
 
+def test_active_input_source_and_restart_key_state():
+    from unittest.mock import patch
+    from localflow.transform_hotkey import TransformHotkeyListener
+    listener = TransformHotkeyListener(lambda *_: None, lambda *_: None)
+    with patch('localflow.transform_hotkey.current_input_is_layout', return_value=True):
+        listener.refresh_input_source()
+        assert listener.review_eligible
+    with patch('localflow.transform_hotkey.current_input_is_layout', return_value=False):
+        listener.refresh_input_source()
+        assert not listener.review_eligible
+    listener.review.physical.update((36, 76))
+    listener.review.consumed.update((36, 76))
+    with patch('localflow.transform_hotkey.Q.CGEventSourceKeyState', side_effect=lambda state, key: key == 76):
+        listener._reconcile_review_keys()
+    assert listener.review.physical == listener.review.consumed == {76}
+
+
 def test_native_tap_lifecycle_and_exact_consumption():
     from unittest.mock import patch
     import Quartz as Q
@@ -175,13 +192,54 @@ def test_native_tap_lifecycle_and_exact_consumption():
         assert listener._event(None, Q.kCGEventKeyUp, event, None) is None
         Q.CGEventSetFlags(event, Q.kCGEventFlagMaskSecondaryFn | Q.kCGEventFlagMaskAlternate)
         assert listener._event(None, Q.kCGEventKeyDown, event, None) is event
-    with patch.object(Q, "CGEventTapCreate", return_value=object()) as create, patch.object(Q, "CFMachPortCreateRunLoopSource", return_value=object()), patch.object(Q, "CFRunLoopAddSource") as add, patch.object(Q, "CGEventTapEnable"), patch.object(Q, "CFRunLoopRemoveSource") as remove, patch.object(Q, "CFMachPortInvalidate") as invalidate:
+    with patch.object(Q, "CGEventTapCreate", return_value=object()) as create, patch.object(Q, "CFMachPortCreateRunLoopSource", return_value=object()), patch.object(Q, "CFRunLoopAddSource") as add, patch.object(Q, "CGEventTapEnable"), patch.object(Q, "CGEventTapIsEnabled", return_value=True), patch.object(Q, "CFRunLoopRemoveSource") as remove, patch.object(Q, "CFMachPortInvalidate") as invalidate:
         listener.start()
         listener.start()
         assert create.call_count == add.call_count == 1
         listener.stop()
         listener.stop()
         assert remove.call_count == invalidate.call_count == 1
+
+
+def test_internal_note_review_is_scoped_and_refinement_keeps_its_keys():
+    import os
+    from types import SimpleNamespace
+    from unittest.mock import patch
+    import Quartz as Q
+    from localflow.transform_hotkey import TransformHotkeyListener
+    listener = TransformHotkeyListener(lambda *_: None, lambda *_: None)
+    actions = []
+    listener.review_callback = lambda *a: actions.append(a)
+    scope = SimpleNamespace(valid=True)
+    listener.review_scope = scope
+    front = SimpleNamespace(processIdentifier=lambda: os.getpid())
+    workspace = SimpleNamespace(frontmostApplication=lambda: front)
+    native = SimpleNamespace(sharedWorkspace=lambda: workspace)
+    event = Q.CGEventCreateKeyboardEvent(None, 36, True)
+    Q.CGEventSetFlags(event, 0)
+    with patch('localflow.transform_hotkey.NSWorkspace', native), patch(
+            'localflow.transform_hotkey.AppHelper.callAfter',
+            side_effect=lambda fn, *a: fn(*a)):
+        # An ordinary Hub/refinement lease never takes its own app's Return.
+        listener.review.arm('refinement', os.getpid(), ready=True, enabled=True)
+        assert listener._event(None, Q.kCGEventKeyDown, event, None) is event
+        assert listener._event(None, Q.kCGEventKeyUp, event, None) is event
+        assert not actions
+        listener.review.arm('note', os.getpid(), ready=True, enabled=True,
+                            internal_editor=True)
+        assert listener._event(None, Q.kCGEventKeyDown, event, None) is None
+        assert actions == [('accept', 'note')]
+        assert listener.review.claim('note')
+        assert listener._event(None, Q.kCGEventKeyUp, event, None) is None
+        listener.review.arm('changed_focus', os.getpid(), ready=True,
+                            enabled=True, internal_editor=True)
+        scope.valid = False
+        assert listener._event(None, Q.kCGEventKeyDown, event, None) is event
+        listener._event(None, Q.kCGEventKeyUp, event, None)
+        scope.valid = True
+        listener.review_eligible = False  # a live input-method composition
+        assert listener._event(None, Q.kCGEventKeyDown, event, None) is event
+        assert actions == [('accept', 'note')]
 
 
 if __name__ == "__main__":

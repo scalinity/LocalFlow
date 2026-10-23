@@ -80,7 +80,7 @@ def test_request_shape_per_model():
     assert kw["max_tokens"] >= 16000
     assert not {"temperature", "top_p", "top_k"} & set(kw)
     assert kw["messages"][-1]["role"] == "user"
-    assert kw["messages"][-1]["content"].startswith("<draft>\n")
+    assert json.loads(kw["messages"][-1]["content"])["source"] == _job().source
     assert kw["system"] == tf.prompts.POLISH_CONTRACT
     assert kw["output_config"]["format"]["schema"] == \
         tf.prompts.TEXT_SCHEMA
@@ -161,7 +161,7 @@ def test_key_is_read_lazily_and_dropped_when_rejected():
             anthropic.AuthenticationError(
                 "x", response=httpx2.Response(401, request=REQ),
                 body=None) if key == "k1" else "Meet at three.")
-    t = claude.Transformer(key_reader=lambda: keys.pop(0),
+    t = claude.Transformer(key_reader=lambda: keys.pop(0) if len(keys) > 1 else keys[0],
                            client_factory=factory)
     r1 = t.run(_job(), "claude-haiku-5-5", "low")
     assert r1.reason == "transform_unavailable:no_api_key" and not made
@@ -170,22 +170,24 @@ def test_key_is_read_lazily_and_dropped_when_rejected():
     assert r2.reason == "transform_unavailable:api_key_rejected"
     r3 = t.run(_job(), "claude-haiku-5-5", "low")  # re-read, new client
     assert r3.path == "applied" and made == ["k1", "k2"], made
-    # An invalid pair never reaches the API: the recommendation runs.
+    # An invalid saved pair refuses; silently substituting a different paid
+    # model would misrepresent the effective configuration.
     c = claude_fakes.FakeClient("Meet at three.")
     r4 = claude_fakes.transformer(c).run(_job(), "claude-opus-5-5", "off")
-    assert (r4.model, r4.reasoning) == claude.recommended("polish")
+    assert r4.reason == "transform_unavailable:unsupported_configuration"
+    assert r4.path == "fallback_original" and not c.calls
     print("ok  key: read on use, re-read after a miss, dropped on"
           " rejection; invalid pairs never sent")
 
 
 def test_key_change_and_removal_take_effect_after_success():
-    keys = ["k1", "k1", "k2", None]
+    keys = ["k1"] * 4 + ["k2"] * 2 + [None]
     made = []
 
     def factory(key):
         made.append(key)
         return claude_fakes.FakeClient(*["Meet at three."] * 3)
-    t = claude.Transformer(key_reader=lambda: keys.pop(0),
+    t = claude.Transformer(key_reader=lambda: keys.pop(0) if len(keys) > 1 else keys[0],
                            client_factory=factory)
     assert t.run(_job(), "claude-haiku-5-5", "low").path == "applied"
     assert t.run(_job(), "claude-haiku-5-5", "low").path == "applied"
@@ -283,13 +285,13 @@ def test_model_choice_lives_beside_the_definition():
             raise AssertionError("unknown transform accepted")
         except ValueError:
             pass
-        # A stored pair the table no longer offers reads as the default.
+        # An unsupported stored pair remains visible and refuses execution.
         st.submit(lambda db: db.execute(
             "UPDATE transform_meta SET value=? WHERE key=?",
             (json.dumps({"model": "claude-opus-5-5", "reasoning": "off"}),
              "model:builtin:polish")))
         assert ts.model_choice("builtin:polish", "polish")["source"] == \
-            "default"
+            "unavailable"
         # Malformed stored values read as the default too, never break
         # the listing.
         for bad in ('{"model": [], "reasoning": "low"}', '[1]', 'not json'):

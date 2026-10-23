@@ -400,6 +400,8 @@ def transforms_model(ctl):
     v = ctl.state.views["transforms"]
     data = v.get("data")
     out = _base(v, ctl, "transforms")
+    access = getattr(ctl.coordinator, "_keyboard_access", None)
+    out["keyboard_ready"] = access.transforms_active if access is not None else None
     if data is None:
         out["transforms"] = None
         return out

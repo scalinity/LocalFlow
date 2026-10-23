@@ -26,15 +26,17 @@ import hashlib
 import json
 import re
 import time
+import copy
 from typing import Callable, Optional
 
 from . import atoms as tf_atoms
 from . import claude as tf_claude
 from . import diffview
 from . import prompts as tf_prompts
+from . import quality
 from .definitions import TransformDefinition
 
-VALIDATOR_REVISION = "claude-gate-1"
+VALIDATOR_REVISION = "independent-gate-4"
 SOURCE_CHAR_LIMIT = 12000   # an oversized selection refuses honestly
 
 PATH_APPLIED = "applied"             # validated, may auto-apply/accept
@@ -59,8 +61,15 @@ class TransformJob:
     locale: str = "en-US"
     parent_job_id: Optional[str] = None   # dictation attribution
     selection: Optional[tuple] = None     # (start, end) in the source
+    context_pack: Optional[dict] = None
+    depth: str = "auto"
+    followup: str = ""
+    constraints: tuple = ()
+    _context_identity: str = dataclasses.field(default="", init=False, repr=False)
 
     def __post_init__(self):
+        object.__setattr__(self, "context_pack", copy.deepcopy(self.context_pack))
+        object.__setattr__(self, "_context_identity", quality.fingerprint(self.context_pack))
         if len(self.source) > SOURCE_CHAR_LIMIT:
             raise ValueError(
                 f"transform source exceeds {SOURCE_CHAR_LIMIT} chars"
@@ -74,10 +83,13 @@ class TransformJob:
         tasks, so an edited contract never pairs with the old one).
         Same key ⇒ genuinely comparable; any difference ⇒ a different
         task, never a preference pair."""
+        if quality.fingerprint(self.context_pack) != self._context_identity:
+            raise ValueError("frozen context changed; create a new task")
         h = hashlib.sha256()
         for part in (self.mode, self.source, self.instructions,
                      self.examples_revision, self.prompt_revision,
-                     self.locale):
+                     self.locale, quality.fingerprint(self.context_pack),
+                     self.depth, self.followup, json.dumps(self.constraints)):
             h.update(part.encode("utf-8"))
             h.update(b"\0")
         return f"ttask:{h.hexdigest()[:24]}"
@@ -97,6 +109,9 @@ class TransformJob:
             "transform_revision": self.transform_revision,
             "prompt_revision": self.prompt_revision,
             "parent_job_id": self.parent_job_id,
+            "context_fingerprint": quality.fingerprint(self.context_pack),
+            "compiler_revision": tf_prompts.COMPILER_REVISION,
+            "quality_revision": quality.REVISION,
         }
 
 
@@ -146,12 +161,22 @@ class TransformResult:
     model: Optional[str] = None    # the model that served (message.model)
     reasoning: Optional[str] = None  # the reasoning level it ran at
     input_tokens: int = 0
+    blocking_issues: tuple = ()
+    metadata: Optional[dict] = None
+    attempts: tuple = ()
 
     @property
     def served_model_id(self) -> Optional[str]:
         return tf_claude.served_label(self.model, self.reasoning)
 
     def to_json(self) -> dict:
+        def total(key):
+            return sum(a[key] for a in self.attempts) if self.attempts and all(
+                a.get(key) is not None for a in self.attempts) else None
+        cost = (sum(tf_claude.cost_usd(a["model"], a["input_tokens"], a["output_tokens"])
+                    for a in self.attempts) if self.attempts and all(
+                        a.get("model") in tf_claude.MODELS and a.get("input_tokens") is not None
+                        and a.get("output_tokens") is not None for a in self.attempts) else None)
         return {
             "path": self.path, "reason": self.reason,
             "validator_revision": self.validator_revision,
@@ -169,6 +194,12 @@ class TransformResult:
             "duration_ms": self.duration_ms,
             "template_revision": self.template_revision,
             "model": self.model, "reasoning": self.reasoning,
+            "blocking_issues": list(self.blocking_issues),
+            "metadata": self.metadata,
+            "attempts": list(self.attempts),
+            "total_input_tokens": total("input_tokens"),
+            "total_output_tokens": total("output_tokens"),
+            "cost_usd": cost,
             "diff": self.diff_stats,
             "output_sha256": hashlib.sha256(
                 self.output.encode("utf-8")).hexdigest(),
@@ -277,7 +308,9 @@ def _summary(coverage) -> dict:
 
 def run_transform(job: TransformJob, generate: Callable, *,
                   model: Optional[str] = None,
-                  reasoning: Optional[str] = None) -> TransformResult:
+                  reasoning: Optional[str] = None, verify=None,
+                  context_current=None, cancelled=None,
+                  allow_repair=True) -> TransformResult:
     """Execute one transform job. ``generate(system, messages, schema)
     -> {"text", "model", "reasoning", "input_tokens", "output_tokens"}``
     is the Claude call (``claude.call``); it raises
@@ -290,10 +323,12 @@ def run_transform(job: TransformJob, generate: Callable, *,
     answer → ``fallback_original`` with the reason."""
     system, messages = tf_prompts.build_request(
         job.mode, job.source, custom_instruction=job.instructions,
-        examples=job.examples)
+        examples=job.examples, context_pack=job.context_pack,
+        depth=job.depth, followup=job.followup, constraints=job.constraints)
+    job.task_key()  # refuses mutated context before any provider call
     schema = tf_prompts.schema_for(job.mode)
     prompt = json.dumps({"model": model, "reasoning": reasoning,
-                         "system": system, "messages": messages},
+                         "system": system, "messages": messages, "schema": schema},
                         ensure_ascii=False)
     t0 = time.monotonic()
 
@@ -311,13 +346,15 @@ def run_transform(job: TransformJob, generate: Callable, *,
         gen = generate(system, messages, schema)
     except tf_claude.TransformUnavailable as e:
         return fallback(f"transform_unavailable:{e.code}",
-                        {"model": e.model} if e.model else None)
+                        e.usage or ({"model": e.model} if e.model else None))
     except Exception as e:
         return fallback(f"transform_engine_failed:{type(e).__name__}")
     map_cov = []
+    metadata = {}
     try:
         if job.mode == "prompt_engineer":
             text, reqs, unc = _parse_prompt_engineer(gen.get("text") or "")
+            metadata = json.loads(gen["text"])
             map_cov = _map_coverage(job.source, text, reqs, unc)
         else:
             text = json.loads(gen.get("text") or "")["text"]
@@ -325,7 +362,7 @@ def run_transform(job: TransformJob, generate: Callable, *,
                 raise ValueError("text is not a string")
     except (ValueError, KeyError, TypeError):
         return fallback("transform_unavailable:output_invalid", gen)
-    output = text.strip()
+    output = text  # code/Markdown edge whitespace can be significant
     if not output:
         return fallback("empty_output", gen)
     if any(tag in output and tag not in job.source
@@ -335,9 +372,65 @@ def run_transform(job: TransformJob, generate: Callable, *,
         return fallback("transform_unavailable:output_invalid", gen)
     coverage = tuple(_literal_coverage(job.source, output) + map_cov)
     excerpts = _dedupe(c.atom.excerpt for c in coverage if c.review_issue)
+    blocking = list(quality.grounding_issues(metadata, job.context_pack))
+    attempts = [{"role": "generation", "model": gen.get("model"),
+                 "reasoning": gen.get("reasoning", reasoning),
+                 "input_tokens": gen.get("input_tokens"),
+                 "output_tokens": gen.get("output_tokens"),
+                 "latency_ms": gen.get("latency_ms"),
+                 "cache_read_input_tokens": gen.get("cache_read_input_tokens"),
+                 "cache_creation_input_tokens": gen.get("cache_creation_input_tokens")}]
+    independently_checked = False
+    if output != job.source and verify is not None:
+        try:
+            checked = verify(*quality.verification_request(job, output, metadata))
+            issues = quality.read_verdict(checked["text"])
+            blocking.extend(i["message"] for i in issues)
+            independently_checked = True
+            attempts.append({"role": "verification", "model": checked.get("model"),
+                "reasoning": checked.get("reasoning"), "input_tokens": checked.get("input_tokens"),
+                "output_tokens": checked.get("output_tokens"), "latency_ms": checked.get("latency_ms"),
+                "cache_read_input_tokens": checked.get("cache_read_input_tokens"),
+                "cache_creation_input_tokens": checked.get("cache_creation_input_tokens")})
+        except Exception as e:
+            blocking.append("Independent verification unavailable: " + type(e).__name__)
+    elif output != job.source and job.mode == "prompt_engineer":
+        blocking.append("Independent semantic verification has not run")
+    if cancelled and cancelled():
+        return fallback("transform_unavailable:cancelled", gen)
+    if context_current and not context_current(job.context_pack):
+        return fallback("transform_unavailable:context_revoked", gen)
+    literal_loss = [c.atom.excerpt for c in _literal_coverage(job.source, output) if c.review_issue]
+    blocking.extend("Protected literal missing: " + span for span in literal_loss)
+    if blocking and allow_repair and verify is not None:
+        # One targeted repair, under the same semantic task/context identity.
+        # Publication still checks revocation and cancellation after the call.
+        try:
+            repair_messages = [*messages, {"role": "assistant", "content": gen["text"]},
+                {"role": "user", "content": json.dumps({"repair_issues": blocking,
+                    "instruction": "Return the complete corrected transformation, preserving the original source requirements and eligible context."}, ensure_ascii=False)}]
+            repaired = generate(system, repair_messages, schema)
+            result = run_transform(job, lambda *_: repaired, model=model,
+                reasoning=reasoning, verify=verify, context_current=context_current,
+                cancelled=cancelled, allow_repair=False)
+            return dataclasses.replace(result,
+                attempts=tuple(attempts) + tuple({**a, "role": "repair"
+                    if a["role"] == "generation" else a["role"]}
+                    for a in result.attempts),
+                duration_ms=round((time.monotonic()-t0)*1000, 1))
+        except Exception as e:
+            blocking.append("Targeted repair unavailable: " + type(e).__name__)
+    if independently_checked:
+        # Citations stay inspectable. They cannot certify completeness or
+        # create a warning merely because a faithful paraphrase lacks an
+        # exact citation. The all-source pass and literal checks decide.
+        excerpts = _dedupe(c.atom.excerpt for c in _literal_coverage(job.source, output)
+                           if c.review_issue)
+    if blocking:
+        excerpts = _dedupe((*excerpts, *blocking))
     if excerpts:
         path, reason = PATH_NEEDS_REVIEW, "requirement_coverage_uncertain"
-    elif " ".join(output.split()) == " ".join(job.source.split()):
+    elif output == job.source:
         path, reason = PATH_NO_CHANGES, "no_changes"
     else:
         path, reason = PATH_APPLIED, None
@@ -351,14 +444,17 @@ def run_transform(job: TransformJob, generate: Callable, *,
         prompt=prompt,
         duration_ms=round((time.monotonic() - t0) * 1000.0, 1),
         diff_stats=diffview.diff_stats(job.source, output),
-        validator_revision=VALIDATOR_REVISION)
+        validator_revision=VALIDATOR_REVISION, blocking_issues=tuple(blocking),
+        metadata={k: metadata.get(k, []) for k in ("enrichments", "used_context", "warnings")},
+        attempts=tuple(attempts))
 
 
 def job_for_definition(defn: TransformDefinition, source: str, *,
                        source_kind: str = "selection",
                        parent_job_id: Optional[str] = None,
                        selection: Optional[tuple] = None,
-                       locale: str = "en-US") -> TransformJob:
+                       locale: str = "en-US", context_pack=None,
+                       depth="auto", followup="", constraints=()) -> TransformJob:
     """Build the TransformJob a definition executes under (the
     definition's revision + prompt revision frozen at request time)."""
     return TransformJob(
@@ -370,7 +466,9 @@ def job_for_definition(defn: TransformDefinition, source: str, *,
         examples_revision=(defn.prompt_revision
                            if defn.examples else ""),
         examples=tuple(defn.examples), locale=locale,
-        parent_job_id=parent_job_id, selection=selection)
+        parent_job_id=parent_job_id, selection=selection,
+        context_pack=context_pack, depth=depth, followup=followup,
+        constraints=tuple(constraints))
 
 
 def result_json_for_store(result: TransformResult) -> str:
@@ -379,6 +477,8 @@ def result_json_for_store(result: TransformResult) -> str:
         {"manifest": result.job.task_manifest(),
          "output": result.output,
          "coverage": [c.to_json() for c in result.coverage],
+         "attempts": list(result.attempts),
+         "blocking_issues": list(result.blocking_issues),
          "review_excerpts": list(result.review_excerpts)},
         ensure_ascii=False, sort_keys=True)
 
@@ -397,6 +497,8 @@ def decision_json(result: TransformResult) -> str:
          "task_key": result.job.task_key() if result.job else None,
          "coverage_summary": result.coverage_summary,
          "coverage": [c.to_json() for c in result.coverage],
+         "attempts": list(result.attempts),
+         "blocking_issues": list(result.blocking_issues),
          "review_excerpts": list(result.review_excerpts)},
         ensure_ascii=False, sort_keys=True)
 
@@ -444,4 +546,6 @@ def result_from_message(job: TransformJob, msg: dict) -> TransformResult:
         duration_ms=meta.get("duration_ms", 0.0),
         prompt=msg.get("prompt") or "",
         validator_revision=meta.get("validator_revision"),
-        model=meta.get("model"), reasoning=meta.get("reasoning"))
+        model=meta.get("model"), reasoning=meta.get("reasoning"),
+        blocking_issues=tuple(meta.get("blocking_issues") or ()),
+        metadata=meta.get("metadata"), attempts=tuple(meta.get("attempts") or ()))

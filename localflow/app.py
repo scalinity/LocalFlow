@@ -487,6 +487,11 @@ class AppDelegate(NSObject):
         self._tf_state_key = None
         self._tf_panel = None       # the M11 transform preview panel
         self._tf_active = None      # in-flight selection transform state
+        self._tf_memory = None
+        self._tf_intelligence = None
+        self._tf_intelligence_lock = threading.Lock()
+        self._tf_destinations = {}
+        self._tf_workspace_picker = None
         try:
             self._tf_store = v2_transforms_store.TransformStore(self.store)
             self._tf_store.seed_built_ins()
@@ -1396,9 +1401,38 @@ class AppDelegate(NSObject):
     # ---- M11: transforms (Spec S16) --------------------------------------
 
     @objc.python_method
+    def _tf_services(self):
+        with self._tf_intelligence_lock:
+            if getattr(self, "_tf_intelligence", None) is None and self._tf_store is not None \
+                    and getattr(self.supervisor, "transformer", None) is not None:
+                from .v2.transforms.runtime import create_services
+                self._tf_memory, self._tf_intelligence = create_services(
+                    self.store, self._tf_store, self.supervisor.transformer,
+                    background_allowed=lambda: not getattr(self, "_closing", False)
+                        and self.state == STATE_IDLE)
+        return self._tf_intelligence
+
+    @objc.python_method
+    def _tf_capture_context(self, capture):
+        """An approved local path can identify a project; titles never do."""
+        if self._tf_services() is None:
+            return None
+        edit = capture.get("buffer_edit")
+        path = self._m10_document_path(edit.snapshot.cwd if edit is not None
+            else getattr(getattr(capture.get("snapshot"), "field", None), "document_url", None))
+        try:
+            project = self._tf_memory.resolve_project(path=path) if path is not None else None
+        except (OSError, ValueError):
+            project = None
+        pack = self._tf_intelligence._context(capture["source"],
+            self._tf_intelligence._policy(project_id=project)) if project else None
+        capture["context_pack"] = pack
+        return pack
+
+    @objc.python_method
     def _m11_run_transform(self, defn, source, *, source_kind,
                            parent_job_id=None, attempt=1,
-                           selection=None, executed=None):
+                           selection=None, executed=None, context_pack=None, depth="auto"):
         """Run one transform on Claude (ADR-0002) under the transform's
         chosen model and reasoning level, and rebuild the
         ``TransformResult``. TOTAL: a failed request —
@@ -1414,7 +1448,8 @@ class AppDelegate(NSObject):
             job = v2_transforms.job_for_definition(
                 defn, source, source_kind=source_kind,
                 parent_job_id=parent_job_id, selection=selection,
-                locale=self.cfg.get("normalization_locale", "en-US"))
+                locale=self.cfg.get("normalization_locale", "en-US"),
+                context_pack=context_pack, depth=depth)
             model, reasoning = self._tf_model_choice(job)
             res = self.supervisor.transform(
                 job_id=parent_job_id, attempt=attempt,
@@ -1426,7 +1461,9 @@ class AppDelegate(NSObject):
                 examples_revision=job.examples_revision,
                 examples=job.examples,
                 locale=self.cfg.get("normalization_locale", "en-US"),
-                model=model, reasoning=reasoning)
+                model=model, reasoning=reasoning, **({"context_pack": context_pack,
+                    "depth": depth, "context_current": self._tf_intelligence.pack_valid}
+                    if context_pack is not None else {}))
         except ValueError as e:
             # The honest oversized-source refusal (S16), surfaced
             # through the same fallback channel as a worker fault.
@@ -1571,7 +1608,7 @@ class AppDelegate(NSObject):
         return result.output
 
     @objc.python_method
-    def _m11_capture_selection(self):
+    def _m11_capture_selection(self, expected_pid=None, expected_element=None, expected_window=None):
         """Capture the focused selection for a selected-text transform
         (S16): classify the field first (a secure field is never read),
         then the selection, its range, the window title and bounded
@@ -1586,9 +1623,14 @@ class AppDelegate(NSObject):
         if self._context_deny_invalid:
             return None, "deny_list_invalid"
         from .v2.insertion.selection import capture_selection
+        queued = getattr(self._insertion, "capture_transform_selection", None)
+        if queued is not None:
+            return queued(expected_pid=expected_pid, expected_element=expected_element,
+                          expected_window=expected_window)
         return capture_selection(
             self._insertion.host,
-            denied_apps=self._context_policy["context_denied_apps"])
+            denied_apps=self._context_policy["context_denied_apps"], expected_pid=expected_pid,
+            expected_element=expected_element, expected_window=expected_window)
 
     def runTransform_(self, sender):
         """Status-menu action: transform the current selection with the
@@ -1605,29 +1647,376 @@ class AppDelegate(NSObject):
         if self._tf_pipeline_busy():
             self.v2log.emit("transforms.busy", level="INFO",
                             reason_code="pipeline_active")
+            self._tf_status("A transform or dictation is already running. Finish or cancel it, then retry.")
             return
         snapshot = self._transforms_snapshot()
         defn = snapshot.by_id(transform_id) if snapshot is not None else None
         if defn is None:
             self.v2log.emit("transforms.unavailable", level="WARNING",
                             reason_code="definition_missing")
+            self._tf_status("This transform is unavailable. Open Transforms and choose an enabled definition.")
             return
-        self._tf_active = {"transform_id": transform_id}
+        operation_id = v2.ids.new_id("apply")
+        self.tfDismissReview()
+        if self._tf_panel is not None:
+            self._tf_panel.panel.orderOut_(None)
+        self._tf_active = {"transform_id": transform_id, "operation_id": operation_id}
+        self._tf_phase(operation_id, "acknowledged")
+        self._tf_arm_review(operation_id, None, ready=False)
+        invocation_pid = self._tf_review["pid"]
+        scope = getattr(getattr(self, "_transform_hotkeys", None), "review_scope", None)
+        invocation_element = scope.element if scope is not None else None
+        invocation_window = scope.window if scope is not None else None
         self.overlay.showWithMode_(MODE_TRANSFORMING)
 
         def work():
-            capture, reason = self._m11_capture_selection()
+            self._tf_phase(operation_id, "capturing")
+            capture, reason = self._m11_capture_selection(expected_pid=invocation_pid,
+                expected_element=invocation_element, expected_window=invocation_window)
             result = None
             if capture is None:
                 self.v2log.emit("transforms.selection_unavailable",
                                 level="INFO", reason_code=reason)
+                AppHelper.callAfter(self._tf_capture_failed, operation_id, reason)
+                return
             else:
+                capture["operation_id"] = operation_id
+                self._tf_phase(operation_id, "generating", capture)
                 result = self._m11_run_transform(
                     defn, capture["source"], source_kind="selection",
-                    selection=capture["range"])
+                    selection=capture["range"], context_pack=self._tf_capture_context(capture))
             AppHelper.callAfter(
-                self._tfShowResult_, result, capture, defn)
+                self._tf_publish_operation, operation_id, result, capture, defn)
         self._tf_spawn(work)
+
+    @objc.python_method
+    def _tf_phase(self, operation_id, phase, capture=None, result=None):
+        import hashlib
+        data = {"operation_id": operation_id, "phase": phase,
+                "monotonic": time.monotonic()}
+        if capture:
+            data.update(adapter=capture.get("acquisition", "ax_range"),
+                        source_chars=len(capture["source"]),
+                        source_sha256=hashlib.sha256(capture["source"].encode()).hexdigest())
+        if result is not None:
+            metrics = result.to_json()
+            data["generation"] = {key: metrics[key] for key in (
+                "path", "model", "reasoning", "duration_ms", "attempts",
+                "total_input_tokens", "total_output_tokens", "cost_usd")}
+        self._tf_last_operation = data
+        self.v2log.emit("transforms.phase", level="INFO", outcome=phase,
+                        detail=json.dumps(data))
+
+    @objc.python_method
+    def _tf_status(self, message):
+        if self._tf_panel is None:
+            from .v2.ui.transforms_panel import TransformPreviewPanel
+            self._tf_panel = TransformPreviewPanel.alloc().init_panel(self)
+        self._tf_panel.show_status(message)
+
+    @objc.python_method
+    def _tf_capture_failed(self, operation_id, reason):
+        if (self._tf_active or {}).get("operation_id") != operation_id:
+            return
+        self._tf_active = None
+        self.tfDismissReview()
+        self._settle_state()
+        self._tf_phase(operation_id, "capture_failed")
+        self._tf_status({
+            "no_selection": "Select editable text before invoking a transform.",
+            "terminal_buffer_integration_required": "Terminal screen selections are not the editable prompt. Use the LocalFlow shell widget or Codex editor integration.",
+            "selection_apis_disagree": "The app reported conflicting selected text. The original is unchanged. Select it again or open it in the prompt workspace.",
+            "secure_field": "Protected fields cannot be transformed.",
+            "app_denied": "This app is excluded by the context policy.",
+            "destination_unverified": "The destination changed before capture. Select the text and retry.",
+        }.get(reason, f"Could not acquire an editable selection ({reason}). The original is unchanged."))
+
+    @objc.python_method
+    def _tf_arm_review(self, operation_id, capture, *, ready, enabled=False):
+        from AppKit import NSWorkspace
+        front = NSWorkspace.sharedWorkspace().frontmostApplication()
+        target = (capture or {}).get("target")
+        pid = getattr(target, "app_pid", None) or (capture or {}).get("review_pid")
+        if pid is None and (capture or {}).get("note"):
+            pid = os.getpid()
+        if pid is None and capture is None:
+            pid = front.processIdentifier() if front else None
+        if ready and (front is None or front.processIdentifier() != pid):
+            self.tfDismissReview(cancel_buffer=False)
+            return
+        self.tfDismissReview(cancel_buffer=False)
+        self._tf_review = {"token": operation_id, "ready": ready,
+                           "enabled": enabled, "pid": pid, "capture": capture}
+        AppHelper.callLater(300, self._tf_review_timeout, self._tf_review)
+        listener = getattr(self, "_transform_hotkeys", None)
+        if listener is not None and listener.tap is not None:
+            from .v2.transforms.focus_scope import FocusScope
+            review = self._tf_review
+            scope = FocusScope(pid, lambda: AppHelper.callAfter(
+                self._tf_focus_invalidated, review),
+                expected_element=(capture or {}).get("review_element"),
+                expected_window=(capture or {}).get("review_window"),
+                allow_window_ancestors=bool((capture or {}).get("note")),
+                required_role=("AXTextArea" if (capture or {}).get("note") else None)) if pid else None
+            listener.review_scope = scope
+            review["scope_established"] = bool(scope is not None and scope.start())
+            if not review["scope_established"]:
+                if self._tf_panel is not None and ready:
+                    self._tf_panel._buttons["panelAccept:"].setTitle_("Accept")
+                    self._tf_panel.count.setStringValue_("Enter is unavailable for this destination. Use the displayed action or Copy.")
+                return
+            if capture is not None:
+                capture.setdefault("review_element", scope.element)
+                capture.setdefault("review_window", scope.window)
+            listener.refresh_input_source()
+            listener.review.arm(operation_id, pid, ready=ready, enabled=enabled,
+                                internal_editor=bool((capture or {}).get("note")))
+            if self._tf_panel is not None and ready:
+                self._tf_panel._buttons["panelAccept:"].setTitle_("Accept ↵")
+        elif self._tf_panel is not None and ready:
+            self._tf_panel._buttons["panelAccept:"].setTitle_("Accept")
+
+    @objc.python_method
+    def _tf_focus_invalidated(self, review):
+        if getattr(self, "_tf_review", None) is review and review.get("scope_established"):
+            self._tf_review_key("interception_lost", review["token"])
+
+    @objc.python_method
+    def _tf_review_timeout(self, review):
+        if getattr(self, "_tf_review", None) is review:
+            self._tf_review_key("expired", review["token"])
+
+    @objc.python_method
+    def tfRestoreReview(self, result, capture):
+        if not capture.get("_apply_started") and self._tf_active is None:
+            self._tf_arm_review(capture["operation_id"], capture, ready=True,
+                enabled=result.path in ("applied", "needs_review")
+                    and capture.get("can_replace", True) and not result.blocking_issues)
+
+    @objc.python_method
+    def tfRefineTransform(self, result, capture, defn):
+        self.tfDismissReview(cancel_buffer=False)
+        service = self._tf_services()
+        if service is None:
+            self._tf_status("The prompt workspace is unavailable. Copy the result and check Diagnostics.")
+            return
+        token = capture["operation_id"] + ":workspace"
+        def work():
+            try:
+                session = service.create_session(capture["source"], token,
+                    transform_id=defn.transform_id)
+                if session["revision"] == 1 and result.output != session["prompt"]:
+                    session = service.sessions.append(session["id"], 1, result.output,
+                        context=(result.job.context_pack if result.job else None),
+                        result={"validation": result.to_json()}, kind="assistant")["session"]
+                AppHelper.callAfter(self._tf_open_workspace, session["id"], result, capture, defn)
+            except Exception as e:
+                AppHelper.callAfter(self._tf_status,
+                    "Could not open the prompt workspace (" + type(e).__name__ + "). Copy the result to keep it.")
+        threading.Thread(target=work, name="localflow-prompt-session", daemon=True).start()
+
+    @objc.python_method
+    def _tf_open_workspace(self, session_id, result, capture, defn):
+        if getattr(self, "_closing", False):
+            return
+        self._tf_destinations[session_id] = {"result": result, "capture": capture, "definition": defn}
+        self._tf_pending_prompt_session = session_id
+        self.openHub_(None)
+        if self._hub is not None and hasattr(self._hub, "emit"):
+            self._hub.show_route("transforms")
+            self._hub.emit("prompt_sessions.open", {"session_id": session_id})
+
+    @objc.python_method
+    def hubTakePromptSession(self):
+        session_id = getattr(self, "_tf_pending_prompt_session", None)
+        self._tf_pending_prompt_session = None
+        return {"session_id": session_id}
+
+    @objc.python_method
+    def hubApplyPrompt(self, session_id, expected_revision, revision_id, reacquire_target):
+        from .v2.transforms.destinations import selected_revision
+        if not reacquire_target or self._hub_blocks_show() or self._tf_pipeline_busy():
+            return {"outcome": "pipeline_active"}
+        service = self._tf_services()
+        session = service.sessions.read(session_id)
+        revision = selected_revision(session, expected_revision, revision_id)
+        if not service.pack_valid(revision.get("context") or {}):
+            raise ValueError("context_revoked")
+        binding = self._tf_destinations.get(session_id)
+        if binding is None:
+            raise ValueError("original_destination_unavailable")
+        if binding["capture"].get("_apply_started"):
+            return {"outcome": "apply_already_started"}
+        from AppKit import NSRunningApplication, NSApplicationActivateIgnoringOtherApps
+        from ApplicationServices import AXUIElementPerformAction
+        capture = binding["capture"]
+        pid = getattr(capture.get("target"), "app_pid", None) or capture.get("review_pid")
+        app = NSRunningApplication.runningApplicationWithProcessIdentifier_(pid) if pid else None
+        if app is None:
+            raise ValueError("original_application_closed")
+        # This explicit button authorizes reactivating only the recorded app.
+        # Raising its recorded window preserves the selection; clicking inside
+        # the editor would collapse it before strict replacement can validate.
+        self._hub.window.orderOut_(None)
+        window = capture.get("review_window") or getattr(capture.get("snapshot"), "window_element", None)
+        if window is not None:
+            AXUIElementPerformAction(window, "AXRaise")
+        app.activateWithOptions_(NSApplicationActivateIgnoringOtherApps)
+        AppHelper.callLater(.25, self._tf_workspace_reacquired,
+            session_id, expected_revision, revision_id)
+        return {"outcome": "revalidating_original_destination"}
+
+    @objc.python_method
+    def _tf_workspace_reacquired(self, session_id, expected_revision, revision_id):
+        from .v2.transforms.destinations import selected_revision, logical_destination_matches
+        from types import SimpleNamespace
+        binding = self._tf_destinations.get(session_id)
+        try:
+            session = self._tf_intelligence.sessions.read(session_id)
+            revision = selected_revision(session, expected_revision, revision_id)
+            if not binding or not self._tf_intelligence.pack_valid(revision.get("context") or {}):
+                raise ValueError("context_or_destination_revoked")
+            capture = binding["capture"]
+            host = self._insertion.host
+            pid = getattr(capture.get("target"), "app_pid", None) or capture.get("review_pid")
+            if (host.frontmost() or {}).get("pid") != pid:
+                raise ValueError("original_destination_changed")
+            if capture.get("buffer_edit"):
+                element = host.focused_element_for(pid)
+                hit = SimpleNamespace(pid=pid, element=element,
+                    window=host.attribute(element, "AXWindow") if element else None)
+                if not logical_destination_matches(host, capture, hit):
+                    raise ValueError("original_terminal_pane_changed")
+            result = dataclasses.replace(binding["result"], output=revision["prompt"],
+                path=v2_transforms.PATH_NEEDS_REVIEW, blocking_issues=())
+            capture["_apply_context"] = revision.get("context") or {}
+            capture["_workspace_apply"] = {"session_id": session_id,
+                "expected_revision": expected_revision, "revision_id": revision_id}
+            self.tfAcceptTransform(result, capture, None)
+        except (ValueError, RuntimeError) as e:
+            if self._hub is not None:
+                self._hub.showWindow_(None)
+                self._hub.emit("prompt_sessions.apply_status", {"outcome": str(e) if isinstance(e, ValueError) else "apply_unavailable"})
+
+    @objc.python_method
+    def tfDismissReview(self, cancel_buffer=True):
+        listener = getattr(self, "_transform_hotkeys", None)
+        if listener is not None:
+            listener.review.disarm()
+            scope, listener.review_scope = getattr(listener, "review_scope", None), None
+            if scope is not None:
+                scope.stop()
+        self._tf_review = None
+        edit = getattr(self, "_tf_buffer_edit", None)
+        if cancel_buffer and edit is not None:
+            edit.cancel()
+            self._tf_buffer_edit = None
+
+    @objc.python_method
+    def _tf_open_buffer(self, edit, marker_waited=False):
+        if getattr(self, "_closing", False) or self._tf_pipeline_busy():
+            edit.cancel("pipeline_active")
+            return
+        origin_pid = self._tf_buffer_origin(edit)
+        if origin_pid is None:
+            from .v2.integrations.origin import await_window_marker
+            if not marker_waited and await_window_marker(self._insertion.host, edit,
+                    lambda: self._tf_open_buffer(edit, True),
+                    lambda: self._tf_buffer_origin_failed(edit), AppHelper.callLater):
+                return
+            self._tf_buffer_origin_failed(edit)
+            return
+        snapshot = self._transforms_snapshot()
+        defn = snapshot.by_id("builtin:prompt_engineer") if snapshot else None
+        if defn is None:
+            edit.cancel("definition_missing")
+            return
+        self.tfDismissReview()
+        self._tf_buffer_edit = edit
+        token = edit.operation_id
+        self._tf_active = {"transform_id": defn.transform_id, "operation_id": token,
+                           "buffer_edit": edit}
+        capture = {"source": edit.snapshot.source,
+            "range": (edit.snapshot.start, edit.snapshot.end),
+            "snapshot": None, "buffer_edit": edit, "operation_id": token,
+            "acquisition": "logical_" + edit.snapshot.kind,
+            "scope": edit.snapshot.scope, "can_replace": edit.active}
+        capture["review_pid"] = origin_pid
+        self._tf_arm_review(token, capture, ready=False)
+        self._tf_phase(token, "logical_buffer_captured", capture)
+        self.overlay.showWithMode_(MODE_TRANSFORMING)
+        def work():
+            result = self._m11_run_transform(defn, capture["source"],
+                source_kind="selection", selection=capture["range"],
+                context_pack=self._tf_capture_context(capture))
+            AppHelper.callAfter(self._tf_publish_operation, token, result, capture, defn)
+        self._tf_spawn(work)
+
+    @objc.python_method
+    def _tf_buffer_origin_failed(self, edit):
+        edit.cancel("original_terminal_pane_not_focused")
+        self._tf_status("Return to the terminal pane that opened LocalFlow and invoke the integration again. The logical buffer is unchanged.")
+
+    @objc.python_method
+    def _tf_buffer_origin(self, edit, expected_pid=None):
+        from .v2.integrations.origin import has_ancestor, window_has_marker
+        from .v2.context.providers import TERMINAL_BUNDLES
+        from .v2.context.snapshot import app_denied
+        host = self._insertion.host
+        front = host.frontmost() or {}
+        pid = front.get("pid")
+        if not edit.active or pid is None or expected_pid is not None and pid != expected_pid \
+                or front.get("bundle") not in TERMINAL_BUNDLES \
+                or self._context_deny_invalid or app_denied(front.get("bundle"),
+                    self._context_policy["context_denied_apps"]):
+            return None
+        if not window_has_marker(host, pid, edit.snapshot.marker) \
+                or not has_ancestor(edit.snapshot.pid, pid):
+            return None
+        return pid
+
+    @objc.python_method
+    def _tf_close_buffer(self, edit):
+        if getattr(self, "_tf_buffer_edit", None) is not edit:
+            return
+        self._tf_buffer_edit = None
+        if (self._tf_active or {}).get("buffer_edit") is edit:
+            self._tf_active = None
+            self._settle_state()
+        state = getattr(self._tf_panel, "_state", {}) if self._tf_panel else {}
+        if (state.get("capture") or {}).get("buffer_edit") is edit or \
+                (getattr(self, "_tf_review", None) or {}).get("token") == edit.operation_id:
+            self.tfDismissReview()
+            if self._tf_panel is not None:
+                self._tf_panel.panel.orderOut_(None)
+
+    @objc.python_method
+    def _tf_review_key(self, action, token):
+        review = getattr(self, "_tf_review", None)
+        if not review or review["token"] != token:
+            return
+        if action in ("dismiss", "expired", "interception_lost"):
+            self.tfDismissReview()
+            if self._tf_active:
+                self._tf_active = None
+                self._settle_state()
+            if self._tf_panel is not None:
+                self._tf_panel.panel.orderOut_(None)
+        elif action == "accept" and review["ready"] and review["enabled"]:
+            if self._tf_panel is not None:
+                self._tf_panel.panelAccept_(None)
+        elif review["ready"] and self._tf_panel is not None:
+            self._tf_panel.count.setStringValue_("Apply is unavailable for this result. Copy it or retry.")
+
+    @objc.python_method
+    def _tf_publish_operation(self, token, result, capture, defn):
+        if getattr(self, "_closing", False) or (self._tf_active or {}).get("operation_id") != token:
+            return
+        edit = (capture or {}).get("buffer_edit")
+        if edit is not None and not edit.active:
+            self._tf_close_buffer(edit)
+            return
+        self._tfShowResult_(result, capture, defn)
 
     @objc.python_method
     def tfRefreshHotkeys(self):
@@ -1661,6 +2050,7 @@ class AppDelegate(NSObject):
         is total: whatever escapes, ``_tfShowResult_`` still runs on
         the main thread and clears ``_tf_active`` (an unguarded death
         would wedge every future transform until restart)."""
+        token = (self._tf_active or {}).get("operation_id")
         def guarded():
             try:
                 work()
@@ -1668,7 +2058,10 @@ class AppDelegate(NSObject):
                 self.v2log.emit("transforms.request_failed",
                                 level="WARNING",
                                 reason_code=type(e).__name__)
-                AppHelper.callAfter(self._tfShowResult_, None, None, None)
+                if token:
+                    AppHelper.callAfter(self._tf_publish_operation, token, None, None, None)
+                else:
+                    AppHelper.callAfter(self._tfShowResult_, None, None, None)
         threading.Thread(target=guarded, daemon=True,
                          name="localflow-transform").start()
 
@@ -1676,10 +2069,18 @@ class AppDelegate(NSObject):
     def _tfShowResult_(self, result, capture, defn):
         """Main thread: the transform finished — record the candidate
         and open the preview panel (or clear the pill honestly)."""
+        active = self._tf_active or {}
         self._tf_active = None
-        if result is None or capture is None or defn is None:
+        if active.get("cancelled"):
+            self.tfDismissReview()
             self._settle_state()
             return
+        if result is None or capture is None or defn is None:
+            self.tfDismissReview()
+            self._settle_state()
+            self._tf_status("The transform stopped before producing a result. The original is unchanged; retry or check Diagnostics.")
+            return
+        capture.setdefault("operation_id", v2.ids.new_id("apply"))
         # M13 usage fact: an explicit (selection/note-scope) transform
         # run is its own activity kind — never a dictation word. The
         # dictation auto-apply path does not pass through here; its
@@ -1741,6 +2142,9 @@ class AppDelegate(NSObject):
                 self._tf_panel = TransformPreviewPanel.alloc()\
                     .init_panel(self)
             self._tf_panel.show(result, capture, defn, candidate_id)
+            enabled = result.path in ("applied", "needs_review") and capture.get("can_replace", True) and not result.blocking_issues
+            self._tf_arm_review(capture["operation_id"], capture, ready=True, enabled=enabled)
+            self._tf_phase(capture["operation_id"], "preview_ready", capture, result)
         except Exception as e:
             self.v2log.emit("transforms.panel_failed", level="WARNING",
                             reason_code=type(e).__name__)
@@ -1755,6 +2159,30 @@ class AppDelegate(NSObject):
         offer). The explicit accept is the preference observation. A
         NOTE-scope capture (M12) applies in the Scratchpad editor
         instead — the external queue is never involved."""
+        if result.path not in ("applied", "needs_review") or not capture.get("can_replace", True) or result.blocking_issues:
+            return
+        if capture.get("_apply_started"):
+            return
+        pack = capture.get("_apply_context", result.job.context_pack if result.job else None)
+        authority = (lambda: self._tf_intelligence.pack_valid(pack)) if pack \
+            and getattr(self, "_tf_intelligence", None) is not None else None
+        if authority is not None and not authority():
+            self._tf_status("Context changed or was forgotten. Regenerate with current context; the original is unchanged.")
+            return
+        capture["_apply_started"] = True
+        self.tfDismissReview(cancel_buffer=False)
+        operation_id = capture.setdefault("operation_id", v2.ids.new_id("apply"))
+        self._tf_phase(operation_id, "applying", capture)
+        if capture.get("buffer_edit") is not None:
+            edit = capture["buffer_edit"]
+            context_authority = authority
+            authority = lambda: (context_authority is None or context_authority()) \
+                and self._tf_buffer_origin(edit, capture.get("review_pid")) is not None
+            self._insertion.submit_buffer_edit(edit, result.output,
+                expected_revision=edit.snapshot.revision,
+                on_done=lambda r: AppHelper.callAfter(self._tfApplyDone_, r, result, capture),
+                authority_check=authority)
+            return
         if candidate_id and result.job is not None \
                 and self._tf_store is not None:
             try:
@@ -1781,12 +2209,14 @@ class AppDelegate(NSObject):
         # the same operation (one effect).
         self._insertion.submit(
             result.output,
-            {"job_id": candidate_id, "attempt": 1,
+            {"job_id": candidate_id or operation_id, "attempt": 1,
              "context_snapshot": capture["snapshot"],
              "strict_replacement": True,
+             "selection_acquisition": capture.get("acquisition"),
+             "authority_check": authority,
              "observation_consent": candidate_id is not None},
             on_done=lambda r, j=None: AppHelper.callAfter(
-                self._tfInsertDone_, r))
+                self._tfApplyDone_, r, result, capture))
         self.v2log.emit("transforms.accepted", level="INFO",
                         outcome=result.path)
 
@@ -1803,6 +2233,20 @@ class AppDelegate(NSObject):
         self.v2log.emit("transforms.insertion_done", level="INFO",
                         outcome=state, reason_code=reason)
         self._settle_state()
+
+    @objc.python_method
+    def _tfApplyDone_(self, insertion_result, result, capture):
+        self._tfInsertDone_(insertion_result)
+        state = insertion_result.get("state") if isinstance(insertion_result, dict) \
+            else getattr(insertion_result, "state", None)
+        attempt = capture.get("_workspace_apply")
+        if attempt and getattr(self, "_hub", None) is not None and hasattr(self._hub, "emit"):
+            self._hub.emit("prompt_sessions.apply_status", {**attempt,
+                "outcome": "applied_verified" if state == "confirmed" else state or "outcome_unknown"})
+        if state not in ("confirmed", "posted_unverified", "insertion_confirmed", "insertion_unverified",
+                         "applied_verified", "applied_unverified"):
+            if self._tf_panel is not None:
+                self._tf_panel.reoffer_apply(state or "unavailable", result)
 
     @objc.python_method
     def tfCopyTransform(self, result):
@@ -1838,16 +2282,21 @@ class AppDelegate(NSObject):
             self.v2log.emit("transforms.busy", level="INFO",
                             reason_code="pipeline_active")
             return
-        self._tf_active = {"transform_id": defn.transform_id}
+        token = v2.ids.new_id("apply")
+        self.tfDismissReview(cancel_buffer=False)
+        self._tf_active = {"transform_id": defn.transform_id, "operation_id": token,
+                           "buffer_edit": capture.get("buffer_edit")}
+        self._tf_arm_review(token, capture, ready=False)
         self.overlay.showWithMode_(MODE_TRANSFORMING)
         job = v2_transforms.retry_original(result.job)
         retry_capture = dict(capture)
+        retry_capture["operation_id"] = token
+        retry_capture.pop("_apply_started", None)
         retry_capture["retry_of"] = candidate_id
 
         def work():
             res = self._m11_run_job(job)
-            AppHelper.callAfter(self._tfShowResult_, res, retry_capture,
-                                defn)
+            AppHelper.callAfter(self._tf_publish_operation, token, res, retry_capture, defn)
         self._tf_spawn(work)
 
     @objc.python_method
@@ -1863,14 +2312,20 @@ class AppDelegate(NSObject):
         other = snapshot.by_id(other_id) if snapshot is not None else None
         if other is None:
             return
-        self._tf_active = {"transform_id": other_id}
+        token = v2.ids.new_id("apply")
+        self.tfDismissReview(cancel_buffer=False)
+        self._tf_active = {"transform_id": other_id, "operation_id": token,
+                           "buffer_edit": capture.get("buffer_edit")}
+        capture = dict(capture, operation_id=token)
+        capture.pop("_apply_started", None)
+        self._tf_arm_review(token, capture, ready=False)
         self.overlay.showWithMode_(MODE_TRANSFORMING)
 
         def work():
             res = self._m11_run_transform(
                 other, capture["source"], source_kind="selection",
-                selection=capture["range"])
-            AppHelper.callAfter(self._tfShowResult_, res, capture, other)
+                selection=capture["range"], context_pack=capture.get("context_pack"))
+            AppHelper.callAfter(self._tf_publish_operation, token, res, capture, other)
         self._tf_spawn(work)
 
     @objc.python_method
@@ -1889,17 +2344,23 @@ class AppDelegate(NSObject):
         defn = snapshot.by_id(defn_id) if snapshot is not None else None
         if defn is None:
             return
-        self._tf_active = {"transform_id": defn_id}
+        token = v2.ids.new_id("apply")
+        self.tfDismissReview(cancel_buffer=False)
+        self._tf_active = {"transform_id": defn_id, "operation_id": token,
+                           "buffer_edit": capture.get("buffer_edit")}
+        self._tf_arm_review(token, capture, ready=False)
         self.overlay.showWithMode_(MODE_TRANSFORMING)
         new_capture = dict(capture)
+        new_capture["operation_id"] = token
+        new_capture.pop("_apply_started", None)
         new_capture["source"] = result.output
         new_capture.pop("retry_of", None)
 
         def work():
             res = self._m11_run_transform(
-                defn, result.output, source_kind="result")
-            AppHelper.callAfter(self._tfShowResult_, res, new_capture,
-                                defn)
+                defn, result.output, source_kind="result",
+                context_pack=capture.get("context_pack"))
+            AppHelper.callAfter(self._tf_publish_operation, token, res, new_capture, defn)
         self._tf_spawn(work)
 
     @objc.python_method
@@ -1918,7 +2379,9 @@ class AppDelegate(NSObject):
                 instructions=job.instructions,
                 examples_revision=job.examples_revision,
                 examples=job.examples, locale=job.locale,
-                model=model, reasoning=reasoning)
+                model=model, reasoning=reasoning, **({"context_pack": job.context_pack,
+                    "depth": job.depth, "context_current": self._tf_intelligence.pack_valid}
+                    if job.context_pack is not None else {}))
         except Exception as e:
             reason = getattr(e, "reason_code", None) or type(e).__name__
             return v2_transforms.TransformResult(
@@ -2046,7 +2509,10 @@ class AppDelegate(NSObject):
                        "range": rng, "text": source, "scope": scope}
         capture = {"source": source, "range": rng,
                    "snapshot": None, "note": note,
-                   "destination": destination}
+                   "destination": destination,
+                   "operation_id": v2.ids.new_id("apply")}
+        self._tf_arm_review(capture["operation_id"], capture, ready=False)
+        self._tf_phase(capture["operation_id"], "generating", capture)
 
         def work():
             result = self._m11_run_transform(
@@ -2700,22 +3166,36 @@ class AppDelegate(NSObject):
             on_release=self.finishDictation,
             on_other_key=self.cancelDictation,
         )
-        self.hotkey.start()
         from .transform_hotkey import TransformHotkeyListener
         self._transform_hotkeys = TransformHotkeyListener(
             self.tfRunShortcut,
             lambda outcome, reason: self.v2log.emit(
                 "transforms.hotkeys", level="INFO" if reason is None else "WARNING",
                 outcome=outcome, reason_code=reason))
+        self._transform_hotkeys.review_callback = self._tf_review_key
         self.tfRefreshHotkeys()
-        self._transform_hotkeys.start()
+        self._terminal_buffers = None
+        try:
+            from .v2.integrations import BufferServer, PreviewAdapter
+            self._terminal_buffers = BufferServer(PreviewAdapter(
+                AppHelper.callAfter, self._tf_open_buffer, self._tf_close_buffer)).start()
+        except Exception as e:
+            self.v2log.emit("transforms.terminal_unavailable", level="WARNING",
+                            reason_code=type(e).__name__)
         self._transform_hotkey_state = self._tf_store.revision() if self._tf_store else None
         if self.cfg.get("mouse_trigger"):
             self.mouse_trigger = MouseTriggerListener(
                 self.cfg["mouse_trigger"],
                 on_press=lambda: self.startDictation(source="mouse"),
                 on_release=lambda: self.finishDictation(source="mouse"))
-            self.mouse_trigger.start()
+        from .permissions import KeyboardAccess
+        self._keyboard_access = KeyboardAccess(
+            [listener for listener in (self.hotkey, self.mouse_trigger) if listener is not None],
+            self._transform_hotkeys)
+        self._keyboard_access.refresh(perms)
+        self._keyboard_access_checked = time.monotonic()
+        if not self._keyboard_access.transforms_active:
+            self._tf_status("Keyboard shortcuts are inactive. Enable LocalFlow in System Settings → Privacy & Security → Accessibility and Input Monitoring. Until then, transform keys can type characters into the other app.")
 
         # Sleep/lock end capture with a recoverable item; wake never
         # reopens the microphone by itself (Spec S09).
@@ -2759,7 +3239,9 @@ class AppDelegate(NSObject):
         self.v2log.emit(
             "app.ready", level="INFO", reason_code="shell_interactive",
             config_hash=v2.ids.config_hash(self.cfg),
-            detail=f"hold {key} to dictate, release to insert text")
+            detail=f"hold {key} to dictate, release to insert text"
+                if self._keyboard_access.dictation_active else
+                "Hub ready; keyboard access is required before dictation or transform shortcuts")
 
     @objc.python_method
     def _start_worker(self):
@@ -2826,6 +3308,15 @@ class AppDelegate(NSObject):
         the store and event writer close admission and drain. Nothing here
         waits for a main-thread callback."""
         self._closing = True
+        intelligence = getattr(self, "_tf_intelligence", None)
+        if intelligence is not None:
+            intelligence.close()
+        picker = getattr(self, "_tf_workspace_picker", None)
+        if picker is not None:
+            picker.cancel("quit")
+        buffers = getattr(self, "_terminal_buffers", None)
+        if buffers is not None:
+            buffers.stop()
         listener = getattr(self, "_transform_hotkeys", None)
         if listener is not None:
             listener.stop()
@@ -4129,6 +4620,17 @@ class AppDelegate(NSObject):
     # ---- watchdog ---------------------------------------------------------
 
     def watchdog_(self, timer):
+        access = getattr(self, "_keyboard_access", None)
+        if access is not None and time.monotonic() - self._keyboard_access_checked >= 2:
+            self._keyboard_access_checked = time.monotonic()
+            if access.refresh(ensure_permissions(prompt=False)):
+                if not access.dictation_active:
+                    self._abandon_capture_for_system("keyboard_permission_revoked")
+                    self.tfDismissReview()
+                self.v2log.emit("app.keyboard_access", level="INFO",
+                    outcome="active" if access.transforms_active else "unavailable")
+                if getattr(self, "_hub", None) is not None:
+                    self._hub.request_flush()
         # Legacy AppKit editor mutations also refresh the one tap's map.
         if getattr(self, "_transform_hotkeys", None) is not None and self._tf_store:
             revision = self._tf_store.revision()
@@ -4285,6 +4787,7 @@ class AppDelegate(NSObject):
                     raise _JobCancelled()
                 raw = res.get("text") or ""
                 job["raw"] = raw
+                job["learning_signal"] = res.get("learning_signal")
                 asr_ms = res.get("duration_ms")
                 job["asr_ms"] = asr_ms  # M13 usage fact stage timing
                 self.v2log.emit(
@@ -4654,6 +5157,28 @@ class AppDelegate(NSObject):
                                 reason_code="transform_requires_cleanup")
                     if ctx is not None:
                         self.collector.finalize(ctx)
+                    try:
+                        signal = job.get("learning_signal") or {}
+                        # A recognizer signal is not proof of a personal fact.
+                        # Missing or low scores cannot authorize learning.
+                        eligible = signal.get("method") == "parakeet_token_scores" \
+                            and signal.get("mean", 0) >= .9 and signal.get("minimum", 0) >= .6
+                        if raw and eligible and not job.get("cancelled"):
+                            service = self._tf_services()
+                            if service is not None:
+                                snapshot = job.get("context_snapshot")
+                                target = getattr(snapshot, "target", None)
+                                field = getattr(snapshot, "field", None)
+                                service.activity.observe(raw, source_id="dictation:" + job_id,
+                                    kind="user_dictation", job_id=job_id,
+                                    app_id=getattr(target, "app_bundle", None),
+                                    denied=target is None or self._context_deny_invalid
+                                        or bool(getattr(target, "denied", False)),
+                                    secure=getattr(field, "classification", None) == "secure",
+                                    quoted=any(mark in raw for mark in ('"', '“', '”', '```')))
+                    except Exception as e:
+                        self.v2log.emit("memory.capture_skipped", level="INFO",
+                            reason_code=type(e).__name__)
                     if raw and self.cfg["log_transcripts"] and not collecting:
                         # Collection disabled: the user's existing transcript
                         # logging choice still keeps text in the private
@@ -5653,6 +6178,7 @@ class AppDelegate(NSObject):
         AppKit Hub so Open Hub… always opens something."""
         from .v2 import ui as v2_ui
         from .v2 import history_queries, training_data
+        self._tf_services()
         spec = {
             "store": self.store,
             "history_service": history_queries.HistoryQueryService(
@@ -5662,6 +6188,8 @@ class AppDelegate(NSObject):
             "styles_service": self._styles,
             "snippets_service": self._snip_store,
             "transforms_service": self._tf_store,
+            "intelligence_service": self._tf_intelligence,
+            "memory_service": self._tf_memory,
             "notes_service": self._notes_store,
             "insights_service": self._insights,
             "learning_service": self._learning,
@@ -6767,13 +7295,6 @@ def _bundle_icon():
 
 def main():
     cfg = config_mod.load()
-    if _bundle_icon() is not None:
-        # The bundle runs on Python.app; name the process LocalFlow for
-        # its Dock tile and app menu while the Hub is open.
-        from AppKit import NSBundle
-        info = NSBundle.mainBundle().localizedInfoDictionary() \
-            or NSBundle.mainBundle().infoDictionary()
-        info["CFBundleName"] = "LocalFlow"
     app = NSApplication.sharedApplication()
     app.setActivationPolicy_(NSApplicationActivationPolicyAccessory)
 
@@ -6782,6 +7303,8 @@ def main():
     app.setDelegate_(delegate)
 
     signal.signal(signal.SIGINT,
+                  lambda *_: AppHelper.callAfter(delegate.quitLocalFlow_, None))
+    signal.signal(signal.SIGTERM,
                   lambda *_: AppHelper.callAfter(delegate.quitLocalFlow_, None))
     AppHelper.runEventLoop()
 

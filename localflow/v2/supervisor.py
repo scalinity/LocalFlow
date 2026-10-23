@@ -593,7 +593,8 @@ class WorkerSupervisor:
                   transform_revision, prompt_revision, mode, source,
                   source_kind="selection", instructions="",
                   examples_revision="", examples=(), locale=None,
-                  model=None, reasoning=None):
+                  model=None, reasoning=None, context_pack=None, depth="auto",
+                  context_current=None, cancelled=None):
         """M11 (S16), ADR-0002: one transform on Claude, in this process.
         No GPU lock and no worker, so no dictation's ASR queues behind it
         on the worker. Returns the reply shape the app rebuilds
@@ -612,11 +613,14 @@ class WorkerSupervisor:
                 instructions=instructions or "",
                 examples_revision=examples_revision or "",
                 examples=tuple(tuple(ex) for ex in examples or ()),
-                locale=locale or "en-US", parent_job_id=job_id)
+                locale=locale or "en-US", parent_job_id=job_id,
+                context_pack=context_pack, depth=depth)
         except ValueError as e:
             return {"attempt": attempt, "generation": None,
                     "refused": str(e)[:160]}
-        result = self.transformer.run(job, model, reasoning)
+        result = self.transformer.run(job, model, reasoning, **({
+            "context_current": context_current, "cancelled": cancelled}
+            if context_current or cancelled else {}))
         return {"attempt": attempt, "generation": None,
                 "job_id": job_id, **tf_engine.message_for(result)}
 

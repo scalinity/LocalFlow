@@ -259,6 +259,13 @@ def test_controller_allowlist_is_exactly_the_surfaces():
             for bad in ("sql", "exec", "eval", "path", "file", "shell."):
                 if bad == "shell." and name == "shell.hello":
                     continue
+                if bad == "file" and name == "context.import_files":
+                    # This bounded import requires an approved project and
+                    # at most 16 explicitly selected paths, not generic I/O.
+                    out = w.host.send(name, {"path": "/tmp/not-authorized"})
+                    assert out["status"] == "refusal" and out[
+                        "reason_code"].startswith("invalid_payload:"), out
+                    continue
                 assert bad not in name, name
     print("ok  allowlist: named surface commands only, no generic entry")
 
@@ -472,6 +479,44 @@ def test_home_read_model_is_real_and_bounded():
           " services, bounded and field-picked")
 
 
+def test_home_voice_progress_refreshes_after_a_new_dictation():
+    from test_training_review_hub import _seed_example
+    with CWorld() as w:
+        _seed_example(w.d, 'first original speech', 'First speech.')
+        w.ctl.state.reload_current()
+        w.drain()
+        first = w.host.latest('home')['data']['profile']['eligible_words']
+        snapshot = w.d._profile.current()['snapshot_id']
+        _seed_example(w.d, 'another five words of speech', 'More speech.')
+        w.ctl.state.reload_current()
+        w.drain()
+        second = w.host.latest('home')['data']['profile']['eligible_words']
+        assert second == first + 5, (first, second)
+        refreshed = w.d._profile.current()['snapshot_id']
+        assert refreshed != snapshot
+        w.ctl.state.reload_current()
+        w.drain()
+        assert w.d._profile.current()['snapshot_id'] == refreshed
+    print('ok  home: fresh eligible speech updates progress; unchanged reload adds no snapshot')
+
+
+def test_home_retains_measured_numbers_when_refresh_fails():
+    from test_training_review_hub import _seed_example
+    from unittest.mock import patch
+    with CWorld() as w:
+        _seed_example(w.d, 'five words of original speech', 'Original speech.')
+        w.ctl.state.reload_current()
+        w.drain()
+        first = w.host.latest('home')['data']['profile']['eligible_words']
+        with patch.object(w.ctl.state.profile_service, 'compute', side_effect=RuntimeError('refresh failed')):
+            w.ctl.state.reload_current()
+            w.drain()
+        data = w.host.latest('home')['data']
+        assert data['profile']['eligible_words'] == first == 5
+        assert data['profile_error'] == 'RuntimeError'
+    print('ok  home: a refresh failure retains measured numbers and reports the failure')
+
+
 # ---- dictionary --------------------------------------------------------------------
 
 
@@ -629,6 +674,8 @@ if __name__ == "__main__":
             test_revocation_scrubs_every_pushed_view,
             test_retention_on_home_reloads_the_open_recent_row,
             test_home_read_model_is_real_and_bounded,
+            test_home_voice_progress_refreshes_after_a_new_dictation,
+            test_home_retains_measured_numbers_when_refresh_fails,
             test_dictionary_double_cas_and_unapproved_add,
             test_dictionary_import_export_never_take_a_path_from_the_page,
             test_settings_outcomes_and_confirmation,

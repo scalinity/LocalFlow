@@ -358,7 +358,7 @@ MLX runs in a fresh worker subprocess. It is started with `Popen` and never fork
 .venv/bin/pip install parakeet-mlx mlx-lm "transformers<5.11" sounddevice \
     pyobjc-framework-Cocoa pyobjc-framework-Quartz \
     pyobjc-framework-ApplicationServices pyobjc-framework-WebKit \
-    "anthropic>=1.14"   # only for the optional Your Voice written profile
+    "anthropic>=1.14" onnxruntime==1.31.0
 # transformers stays below 5.11: newer versions changed AutoTokenizer.register
 # and crash mlx-lm at import, which silently disables LLM cleanup
 .venv/bin/python scripts/warmup.py   # downloads the model and checks transcription

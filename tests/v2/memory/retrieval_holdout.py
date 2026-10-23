@@ -1,0 +1,66 @@
+"""Synthetic, disjoint selection/final families frozen before encoder testing.
+
+Each row is (label, approved memory text, relevant query). All other rows in
+the same split are irrelevant. Existing technical cases remain regressions.
+Final labels must not be edited after evaluation or used to choose ranking.
+"""
+
+SELECTION = [
+    ('train', 'For intercity trips I take the railway rather than drive.', 'How do I travel between distant towns?'),
+    ('food', 'I avoid meals containing peanuts because of an allergy.', 'Which ingredient must be excluded from dinner?'),
+    ('calendar', 'My weekly planning starts on Monday morning.', 'When do I organize the coming week?'),
+    ('payments', 'Monthly rent is paid by standing bank transfer.', 'How is the recurring housing bill settled?'),
+    ('shopping', 'The household grocery list is grouped by supermarket aisle.', 'What ordering helps me buy food efficiently?'),
+    ('receipts', 'Purchase receipts are kept in a blue folder.', 'Where do I store proof of expenses?'),
+    ('exercise', 'My preferred cardio workout is swimming laps.', 'Which aerobic activity do I enjoy?'),
+    ('books', 'I borrow novels from the public library.', 'Where do I obtain fiction to read?'),
+    ('plants', 'The balcony herbs need watering every other evening.', 'How often should the outdoor kitchen plants be irrigated?'),
+    ('coffee', 'I drink decaffeinated coffee after lunch.', 'Which afternoon beverage avoids a stimulant?'),
+    ('laundry', 'Wool sweaters are washed by hand in cold water.', 'How should delicate winter clothing be cleaned?'),
+    ('repairs', 'The bicycle repair kit is on the garage shelf.', 'Where can I find tools to fix a punctured tire?'),
+    ('pets', 'The cat eats twice a day, at breakfast and supper.', 'What is the feeding schedule for the feline?'),
+    ('sleep', 'I keep the bedroom cool and the curtains closed for sleep.', 'Which room conditions help me rest?'),
+    ('music', 'I practice the piano for twenty minutes before dinner.', 'When and for how long do I rehearse keyboard music?'),
+    ('mail', 'Letters awaiting a reply go in the tray by the entrance.', 'Where should unanswered correspondence be placed?'),
+    ('packing', 'Travel documents stay in the front pocket of my backpack.', 'Where are my journey papers packed?'),
+    ('parking', 'Visitors should leave their cars in the rear courtyard.', 'Where can guests park a vehicle?'),
+    ('recycling', 'Glass jars are collected separately from paper packaging.', 'How should bottles and cardboard be sorted?'),
+    ('heating', 'The radiator thermostat is set lower when the house is empty.', 'What happens to the temperature control while nobody is home?'),
+    ('cooking', 'Rice is cooked using two measures of water for one measure of grain.', 'What liquid ratio does my rice recipe require?'),
+    ('weather', 'I bring a waterproof coat whenever rain is forecast.', 'Which garment is packed for expected wet conditions?'),
+    ('calls', 'I schedule family telephone calls on Sunday evenings.', 'When do I usually speak to relatives remotely?'),
+    ('supplies', 'Spare light bulbs are kept in the kitchen utility drawer.', 'Where can I find a replacement for a failed lamp?'),
+]
+
+FINAL = [
+    ('telescope', 'The telescope and star charts are stored in the attic.', 'Where is the equipment for observing the night sky kept?'),
+    ('camera', 'Photographs are backed up to two independent external drives.', 'How are captured images protected against storage failure?'),
+    ('pottery', 'Fresh clay pieces must dry completely before entering the kiln.', 'What must happen to new ceramics before firing?'),
+    ('archive', 'The historical letters are catalogued by author and year.', 'How is the correspondence collection organized?'),
+    ('museum', 'The museum tour begins at the sculpture gallery entrance.', 'Where should participants meet for the exhibition walk?'),
+    ('trail', 'The mountain trail closes when avalanche danger is high.', 'Which hazard prevents access to the hiking route?'),
+    ('sailing', 'A life jacket is required for every passenger on the sailboat.', 'What personal equipment must everyone wear aboard?'),
+    ('choir', 'Choir rehearsal takes place on Wednesday in the community hall.', 'When and where does the singing group practice?'),
+    ('chess', 'The chess club uses rapid games with fifteen minutes per player.', 'What time control applies to the board game matches?'),
+    ('languageclass', 'The language class emphasizes listening comprehension before grammar drills.', 'Which learning activity comes before formal syntax exercises?'),
+    ('astronomy', 'The observatory dims interior lights to preserve night vision.', 'Why is illumination reduced inside the stargazing building?'),
+    ('woodwork', 'Oak boards must acclimatize indoors before being cut for furniture.', 'How should hardwood be prepared before cabinet making?'),
+    ('sewing', 'The sewing pattern includes a one-centimeter seam allowance.', 'What extra margin is provided for joining the fabric?'),
+    ('theatre', 'The theatre group reads the entire script before assigning roles.', 'What activity precedes casting the play?'),
+    ('research', 'Survey responses are anonymous and cannot be linked to participant names.', 'Can questionnaire answers identify the people who supplied them?'),
+    ('waterlab', 'The water testing protocol measures acidity with a calibrated pH meter.', 'Which instrument determines how acidic a liquid sample is?'),
+    ('gardenlab', 'Seed germination trials keep temperature constant while changing light exposure.', 'Which experimental condition is controlled while illumination varies?'),
+    ('microscope', 'Microscope slides are labelled with specimen identity and collection date.', 'What identifying information belongs on the glass sample holder?'),
+    ('lecture', 'Lecture summaries should separate observed results from proposed explanations.', 'How should study notes distinguish measurements and hypotheses?'),
+    ('math', 'The mathematics tutor asks for a derivation before a numerical answer.', 'What working should accompany the final calculated value?'),
+    ('chemistry', 'The chemistry notebook records quantities in SI units.', 'Which measurement convention is used for laboratory amounts?'),
+    ('history', 'The history essay compares primary documents from opposing viewpoints.', 'Which sources help assess competing accounts of past events?'),
+    ('geology', 'Rock samples are stored with the location and depth at which they were collected.', 'What field provenance must accompany a geological specimen?'),
+    ('dentistry', 'The dental appointment reminder is sent two days before the visit.', 'How far in advance is the tooth-care consultation notice delivered?'),
+    ('physio', 'The physiotherapy routine begins with gentle shoulder mobility exercises.', 'What starts the rehabilitation session for the upper arm joint?'),
+    ('firstaid', 'The first aid kit is mounted beside the workshop exit.', 'Where are emergency medical supplies located in the workroom?'),
+    ('conference', 'Conference speakers have ten minutes for questions after each presentation.', 'How much discussion time follows a talk?'),
+    ('translation', 'Translated quotations retain the original author attribution.', 'What credit must remain when cited words change language?'),
+    ('volunteer', 'Volunteer shifts are assigned only after availability has been confirmed.', 'What information is required before scheduling helpers?'),
+    ('accessibility', 'The reading group provides large-print copies when requested.', 'Which accommodation helps participants who struggle with small lettering?'),
+]

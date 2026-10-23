@@ -149,8 +149,12 @@ def validate_target(host: InsertionHost,
                 or field.following_text is None:
             # Both flanks are part of the strict proof: one that was
             # never recorded cannot have read back unchanged.
-            verification["surroundings"] = VERIFICATION_NOT_RECORDED
-            proven = False
+            direct_bound = (job.get("selection_acquisition") == "ax_selected_text"
+                and snapshot.field_element is not None
+                and snapshot.field_element == lease.element)
+            verification["surroundings"] = ("bound_direct_selection" if direct_bound
+                                             else VERIFICATION_NOT_RECORDED)
+            proven = direct_bound
         else:
             verification["surroundings"] = _surroundings_verdict(
                 host, lease.element, field)
@@ -394,6 +398,9 @@ def _validate(host, snapshot, job, denied_apps, deny_invalid):
     else:
         sel_text = host.string_for_range(
             el, selected_range[0], selected_range[1] - selected_range[0])
+        if sel_text is None and job.get("selection_acquisition") == "ax_selected_text" \
+                and recorded_field is not None and el == recorded_field:
+            sel_text = host.attribute(el, "AXSelectedText")
         if sel_text is None:
             verification["selection"] = VERIFICATION_UNAVAILABLE
         else:

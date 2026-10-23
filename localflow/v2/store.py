@@ -733,6 +733,12 @@ _MIGRATIONS[14] = [
          PRIMARY KEY(insight_id, example_id))""",
 ]
 
+# Scoped memory uses this same writer and pre-upgrade backup protocol.
+from .memory.schema import MEMORY_MIGRATIONS
+_MIGRATIONS[15] = MEMORY_MIGRATIONS
+from .transforms.conversations import INTELLIGENCE_MIGRATIONS
+_MIGRATIONS[16] = list(INTELLIGENCE_MIGRATIONS)
+
 # Tables whose loss at the current schema version is corruption, not a
 # torn additive migration, whenever rows that depend on them survive
 # (M02-AUDIT-18). Each maps to queries that detect such surviving
@@ -1484,7 +1490,13 @@ class Store:
                     "export_manifests", "job_deletions", "purge_intents",
                     "usage_meta", "m14_operation_receipts",
                     "learning_vocabulary_deltas", "voice_insights",
-                    "voice_insight_evidence"}
+                    "voice_insight_evidence",
+                    "memory_projects", "memory_roots", "memory_state", "memory_sources",
+                    "memory_records", "memory_evidence", "memory_revisions", "memory_suppressed",
+                    "memory_exclusions", "memory_dirty", "memory_vectors", "memory_fts",
+                    "prompt_sessions", "prompt_revisions", "intelligence_jobs",
+                    "transform_authoring", "transform_authoring_revisions",
+                    "intelligence_suggestions", "intelligence_saves"}
         have = {r[0] for r in self._db.execute(
             "SELECT name FROM sqlite_master WHERE type='table'")}
         expected_idx = {m.group(1) for stmts in _MIGRATIONS.values()
@@ -2584,6 +2596,8 @@ class Store:
                     "INSERT OR IGNORE INTO job_deletions(job_id, reason,"
                     " deleted_at_utc) VALUES(?,?,?)",
                     (job_id, reason, now_iso))
+                from .memory.deletion import purge_job
+                purge_job(self._db, job_id, self.now_fn())
                 # M03-AUDIT-02: revoke in-memory authority (queued work,
                 # cached output) in the same serialized op that creates
                 # the barrier — before its payload files are enumerated,

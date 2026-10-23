@@ -122,6 +122,13 @@ class CompanionState(HubState):
                 data["usage_error"] = type(e).__name__
         if self.profile_service is not None:
             try:
+                # Home's progress must include the latest eligible dictation,
+                # rather than waiting for the idle profile timer. This query
+                # already runs off the UI thread; unchanged inputs add no row.
+                self.profile_service.compute(only_if_changed=True)
+            except Exception as e:
+                data["profile_error"] = type(e).__name__
+            try:
                 data["profile"] = self.profile_service.current()
             except Exception as e:
                 data["profile_error"] = type(e).__name__
@@ -139,6 +146,7 @@ class CompanionState(HubState):
         try:
             data = {"subview": "voice"}
             if self.profile_service is not None:
+                self.profile_service.compute(only_if_changed=True)
                 data["profile"] = self.profile_service.current()
             else:
                 data["profile"] = None

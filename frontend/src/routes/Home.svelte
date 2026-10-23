@@ -49,12 +49,12 @@
   const voiceLine = $derived.by(() => {
     if (!data) return '';
     if (!data.profile_available) return 'Your Voice is unavailable.';
-    if (!profile) return 'Not generated yet. Generate it from your dictations in Insights.';
+    if (!profile) return data.profile_error ? 'Word progress could not load.' : 'Loading word progress…';
     if (profile.state === 'invalidated') return 'Needs regenerating — its evidence changed.';
     if (profile.cards?.length) return profile.cards.map((c: any) => c.title).join(' · ');
     const w = profile.eligible_words ?? 0;
     const t = profile.min_words_threshold ?? 2000;
-    return `${num(w)} of ${num(t)} words measured so far.`;
+    return `${num(w)} of ${num(t)} spoken words measured.`;
   });
 </script>
 
@@ -105,8 +105,8 @@
     <aside class="side" aria-label="Summary">
       <dl class="stats">
         <div>
-          <dt class="serif tabular">{usage ? num(usage.final_words) : '—'}</dt>
-          <dd>total words</dd>
+          <dt class="serif tabular">{usage?.raw_words != null ? num(usage.raw_words) : '—'}</dt>
+          <dd>words dictated</dd>
         </div>
         <div>
           <dt class="serif tabular">{usage?.wpm != null ? num(usage.wpm) : '—'}</dt>
@@ -121,6 +121,12 @@
         <div class="voice-text">
           <p class="voice-title">Your Voice</p>
           <p class="voice-line">{voiceLine}</p>
+          {#if profile && data?.profile_error}
+            <p class="voice-basis">Word progress could not refresh.</p>
+          {/if}
+          {#if profile?.state === 'current' && !profile.cards?.length}
+            <p class="voice-basis">Eligible speech before cleanup.</p>
+          {/if}
         </div>
         <VoiceMark size={86} />
       </button>
@@ -223,6 +229,12 @@
     font-size: var(--text-base);
     line-height: 1.45;
     color: var(--text-2);
+  }
+  .voice-basis {
+    margin-top: 6px;
+    font-size: var(--text-sm);
+    color: var(--text-3);
+    line-height: 1.4;
   }
   .recover {
     padding: 0 16px 16px;

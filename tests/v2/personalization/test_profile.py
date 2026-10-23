@@ -90,6 +90,33 @@ def test_measured_views_and_cards():
             s.close()
 
 
+def test_saved_latest_revision_survives_out_of_order_history_restore():
+    with tempfile.TemporaryDirectory() as td:
+        s = make_store(pathlib.Path(td))
+        try:
+            ex, _job = add_example(s, 1, "five words of original speech")
+            s.sync()
+            revision, payload = s.submit(lambda c: c.execute(
+                "SELECT revision_id,envelope_json FROM training_revisions"
+                " WHERE example_id=?", (ex,)).fetchone())
+            env = json.loads(payload)
+            # An older immutable row restored later must not become current.
+            env["revision_id"] = "rev:historical-restored-later"
+            s.append_revision(ex, env)
+            s.sync()
+            s.submit(lambda c: c.execute(
+                "UPDATE training_examples SET latest_revision_id=? WHERE example_id=?",
+                (revision, ex)))
+            ps = profile.ProfileService(s)
+            out = ps.compute(only_if_changed=True)
+            assert out["measured"]["eligible_words"] == 5
+            assert ps.compute(only_if_changed=True)["skipped"]
+            assert ps.current()["measured"]["eligible_words"] == 5
+        finally:
+            s.close()
+    print("ok  saved current revision, not restore order, drives word progress")
+
+
 def test_below_threshold_measured_only():
     with tempfile.TemporaryDirectory() as td:
         tmp = pathlib.Path(td)
@@ -441,7 +468,9 @@ def test_eligible_speech_matches_compute():
                    for i in range(12)]
             add_example(s, 90, "excluded text entirely", state="excluded")
             add_example(s, 92, "generated snippet text", snippets=True)
-            add_example(s, 1, "ship the parser now 1")  # verbatim repeat
+            # A later utterance avoids a timestamp/UUID tie with the first
+            # copy; the test asserts that the earlier evidence survives.
+            add_example(s, 9, "ship the parser now 1")  # verbatim repeat
             ps = profile.ProfileService(s, emit=lambda *a, **k: None,
                                         min_words=10)
             out = ps.compute()
@@ -457,6 +486,7 @@ def test_eligible_speech_matches_compute():
 
 
 if __name__ == "__main__":
+    test_saved_latest_revision_survives_out_of_order_history_restore()
     test_eligible_speech_matches_compute()
     test_self_corrections_and_requested_transforms()
     test_idle_skip_reads_no_text()

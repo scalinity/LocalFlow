@@ -243,6 +243,65 @@ class InsertionService:
         self._count_admitted()
         self._q.put(("insert", op_id, text, job, on_done, on_observation))
 
+    def submit_buffer_edit(self, edit, text, *, expected_revision, on_done, authority_check=None):
+        """The same insertion queue owns logical-editor commits as AX writes.
+
+        The client applies only to its suspended, revision-bound line/editor
+        buffer. No keyboard, clipboard, or command-accept event is involved.
+        """
+        self._count_admitted()
+        self._q.put(("buffer_edit", edit, text, expected_revision, on_done, authority_check))
+
+    def capture_transform_selection(self, *, expected_pid, expected_element=None,
+                                    expected_window=None, timeout=5):
+        """Capture on the writer queue so fresh-copy fallback cannot race paste."""
+        done, cancelled, answer = threading.Event(), threading.Event(), []
+        self._count_admitted()
+        self._q.put(("capture_selection", expected_pid, expected_element,
+                     expected_window, done, cancelled, answer))
+        if not done.wait(timeout):
+            cancelled.set()
+            return None, "capture_timeout"
+        return answer[0]
+
+    def _capture_copy(self, element, pid):
+        from .clipboard import ClipboardTransaction
+        from .selection import window_title
+        from ..transforms.destinations import same_element
+        # Pending payloads belong to an earlier recovery action.
+        if self.clipboard_payload_pending:
+            return None
+        pb = self.pasteboard
+        txn = ClipboardTransaction(pb)
+        saved = txn.capture()
+        if saved.conflict or saved.unsupported_types:
+            return None
+        front = self.host.frontmost() or {}
+        if front.get("pid") != pid or not same_element(self.host.focused_element_for(pid), element):
+            return None
+        from .validation import _as_range
+        before_range = _as_range(self.host.attribute(element, "AXSelectedTextRange"))
+        title = window_title(self.host, element)
+        if not getattr(self.keyboard, "post_copy", lambda: False)():
+            return None
+        deadline = time.monotonic() + .6
+        while time.monotonic() < deadline and pb.change_count() == saved.generation:
+            time.sleep(.02)
+        generation = pb.change_count()
+        if generation == saved.generation:
+            return None  # stale clipboard is never a source
+        txn.published_generation = generation
+        try:
+            text = pb.string_for_type("public.utf8-plain-text")
+            if pb.change_count() != generation or (self.host.frontmost() or {}).get("pid") != pid \
+                    or not same_element(self.host.focused_element_for(pid), element) \
+                    or _as_range(self.host.attribute(element, "AXSelectedTextRange")) != before_range \
+                    or window_title(self.host, element) != title:
+                return None
+            return text
+        finally:
+            txn.restore_if_owned()
+
     def note_new_dictation(self):
         """S29.8 stop condition: a new dictation ends observation."""
         self.signals.note_new_dictation()
@@ -483,6 +542,39 @@ class InsertionService:
             self._in_flight += 1
             try:
                 kind = item[0]
+                if kind == "capture_selection":
+                    _, pid, element, window, done, cancelled, answer = item
+                    try:
+                        from .selection import capture_selection
+                        if self.deny_invalid:
+                            answer.append((None, "deny_list_invalid"))
+                        elif cancelled.is_set():
+                            answer.append((None, "capture_cancelled"))
+                        else:
+                            answer.append(capture_selection(self.host, denied_apps=self.denied_apps,
+                                expected_pid=pid, expected_element=element, expected_window=window,
+                                copy_selected=lambda el, owner:
+                                    None if cancelled.is_set() else self._capture_copy(el, owner)))
+                    except Exception as e:
+                        answer.append((None, "capture_" + type(e).__name__))
+                    finally:
+                        done.set()
+                    continue
+                if kind == "buffer_edit":
+                    _, edit, text, revision, on_done, authority_check = item
+                    try:
+                        ok = (authority_check is None or authority_check()) and edit.accept(text, expected_revision=revision)
+                        result = {"state": "posted_unverified" if ok else "target_changed",
+                            "reason_code": None if ok else "buffer_revision_changed",
+                            "adapter": "logical_buffer", "operation_id": edit.operation_id}
+                    except Exception as e:
+                        result = {"state": "failed", "reason_code": type(e).__name__}
+                    if on_done is not None:
+                        try:
+                            on_done(result)
+                        except Exception:
+                            pass
+                    continue
                 if kind == "undo":
                     _tag, deliver = item
                     try:
@@ -656,14 +748,11 @@ class InsertionService:
         el = lease.element
         # Codex's composer and Chromium web fields can advertise
         # AXSelectedText as settable and acknowledge the setter without
-        # applying the edit. Choose paste upfront for caret delivery;
-        # never paste after an uncertain AX write. Recorded selections and
-        # strict transform replacement keep their existing method and
-        # authority checks.
-        codex_caret = (self._ax_write_ignored(lease.frontmost_bundle)
-                       and not lease.replace_selection
-                       and not job.get("strict_replacement"))
-        if (not codex_caret and el is not None
+        # applying the edit. Choose paste upfront for both caret delivery
+        # and revalidated selections; never paste after an uncertain AX
+        # write. The same strict target/selection lease guards either method.
+        use_clipboard = self._ax_write_ignored(lease.frontmost_bundle)
+        if (not use_clipboard and el is not None
                 and self.host.is_settable(el, "AXSelectedText")):
             return self._ax_insert(text, lease, job, common, facts,
                                    on_observation)
@@ -719,6 +808,14 @@ class InsertionService:
         why = self._revoked(job)
         if why:
             return STATE_SAVED_NOT_INSERTED, why
+        check = job.get("authority_check")
+        if check is not None:
+            try:
+                current = check()
+            except Exception:
+                current = False
+            if not current:
+                return STATE_SAVED_NOT_INSERTED, "context_revoked"
         if not self._still_bound(lease):
             return STATE_TARGET_CHANGED, "target_changed_before_effect"
         if not self._selection_holds(lease):
@@ -764,7 +861,10 @@ class InsertionService:
                 **common))
         readback = None
         if pre is not None:
-            readback = self._classify(el, pre, text, ax=True)
+            # Web composers may acknowledge AX replacement before their
+            # accessibility snapshot catches up. Wait on this exact owned
+            # field; never retry the write or paste a second replacement.
+            readback = self._await_readback(el, pre, text, ax=True)
         state, reason = self._outcome(lease, readback)
         owned = facts["owned"]
         result = InsertionResult(
@@ -1100,7 +1200,7 @@ class InsertionService:
             return True
         return False
 
-    def _await_readback(self, el, pre, text):
+    def _await_readback(self, el, pre, text, *, ax=False):
         """Wait the settle bound for the target to consume the paste,
         polling the bound destination when it may be read (early exit
         once the owned range shows the text attributably, or rewritten).
@@ -1113,7 +1213,7 @@ class InsertionService:
             self._sleep(max(0.0, deadline - time.monotonic()))
             return None
         while True:
-            cls = self._classify(el, pre, text)
+            cls = self._classify(el, pre, text, ax=ax)
             if cls in ("match", "normalized", "resized") \
                     or time.monotonic() >= deadline:
                 return cls

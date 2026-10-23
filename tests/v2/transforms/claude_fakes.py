@@ -45,6 +45,15 @@ class FakeClient:
 
     def _stream(self, **kw):
         self.calls.append(kw)
+        from localflow.v2.transforms.quality import VERIFY_SCHEMA
+        # A successful offline verifier is explicit and separate from the
+        # generation script. Dedicated quality tests supply adverse verdicts.
+        schema = kw.get("output_config", {}).get("format", {}).get("schema")
+        if schema == VERIFY_SCHEMA:
+            return _Stream(types.SimpleNamespace(stop_reason="end_turn",
+                model=self.model or kw['model'], content=[types.SimpleNamespace(
+                    type="text", text='{"issues": []}')],
+                usage=types.SimpleNamespace(input_tokens=30, output_tokens=10)))
         item = self.script.pop(0) if self.script else ""
         if isinstance(item, BaseException):
             raise item

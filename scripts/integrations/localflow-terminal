@@ -1,0 +1,9 @@
+#!/usr/bin/env python3
+"""Run with the app's Python or a configured project venv; never edits on import."""
+import pathlib
+import sys
+
+sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[2]))
+from localflow.v2.integrations.cli import main
+
+raise SystemExit(main())

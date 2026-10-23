@@ -92,6 +92,10 @@ def _conn_model_choice(db, transform_id, mode) -> dict:
                 pref.get("model"), pref.get("reasoning")):
             return {"model": pref["model"],
                     "reasoning": pref["reasoning"], "source": "user"}
+        if isinstance(pref, dict) and isinstance(pref.get("model"), str) \
+                and isinstance(pref.get("reasoning"), str):
+            return {"model": pref["model"], "reasoning": pref["reasoning"],
+                    "source": "unavailable", "unavailable": True}
     model, reasoning = tf.claude.recommended(mode)
     return {"model": model, "reasoning": reasoning, "source": "default"}
 

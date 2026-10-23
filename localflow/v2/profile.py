@@ -212,13 +212,20 @@ class ProfileService:
             "SELECT example_id, state, job_id, rowid FROM training_examples"
             f" WHERE example_id IN ({marks})", example_ids).fetchall()}
         out = []
-        for ex_id, payload in conn.execute(
-                "SELECT example_id, envelope_json FROM training_revisions"
-                " WHERE rowid IN (SELECT MAX(rowid) FROM"
-                f" training_revisions WHERE example_id IN ({marks})"
-                " GROUP BY example_id)", example_ids).fetchall():
+        for ex_id, revision_id, payload in conn.execute(
+                "SELECT r.example_id, r.revision_id, r.envelope_json"
+                " FROM training_examples e JOIN training_revisions r"
+                " ON r.example_id=e.example_id AND r.revision_id=COALESCE("
+                " e.latest_revision_id, (SELECT revision_id FROM"
+                " training_revisions WHERE example_id=e.example_id"
+                " ORDER BY rowid DESC LIMIT 1))"
+                f" WHERE e.example_id IN ({marks})", example_ids).fetchall():
             state, job_id, published = rows.get(ex_id, (None, None, 0))
             env = json.loads(payload)
+            # The saved pointer defines the current revision. Restored rows
+            # need not arrive in chronological order; the row identity also
+            # remains authoritative over an embedded historical identifier.
+            env["revision_id"] = revision_id
             if env.get("origin") not in (None, "live_capture"):
                 continue  # synthetic/legacy corpus material is not the
                 # user's speech

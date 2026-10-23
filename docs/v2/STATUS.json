@@ -1,8 +1,8 @@
 {
   "schema_version": 2,
-  "status_reason": "Quiet Editorial and owner-polish are merged and closed. The bounded M07 correction-admission repair and M15-A benchmark infrastructure are integrated locally. Current Qwen M07 qualification remains model-behavior blocked. Human corpus adjudication/freeze is required; full M15 comparison, M07-V002, final M11 qualification and M16 have not run. The production cleanup model is M2 (local/LocalFlow-Cleanup-M2-Qwen3.5-4B-4bit), shipped on 2026-10-21; the other production cleanup defaults are unchanged. The cleanup validator and engine carry two repairs that landed before any model comparison ran (coverage alignment by longest in-order match; restore-and-revalidate for a candidate whose only failure is a few deleted words), so the benchmarks run on them. Insertion (Chromium and Electron delivery, resized readback, readback detail), Hub replay and the ordered input_device list also changed on main. Repository history was rewritten on 2026-10-01 for commit identity: hashes recorded before then name pre-rewrite commits, whose rewritten twins have the same subject and an identical tree.",
+  "status_reason": "Transforms intelligence AC01\u2013AC22 qualified in installed build21 within recorded scopes; NativePeers-owned cleanup remains refused. See current_state.transforms_intelligence. Quiet Editorial and owner-polish are merged and closed. The bounded M07 correction-admission repair and M15-A benchmark infrastructure are integrated locally. Current Qwen M07 qualification remains model-behavior blocked. Human corpus adjudication/freeze is required; full M15 comparison, M07-V002, final M11 qualification and M16 have not run. The production cleanup model is M2 (local/LocalFlow-Cleanup-M2-Qwen3.5-4B-4bit), shipped on 2026-10-21; the other production cleanup defaults are unchanged. The cleanup validator and engine carry two repairs that landed before any model comparison ran (coverage alignment by longest in-order match; restore-and-revalidate for a candidate whose only failure is a few deleted words), so the benchmarks run on them. Insertion (Chromium and Electron delivery, resized readback, readback detail), Hub replay and the ordered input_device list also changed on main. Repository history was rewritten on 2026-10-01 for commit identity: hashes recorded before then name pre-rewrite commits, whose rewritten twins have the same subject and an identical tree.",
   "current_state": {
-    "as_of": "2026-10-01",
+    "as_of": "2026-10-22",
     "pre_m15_qualification": {
       "state": "PRE_M15_BLOCKED_M07_V001_MODEL_BEHAVIOR",
       "source_sha": "aafedbe5eeb422fbcbb7117458fe2002275d3871",
@@ -16,7 +16,7 @@
       "M16": "NOT_STARTED",
       "next": "Complete the private one-time owner review and corpus-freeze gate before any candidate comparison; current-model M07 blocker remains open."
     },
-    "store_schema_version": 14,
+    "store_schema_version": 16,
     "store_schema_source": "max(_MIGRATIONS) in localflow/v2/store.py",
     "campaign": "Quiet Editorial desktop redesign and M14-adjacent owner-polish closure",
     "campaign_state": "QUIET_EDITORIAL_OWNER_POLISH_MERGED_AND_CLOSED",
@@ -70,6 +70,54 @@
       "production_default_changed": false,
       "push": "PUSHED_TO_ORIGIN_MAIN",
       "handoff": "docs/v2/handoffs/PRE-M15-M15A-INTEGRATION.md"
+    },
+    "transforms_intelligence": {
+      "as_of": "2026-10-23",
+      "branch": "feat/transforms-intelligence",
+      "state": "COMPLETE_VERIFIED",
+      "baseline_head": "96a65f86c5ae7a0844b95a68d5008e91ff5a6393",
+      "source_state": "Qualified source snapshot recorded by the containing commit; installed build21 retains its build-time baseline+dirty identity and exact content hashes.",
+      "installed_state": "Qualification build 21 in /Applications/LocalFlow.app; production 69147d51c3d1ff1e4fa2c5fa0c1617252bc468a080770ddce45a8821c3026933; schema16; packaging16/16.",
+      "ownership": "Integrator owns compiler/schema/app/insertion/key routing. Implementation lanes and native qualification completed within recorded test scopes.",
+      "source_contract": "docs/v2/contracts/transforms.md",
+      "private_spec": "retained in ignored docs/v2/private/transforms-intelligence; not public",
+      "verified": "Installed ChatGPT21 Return exact replacement, Claude18 held-key flow, Chrome18 core flow, Ghostty ZLE15, Codex16 external editor, Hub manual/edit/apply-back, physical Fn speech independent readback (native resize outcome unverified), Scratchpad20 Enter once; native focus/menu/Japanese IME with restoration. Transforms155, integrations109, memory35, frontend41, Svelte0/0, bundle16/16. Quality/role results and limits in qualification report.",
+      "remaining": [
+        "NativePeers cleanup refuses eight owned worktrees: four resumed histories and four unproved process/output closures. Product gates are complete; retained work is preserved.",
+        "ORCHESTRATION.html already has uncommitted changes and is left under its ownership rule. Its stale qualification strip needs a separate ownership-safe realignment."
+      ],
+      "permission_regression": "Native executable owns LocalFlow identity and permission grant; tap readiness blocks shortcuts until active. Correct original source/range and terminal pane are revalidated; actual installed ChatGPT and terminal key/apply checks now pass within documented scopes.",
+      "unrelated_work": "Existing paper build outputs and original branches preserved.",
+      "qualification_record": "docs/v2/acceptance/TRANSFORMS-INTELLIGENCE-QUALIFICATION.md",
+      "evaluation_budget": {
+        "known_token_priced_usd": 31.6939933,
+        "unknown_reserved_usd": 29.91948,
+        "unknown_calls": 20,
+        "working_ceiling_usd": 80,
+        "authorization": "Additional frugal spending authorized as needed; working tranche is not a user ceiling.",
+        "initial_ceiling_usd": 25
+      },
+      "source_deletion_regression": "Delete-everywhere now purges source-linked memory text, history, evidence, FTS/vectors and pending learning in the same writer transaction, with rollback and late-ingestion tests. Independently corrected memories and unrelated sources survive. Source review finding disposition retained privately.",
+      "word_count_regression": "Stable restored history had a latest_revision_id pointer different from insertion-order MAX(rowid); profile refresh repeatedly failed. Reader now follows saved current revision; Home retains old measurements on refresh failure. Installed 1,749/1,749 verified with zero provider requests.",
+      "inspector_regression": "Inspection had ignored selected context/model settings. Async inspection now shares preview context policy and compiler; frozen-copy validation includes source revisions and deletion. Empty-source output is explicitly a template. Installed Hub and real Store/compiler tests pass.",
+      "cleanup": {
+        "raw_app_copies_removed": 8,
+        "verified_zip_archives": 7,
+        "spotlight_localflow_app": "/Applications/LocalFlow.app",
+        "installed_app_untouched": false,
+        "remote_branch_removed": "fix/transform-panel-spacing",
+        "retained_worktrees": 8,
+        "retention_reason": "NativePeers refuses four resumed generations (OWNERSHIP_CONFLICT) and four unproved owned-process/output closures (CLEANUP_UNCERTAIN); no forced tool-owned removal.",
+        "private_record": "build/transforms-intelligence/qualification-18-21-cleanup.json",
+        "qualification_bundles_14_through_17_removed": 4,
+        "qualification_duplicate_logical_bytes_removed": 7451913766,
+        "installed_app_preserved_after_verified_upgrade": true,
+        "qualification_bundles_14_through_21_removed": 8,
+        "retained_worktree_mib": 324,
+        "launchable_qualification_bundles_remaining": 0,
+        "owned_test_browser_profile_removed": true
+      },
+      "qualification_report": "docs/v2/acceptance/TRANSFORMS-INTELLIGENCE-QUALIFICATION.md"
     }
   },
   "historical_implementation": {

@@ -23,6 +23,7 @@
   let again = false;
   let ahead: { version: number; content: string } | null = null;
   let frame = 0;
+  export function focusForTransform() { area?.focus(); }
 
   function span(a: string, b: string) {
     const n = Math.min(a.length, b.length);

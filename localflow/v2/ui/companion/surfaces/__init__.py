@@ -10,10 +10,10 @@ READ_MODELS = {}
 
 def register_all(ctl):
     from . import (dictionary, diagnostics, history, insights, library,
-                   models, scratchpad, settings)
+                   models, scratchpad, settings, intelligence)
     ctl.ops = OpIds()
     ctl.background = Background()
     for mod in (history, dictionary, settings, library, insights,
-                scratchpad, models, diagnostics):
+                scratchpad, models, diagnostics, intelligence):
         mod.register(ctl)
         READ_MODELS.update(getattr(mod, "READ_MODELS", {}))

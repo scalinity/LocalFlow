@@ -83,12 +83,14 @@ def home(ctl):
         "recent_error": data.get("recent_error"),
         "usage": None if usage is None else {
             "dictations": usage.get("dictations"),
+            "raw_words": usage.get("raw_words"),
             "final_words": usage.get("final_words"),
             "wpm": usage.get("wpm"),
             "capture_seconds": usage.get("capture_seconds"),
             "range_first_day": usage.get("range_first_day")},
         "usage_error": data.get("usage_error"),
         "profile": _profile_summary(profile),
+        "profile_error": data.get("profile_error"),
         "profile_available": ctl.state.profile_service is not None,
     }
     return out

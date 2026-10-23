@@ -1104,9 +1104,9 @@ def tg07_conflicting_requirements_surface():
                 "Shorten the paragraph.")                           # ADV-16
 
 
-# Derived for prompts VERSION "claude1" (ADR-0002) with the
+# Derived for prompts VERSION "intelligence4" (ADR-0002) with the
 # serialization below.
-PINNED_FRAME = "636534b7898b0d8e"
+PINNED_FRAME = "16cf206e64112016"
 
 
 @case("engine")

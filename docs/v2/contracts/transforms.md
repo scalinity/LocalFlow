@@ -1,365 +1,190 @@
-# Contract: Transforms and the Prompt Engineer
+# Contract: Transforms and prompt collaboration
 
-**Spec:** S15 (transform-backed modes), S16, S13 (the faithful
-boundary), S18 (replacement authority), S24, S29.4 (transform family),
-S29.10, ADR-0002 (transforms on Claude) · **Owner:** M11 · **Suites:**
-EV-13 (tests/v2/transforms/), EV-19/EV-20 (producer fixtures in
-test_transform_pipeline.py)
+**Scope:** deliberate text rewriting and prompt authoring. Ordinary dictation,
+normalization, faithful cleanup, vocabulary, and insertion retain their contracts.
+**Implementation:** `localflow.v2.transforms`, `transforms_store`, scoped memory,
+the native preview, the companion bridge, and the existing insertion queue.
+Qualification results belong in the acceptance record; this contract does not
+certify an installed application or a model's output.
 
-`localflow.v2.transforms` (`prompts`, `definitions`, `atoms`,
-`engine`, `claude`, `diffview`) + `transforms_store` (schema v7) + the
-coordinator's executor/selection paths and the Hub Transforms view
-deliver deliberate rewriting on Claude as a product workflow — never a
-loosening of faithful cleanup (S16: a transform never expands the S13
-permitted edits; requirement preservation is this contract, not a
-cleanup relaxation).
+## Editing and engineering
 
-## Current owner polish supplement (2026-09-30)
+Polish improves expression while preserving meaning, stance, modality, facts,
+constraints and voice. Concise removes redundancy without removing substance.
+Prompt Engineer improves the effectiveness of the requested task: proportionate
+verification standards, comparison dimensions, deliverables and methodological
+clarifications are permitted. Research premises remain claims to investigate.
+Personal/project additions require eligible supplied evidence. A short clear
+prompt may stay short. Original language stays unless translation is requested.
 
-This supplement supersedes the earlier menu-only shortcut presentation
-below. Historical milestone evidence and semantic revisions stay preserved.
+None of these modes answers or executes the downstream request. Advice,
+investigation, proposals and implementation remain different scopes. Do not
+invent budgets, deadlines, models, environments, personal facts, new prohibitions
+or implementation authority. Explicit no-expansion instructions disable enrichment.
+Custom instructions define permitted changes; unaltered requirements survive.
+Built-in instructions are read-only; duplication creates a custom definition.
 
-- Selected-text transforms now enter through one consuming session event
-  tap, or the Transforms menu as a fallback. Both use the same coordinator
-  selection capture, denied/secure-field rules, M11 generation/gate and M08
-  strict replacement. Dictation's fn listener remains separate.
-- Fresh built-ins default to Polish **⌥1**, Prompt Engineer **⌥2**, Concise
-  **⌥3**. All three can be reassigned, explicitly cleared, or reset to
-  default. Custom transforms can record a modifier/key chord too. Mode
-  identity and built-in prompt contracts stay fixed.
-- Effective shortcuts are physical macOS virtual key codes plus a canonical
-  modifier set (Control, Option, Shift, Command), never Option-generated
-  Unicode. A chord needs a supported nonmodifier key and at least one
-  modifier; fn is excluded. Display glyphs derive from that identity.
-- Namespaced `transform_meta` rows store `source=default|user` with a nullable
-  binding. A user null means explicit clear and survives restart. Missing
-  rows seed once; existing representable menu choices migrate to Command
-  plus physical key without changing preserved definition revisions.
-- Collision checks use effective enabled bindings in the writer transaction.
-  Reassignment/clear releases the old chord. Disabled/deleted definitions
-  register nothing; re-enabling checks ownership again. Reset refuses an
-  occupied shipped chord, including for a disabled definition. Corrupt
-  duplicate effective bindings register neither candidate; the UI lists
-  the conflict. Nothing steals a chord or silently chooses a winner.
-- The single event tap consumes registered down, repeat and paired up
-  events; only the initial down dispatches. No keys are reposted. Other
-  chords pass unchanged. Shortcut recording leases suspension only while
-  LocalFlow itself is foreground, then ends on completion, cancel, blur,
-  editor disposal or expiry. Failure to obtain the tap leaves the menu
-  fallback available and records an honest permission reason.
-- Selected-text review is a borderless, nonactivating expanded speech
-  bubble, centered over the existing pill anchor and growing upward. Warm
-  ink, rounded corners and bounded scrolling keep short results compact.
-  The transform name, change count, added/removed text, needs-review clauses
-  and fallback reasons remain visible. Accept, Copy, Retry Original, Apply
-  Another, Transform Output, Configure, Save to Scratchpad and Dismiss
-  retain their existing routing and candidate identities.
-- Shortcut edits have their own mutable preference lifetime. They do not
-  append a semantic definition/prompt revision, alter task keys or change
-  the M11 requirement-preservation gate. This implementation does not
-  establish final native qualification; the owner-polish closure records
-  the actual evidence and open checks.
+## Compiler and identities
 
-## Definitions and revisions
+`prompts.build_request` is authoritative for execution, inspection, previews and
+evaluation. Trusted instructions are separate from JSON-serialized source,
+examples, explicit follow-up instructions, constraints and labeled context data.
+Closing XML tags or JSON resembling a system message do not escape that framing.
+Examples demonstrate the complete current output schema. Keys and provider access
+remain native; the WebView receives neither credentials nor provider thinking.
 
-- A `TransformDefinition` carries id, name, mode
-  (`polish|concise|prompt_engineer|custom`), origin
-  (`builtin|legacy|user`), prompt revision (content hash — an edited
-  word never shares a revision id), declared edit types, optional
-  writing samples (`(before, after)` pairs), a single-character
-  shortcut, target profiles and the auto-apply flag. Store as many as
-  useful; nothing is subscription-capped.
-- **Old definitions are never erased:** every edit appends a preserved
-  revision to `transform_revisions`; deletion disables, never deletes
-  (M11-AC01). The two uploaded V1 definitions materialize from the M02
-  legacy artifacts as `origin="legacy"` rows — prompt verbatim, legacy
-  `key` recorded but **never bound** (existing keys 1/2 are not
-  automatically Option shortcuts), frozen against edits.
-- Shortcuts are menu key equivalents; collisions are detected at write
-  time (case-insensitive) and surfaced in the Hub — never silently
-  rebound, and never a global key grab.
-- The strengthened built-ins (`builtin:polish`, `builtin:concise`,
-  `builtin:prompt_engineer`) carry versioned contracts in `prompts.py`
-  (the S16 Prompt Engineer contract verbatim in substance). The
-  uploaded V1 prompt's "relevant context"/"format if implied"/"be
-  concise" wording appears nowhere and cannot override the constraints.
+`TransformJob` freezes source, definition/instruction and example versions,
+compiler/schema/enrichment policy, locale, follow-up constraints, depth and the
+exact context fingerprint. Mutated context refuses before a provider call. A
+context/source/instruction change creates a new semantic task. Model and requested
+effort describe an attempt, so comparable models can share the same task identity.
+Authored task, frozen context, generation attempt, canonical revision and external
+apply operation are separate identities.
 
-## Execution and task identity (S16/S29.10)
+Retry Original reuses the frozen task; it does not silently refresh context.
+Transform Output makes the previous output the source of a new task. Its external
+destination remains the original captured region. Neither operation is a
+preference judgment. Auto/Compact/Thorough controls prompt depth independently
+of provider effort.
 
-`TransformJob` freezes the immutable source revision, transform +
-prompt revisions, mode, custom instructions and examples; its
-`task_key` hashes exactly (mode, source, instructions, examples
-revision, locale). **Retry-original is the same task** (a fresh
-attempt may join the task key as a preference candidate);
-**transform-of-result and any changed source/instructions are
-different tasks** — never exported as same-input pairs (M11-AC05).
+## Generation and independent checks
 
-`run_transform` sends the contract as the system prompt, writing
-samples as earlier turns and the selected text as the last user turn
-inside `<draft>` tags (data, never instructions), and runs ONE Claude
-request (ADR-0002) under the transform's model and reasoning level —
-its `transform_meta` preference, else `claude.recommended(mode)`. The
-request runs in the app process (`WorkerSupervisor.transform` →
-`claude.Transformer`); it never takes the GPU lock or reaches the
-worker. Every transform answers with structured output: `{"text"}`, or
-for Prompt Engineer `{"prompt", "requirements", "uncertain"}`.
-`max_tokens` is 32000 (thinking counts toward it); a cut-off answer
-falls back to the original with the honest reason — a truncated
-proposal never applies. The result records the serving model
-(`message.model`) and the reasoning level.
+The native Anthropic layer reads the existing Transforms Keychain credential.
+Generation, verification and index work run off UI/audio/GPU-lock paths. No key,
+network, SDK, supported configuration or usable response yields an explicit
+recoverable outcome with the original intact. Invalid saved model choices remain
+unavailable until explicitly changed/reset. An uncertain network submission is
+not automatically retried. A source over the supported bound refuses; it is
+never truncated.
 
-Result paths: `applied` (validated) · `needs_review`
-(`requirement_coverage_uncertain` — original spans kept, never
-auto-applied) · `no_changes` (the output equals the source; nothing to
-apply) · `fallback_original` (`transform_unavailable:<code>` — no key,
-no network, timeout, rejected key, rate limit, the account's usage
-limit, refusal, length, invalid answer — or an engine fault; never the local model). A source over
-12,000 characters refuses honestly, never truncates.
+Structured output contains only the finished replacement text in `text` or
+`prompt`. Prompt Engineer also returns requirement spans, enrichments,
+evidence IDs/revisions, unresolved clauses and separate warnings. Copy/Accept
+never includes commentary, warning text, JSON, internal IDs or thinking.
 
-## The gate on the transform path (revision `claude-gate-1`)
+The generator's map is supporting evidence. It cannot certify completeness:
 
-Exact-carry literals (below) block for every kind: a lost one is
-`needs_review` with the span kept. Prompt Engineer's requirement map is
-verified span by span — each cited draft span must be in the draft and
-each cited output span in the prompt (spacing, case and markdown marks
-aside); an unverified span or a requirement Claude marks uncertain is a
-review issue with the draft's wording kept. An answer that contains the
-request's `<draft>` framing falls back (`output_invalid`). The lexical
-clause gate below is not on the transform path (ADR-0002: it reviewed
-every correct rewrite); it stays as the regression-pinned validator in
-`atoms.py`.
+- A source-side clause ledger reaches the independent semantic verifier even
+  when a clause is absent from the returned map.
+- Deterministic checks preserve quoted/code spans, URLs, paths and identifiers,
+  validate cited spans and reject fabricated/changed context references.
+- A separate verification call checks omissions, contradictory mappings,
+  modality/optional changes, invented restrictions, downstream task execution
+  and unsupported personal additions. It is probabilistic, not a proof.
+- At most one targeted repair receives concrete issues. A material unresolved
+  issue disables Apply and retains a recovery result. No substitute provider
+  silently replaces the selected configuration.
 
-## The lexical requirement validator (`atoms.py`, revision `m11-gate-2`)
+`applied` is the compatible engine path for a validated candidate **ready for
+application**, not a receipt that an external write happened. Other paths are
+`needs_review`, `no_changes` and `fallback_original`. Blocking issues are separate
+from advisory warnings. Significant whitespace is preserved; exact equality,
+not whitespace folding, establishes no change. Attempts retain requested/served
+configuration, token usage, end-to-end time and verification/repair cost; unknown
+usage remains unknown.
 
-A deterministic gate that **fails closed**: a requirement it cannot
-place in the output is a review issue, never silently applied. An
-empty requirement map is never proof of fidelity.
+`atoms.py` retains the historical lexical validator and its adversarial regression
+cases. Lexical similarity is not the production semantic gate.
 
-**Representation.** Every source clause is a requirement atom (kind
-`requirement`). Clauses come from sentence ends, newlines, `;`, `:`,
-spaced dashes and commas; list markers and heading marks are blanked
-first; a piece opening with a subordinator (if/unless/when/once/
-before/after/until/only if/…) joins the piece it governs; content-free
-pieces join their neighbour; "X and/but Y" splits only when both sides
-carry at least two content words and X holds no negation/hedge/
-condition/scope that could govern Y. Quoted (double/curly, single
-quotes not touching word characters, backticks, fences), URL (trailing
-`.,;:!?` and unbalanced `)` stripped), path (rooted `~/`, `/`, `./`
-with spaced middle segments; relative), file (any letter-initial
-extension, longer than three characters) and identifier (letters mixed
-with digits except ordinals/units, underscores, camelCase, versions)
-spans are **exact-carry literals** (kinds `quoted`, `link`,
-`identifier`): masked before splitting, deduplicated case-sensitively,
-and required verbatim in the output (case-sensitive; a word boundary
-is checked only at an alphanumeric edge).
+## Capture, review and application
 
-Each clause carries an operator profile: negation, hedge/optional,
-condition (including soft conditions such as "if they exist"/"if
-possible", which govern the words before them and are not
-interchangeable with "maybe"), scope, alternative, interrogative
-(`?`, why/whether/how, contextual what/which/who/where, "ask … if"),
-sequence (a numbered item satisfies it), directional relation
-(before/after/once/until/then, with direction), stop, always,
-comparators (le/ge/lt/gt/eq; "no more than" is a comparator, not a
-negation) and numbers bound to the noun they count. Each operator
-governs the content words up to the next operator. In a draft that
-asks for a prompt, the framing ("write/make/draft a prompt", "asks the
-copy editor to", "prompt for the retrospective", "makes clear",
-"note that") is not a requirement.
+Menu and physical global shortcuts enter the same coordinator. Secure/denied
+fields refuse before content reads. AX capture binds the field's owner, window,
+UTF-16 range, source and bounded surroundings. Direct selected text is checked
+against range text when available. Conflicting APIs or invalid units refuse.
+Terminal screen/scrollback ranges confer no composer authority.
 
-**Coverage by mode.**
+A suspended ZLE widget or supported Codex external-editor handoff exports its
+logical buffer. The private same-user IPC challenge binds an operation to the
+client process/session and immutable buffer revision. ZLE exposes a marked region
+or whole buffer; Codex exposes the whole prompt. Only the editor client updates
+its own verified buffer, without paste framing, backspaces, Return, command
+acceptance or prompt submission. Cancellation leaves the original intact.
+Installation and removal preserve unrelated shell/editor settings and active
+sessions. Codex's trailing-whitespace limitation is disclosed and refused rather
+than silently damaging text.
 
-| Mode | Gate |
-|---|---|
-| Prompt Engineer | full: the clause's content (⅔ of its stems; all when ≤ 2) in ONE output segment — or, for clauses with ≥ 4 stems and pure ordering clauses, a short run of adjacent segments (headings between bullets are skipped); every operator holds there with its governed words and direction; equally good segments that disagree on negation/hedge are `uncertain`; ordered clauses keep their order; every source content stem survives somewhere |
-| Polish, Concise | operators: no content threshold, but every operator, bound number and comparator holds in the segment carrying that clause's content, and no clause gains a governing operator |
-| Custom | exact-carry literals only — its instruction defines what may change |
+The preview remains nonactivating, with text-only accessible actions. The scoped
+review-key lease consumes plain Return/keypad Enter and their repeats/matching
+release, including after hiding the panel. The same candidate-scoped coordinator
+arbitrates clicks and keys once, independently of training collection. A held key
+cannot queue acceptance during generation. Escape dismisses/cancels. App switches,
+expiry, shutdown and tap disablement disarm the lease. Modified keys, input-method
+composition and LocalFlow editing surfaces retain their own keyboard behavior.
+When interception is unavailable, click remains explicit and Enter is unverified.
 
-For Prompt Engineer, Polish and Concise the output is also checked for
-**invention** (atoms of kind `added`, excerpt = the added output text):
-an operator added to a matched segment that governs clause content
-(negation/hedge/scope/condition/alternative/stop; an added `exactly`
-is allowed); S16 escalation terms absent from the source (implement,
-deploy, migrate, benchmark, test, refactor, commit, push, merge,
-release, production, backend, frontend, database, schema, security,
-compliance, criteria, environment, fix, code, delete, remove, ship,
-rollback, deadline) unless a negation earlier in the segment governs
-them; novel numbers (not list markers, labels like "Step 1", or "one");
-novel identifiers/paths/URLs.
+The existing insertion queue owns external AX/paste replacements and logical
+editor commits. It revalidates immediately before the effect; a changed target
+never receives blind deletion. Outcomes distinguish verified application,
+unverified posting, changed target, cancellation, failure and copy. A logical
+editor's accepted return is not an app-visible verified-delivery receipt. Undo
+retains the existing target-bound authority.
 
-Statuses are `covered`/`uncertain`/`missing`; any review issue makes
-the result `needs_review` with the source clause (or the added output
-text) kept as a de-duplicated review excerpt beside the diff; auto-apply
-declines. The historical atom kinds (`question`, `negation`, `count`,
-`ordering`, `edit_constraint`, `deadline`, `uncertainty`) remain
-defined so older coverage JSON reads. `TransformResult.to_json()`
-records `validator_revision`; coverage entries serialize their atom's
-kind and operators and survive the supervisor's reply
-(`engine.result_from_message` rebuilds them).
+Busy, missing-definition, capture and generation failures are visible. Diagnostics
+records operation/phase, reason, source length/hash and adapter without source text.
 
-**Why Polish and Concise are gated too.** Their own contracts in
-`prompts.py` require every condition, negation, quantity and question
-to survive, and their auto-apply exposure is the same as Prompt
-Engineer's. They skip the content threshold and global-presence rule
-because rewording and removing redundancy are their job. Custom stays
-exact-carry only (recorded under Limitations).
+## Context, memory and revisions
 
-**The acceptance set** is `tests/v2/transforms/fixtures_prompt_engineer_v2.json`:
-15 dev, 5 validation, 10 regression (the v1 held-out cases, exposed
-during the remediation) and 10 new blind held-out families. Each case
-encodes relations the independent oracle
-(`test_prompt_engineer_cases.judge`) checks inside one output segment;
-verdicts are reported separately (applied, applied-semantic-failure,
-review-addresses-loss, review-misdirected, review-no-loss, fallback,
-error) — a fallback is never counted as applied. v1 stays unchanged as
-the historical manifest.
+Context defaults off. Explicit project selection and personal memory use are
+separate controls. A project identity comes from approved roots/verified paths or
+explicit selection, never a window title or the last project. Approved excerpts
+are bounded and exclude secrets, caches, build outputs, binaries and root/symlink
+escape. Local semantic and lexical retrieval filter eligibility/scope/freshness
+before ranking. Missing local embedding assets are labeled lexical degradation.
 
-## The two execution surfaces
+Memories are versioned, source-linked facts/preferences with scope, authorship,
+status, freshness and correction/forgetting. Explicit Remember is distinct from
+text selected for transformation. Optional learning accepts eligible user activity;
+generated output, quoted third-party content and uncertain ASR cannot become
+personal truth. Learning, context disclosure and training collection are separate.
+Current instructions override remembered defaults. Disputed/stale facts are not
+silently merged into a prompt.
 
-- **Selected-text execution:** the status menu's Transforms submenu
-  (rebuilt on open) starts a run from idle only. The capture
-  (`insertion/selection.py`, off the UI callback) **classifies the
-  focused field first** — a secure field refuses (`secure_field`)
-  without reading its selection, range or value — then records the
-  selection, its range, the window title and up to 200 characters of
-  text on either side. The pill acknowledges immediately
-  (MODE_TRANSFORMING, measured ≤50 ms budget); the generation runs on
-  a transform thread; the preview panel shows the block/word diff with
-  review clauses kept, and the actions (laid out side by side, never
-  overlapping): **accept** (replacement through the M08 queue under
-  **strict replacement** — positive proof of the same selection in the
-  same document, contracts/insertion.md; anything short of that routes
-  to the copy offer, M11-AC03), **copy**, **retry-original**,
-  **apply-another** (the source again under another definition) and
-  **transform-of-result** (a new task over the output whose
-  DESTINATION stays the originally captured selection or note region —
-  never the current caret); undo of an accepted replacement is the M08
-  target-bound undo (Recovery menu) — this panel never builds a second
-  undo engine. Since M12, **save-to-Scratchpad** is live (the output
-  becomes a new note with its task identity recorded), and a
-  NOTE-scope capture (the Scratchpad's picker — selection or whole
-  note) accepts into the editor instead of the external queue, bound
-  to its captured note and region (contracts/scratchpad.md).
-- **Automatic application (the dictation path):** a resolved
-  transform-backed mode whose bound definition opted in
-  (`auto_apply`, default **off** — M11-AC04) transforms the **Clean
-  artifact** before insertion: the cleanup stage's applied output
-  stays the Clean text, the transform writes its own stage artifacts,
-  and only a validated (`applied`) result changes the inserted text —
-  anything else inserts Clean with the honest reason recorded in the
-  job, the menu line and the envelope. A transform never runs over an
-  unretained base (`transform_requires_cleanup` when cleanup is off).
+Forgetting revokes retrieval, indexes, suggestions and pending publication.
+Source suppression prevents unchanged deleted evidence being re-extracted. Jobs
+validate frozen evidence again inside the writer operation that publishes their
+result. Already transmitted requests and user-managed external documents/backups
+cannot be retroactively erased by LocalFlow.
 
-## Mode resolution (extends contracts/profiles.md)
+Prompt sessions persist full canonical revisions, explicit instructions, manual
+edits, context lineage and a monotonic canonical pointer. Concurrent edits use
+expected revisions; a stale result cannot overwrite a newer draft. Reopening a
+session does not revive external destination authority. Applying from the Hub
+requires deliberate destination reacquisition and the existing insertion checks.
 
-All six S15 modes are executable. A transform-backed mode resolves
-`effective_mode = mode` only when the frozen `TransformSnapshot`
-finds its bound definition opted in and targeting the resolved
-profile; otherwise Clean with the honest `fallback_reason`
-(`transform_auto_apply_disabled:<mode>`,
-`transform_profile_not_targeted:<label>`,
-`transform_not_bound:<mode>` — two auto-applicable custom transforms
-are ambiguous, never guessed; `transform_registry_unavailable:<mode>`
-when the job's snapshot could not be frozen, never reported as the
-definition's own setting). The profile label is a built-in category
-name or `declared_profile`: a user-declared profile name never enters
-a reason. `auto_apply` and `enabled` are real Booleans at every
-boundary (definitions and `update_transform`): a truthy string never
-opts a definition in.
+## AI creation, suggestions and persistence
 
-## Store (schema v7, additive; the vocabulary pattern)
+AI creation produces an editable complete definition with synthetic examples,
+production-pipeline tests and conversational refinement. The host permits at most
+four model turns/eight typed tools, bounded tokens/spend and cancellation. Tools
+retrieve only eligible context, inspect definitions, validate/test samples and
+propose a draft. No shell, arbitrary writer, credential reader, message sender or
+computer-control tool is exposed. Only explicit idempotent Save creates a versioned
+transform, with no automatic shortcut, auto-apply or silent overwrite.
 
-`transforms` (versioned rows + usage counters) +
-`transform_revisions` (append-only) + `transform_meta` (state
-counter) + `transform_candidates`/`preference_observations` (S29.10):
-rows carry hashes/ids/counts only; source/output texts ride
-lease-governed artifacts written inside the same writer op
-(`insert_text_artifact_row`/`grant_lease_row`).
+General suggestions work without history. Personalized suggestions require
+eligible recurring observations, retain provenance, respect dismissal/cooldown and
+revoke when evidence is forgotten. No background suggestion activates itself.
 
-**Candidates are training evidence and follow collection consent
-(S29.2).** `record_candidate` writes nothing and returns `None` unless
-collection is `enabled`: the selected-text and note previews read the
-consent state inside the same writer op (a revocation while the
-generation ran is honoured); the dictation path passes the consent its
-job captured at start (`collecting`). The transform itself works the
-same either way (`candidate_id` None). With an output artifact, the
-candidate retains two children of it: `transform_prompt` (the exact
-rendered prompt) and `transform_decision` (JSON: path, reason,
-validator revision, task key, the full coverage map and the review
-excerpts shown). A note candidate's source artifact carries `note_id`
-and `note_revision_id`; it is published only while that note is live
-(checked inside the writer op), and the note's deletion purges the
-candidate's source/output artifacts and their children
-(contracts/scratchpad.md). Every one of these artifacts follows the M02
-deletion barrier: when the originating job was deleted everywhere
-they are written detached (`job_id` NULL — contracts/store.md).
+All new data uses additive versioned migrations and the existing Store writer.
+Transform definitions, examples, hotkeys, model preferences, history, research and
+training candidates retain their existing lifetimes. Runtime preview/apply
+identity works with collection off. Frontend changes require rebuilt bundled
+assets and separate qualification of the actual application bundle.
 
-The same-task invariant is enforced at write time — a judgment across
-task keys refuses. Judgments: `accept|reject|undo|prefer_a|prefer_b|
-tie|neither|uncertain`. **Retry Original is not a judgment:** it
-records no observation; the new candidate's output artifact names the
-earlier candidate as `retry_of`. The dictation auto-apply path records
-candidates only (an automatic application is not a preference, S29.10
-— no judgment, no inferred winner). A `needs_review` candidate is
-never a preference by itself; an explicit human accept of it is
-legitimate evidence and stays distinguishable because its decision
-record keeps the automated status (the M14 transform export carries
-`automated_path` and `decision_artifact_id`).
+## Evaluation
 
-## Evidence (S29.4 transform family; S29.14)
+The synthetic suite separates development, selection and final scenario families;
+private reference examples are development only. Selection never uses the final
+holdout. A frozen candidate is evaluated repeatedly on the untouched final set;
+a failed final requires a new evaluation version and fresh holdout before claiming
+an untouched result. Authoring is measured by created-transform performance on
+unseen samples. Execution, prompt refinement, authoring, suggestions, extraction
+and verification are distinct roles, including deterministic alternatives.
 
-`EvidenceCollector.on_transform_result` (dictation path, before
-finalize) retains the exact rendered prompt, the output and the
-`transform_decision` record (child of the output) as lease-governed
-artifacts and fills the envelope's content-free `transform` block
-(transform id/revision, prompt revision, task key, path, reason,
-coverage counts, validator revision, tokens, duration, artifact ids). With
-no transform requested the slot's reason is `not_applicable`; a
-requested-but-not-run transform records its gate reason — never a
-silent Clean. History's fourth lineage stage resolves from
-`transform_output` artifacts.
-
-## Events
-
-`transforms.not_applied`, `transforms.selection_unavailable`,
-`transforms.busy`, `transforms.accepted`, `transforms.copied`,
-`transforms.insertion_done`, `transforms.review_required` (via
-stage.completed), `transforms.record_failed`,
-`transforms.store_unavailable` — content-free (ids, reasons, counts).
-
-## Config
-
-No new knobs. The transform surface is store-configured (Hub
-Transforms view); execution budgets are engine constants, not config.
-
-## Limitations (documented, not hidden)
-
-- On the transform path, Polish and Concise are gated only by exact
-  carry, and Prompt Engineer's map is as complete as Claude makes it: a
-  requirement Claude omits from both the prompt and the map is not
-  caught by code. scripts/v2/transform_model_eval.py measures how often
-  that happens per model and reasoning level (ADR-0002).
-- The lexical validator is English: it binds operators, governed
-  words, numbers, direction and literals, not full semantics.
-- Custom transforms carry only the exact-carry gate: the user's
-  instruction may legitimately remove or reword clauses, so a lost
-  condition under a Custom instruction is not caught.
-- Identifier literals are case-sensitive: a Polish that capitalizes a
-  dictated "q3" to "Q3" is reviewed.
-- The selection capture requires Accessibility trust and a readable
-  focused field; `app_denied` destinations refuse transforms honestly
-  before any Accessibility call — the M06 decision over the validated
-  `context_denied_apps` (contracts/context.md), and a malformed deny
-  list refuses every app (`deny_list_invalid`); a secure field refuses
-  before any read.
-- Transforms need a network connection and the Keychain key; without
-  either they report why and change nothing.
-- The preview panel's visual pass (layout, focus, text scale,
-  keyboard reachability) is the pending native trial; the headless
-  suites cover state, wiring, geometry, the real coordinator and the
-  insertion composition.
-- Task identity hashes the contract, custom instruction and user
-  examples; the draft framing and the answer schemas are pinned by a
-  test (`tg_task_identity_inputs_pinned`) so editing them forces a
-  `prompts.VERSION` bump. The model and reasoning level are not part of
-  the task: switching models keeps candidates comparable.
+Cache identity includes fixtures/split manifest, compiler/prompt/schema/context,
+model/effort, validator, judge prompt/model/schema and scoring revision. Paid calls
+use a resumable total ceiling, including verification, repairs and judging;
+unknown billing retains its reservation. Failures, costs, end-to-end p50/p95,
+warning errors and quality distributions are reported as observed. A rubric-complete
+reference or LLM self-rating is not release evidence.

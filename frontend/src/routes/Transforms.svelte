@@ -9,12 +9,52 @@
   import Select from '../components/Select.svelte';
   import Editor from './transforms/Editor.svelte';
   import Onboarding from './transforms/Onboarding.svelte';
-  import { app, act, navigate } from '../stores/app.svelte';
+  import Tabs from '../components/Tabs.svelte';
+  import Workspace from './transforms/Workspace.svelte';
+  import Memories from './transforms/Memories.svelte';
+  import Projects from './transforms/Projects.svelte';
+  import Suggestions from './transforms/Suggestions.svelte';
+  import Authoring from './transforms/Authoring.svelte';
+  import type { Definition } from '../lib/intelligence';
+  import { request } from '../lib/intelligence';
+  import { onMount } from 'svelte';
+  import { app, act, navigate, onEvent } from '../stores/app.svelte';
   import { outcome, type Outcome } from '../stores/outcome';
 
   const tf = $derived(app.views.transforms);
   const rows: any[] = $derived(tf?.transforms ?? []);
 
+  let area = $state('transforms');
+  let workspace = $state<Workspace | undefined>();
+  let pendingSessionId = $state<string | null>(null);
+  let pendingArea = $state<string | null>(null);
+  function selectArea(id: string) {
+    if (area === 'workspace' && workspace?.hasUnsavedChanges()) pendingArea = id;
+    else {
+      // Native open is a one-time destination, not the default on remount.
+      if (id !== 'workspace') initialSessionId = null;
+      area = id;
+    }
+  }
+  let initialSessionId = $state<string | null>(null);
+  let authoring = $state<{ intention?: string; definition?: Definition } | null>(null);
+  const areas = [{ id: 'transforms', label: 'My transforms' }, { id: 'workspace', label: 'Prompt workspace' }, { id: 'memories', label: 'Memories' }, { id: 'projects', label: 'Projects' }, { id: 'suggestions', label: 'Suggestions' }];
+  onMount(() => {
+    let active = true;
+    async function openPending() {
+      try {
+        const { session_id } = await request<{ session_id: string | null }>('prompt_sessions.pending_open', {});
+        if (!active || !session_id) return;
+        if (area === 'workspace' && workspace?.hasUnsavedChanges()) pendingSessionId = session_id;
+        else { initialSessionId = session_id; area = 'workspace'; }
+      } catch { /* A retained session can still be opened from the workspace. */ }
+    }
+    const stop = onEvent('prompt_sessions.open', () => { void openPending(); });
+    // Native events can arrive before this route, or even its WebView, mounts.
+    // Pull the retained destination once the actual route is ready.
+    void openPending();
+    return () => { active = false; stop(); };
+  });
   let editor = $state<{ id: string | null } | null>(null);
   let onboarding = $state(!app.shell.onboarding_seen);
   let note = $state<Outcome | null>(null);
@@ -47,11 +87,11 @@
   const levelsOf = (model: string) => models.find((m) => m.id === model)?.reasoning ?? [];
   const isRecommended = (t: any) => t.model === t.recommended?.[0] && t.reasoning === t.recommended?.[1];
   const modelOptions = (t: any) =>
-    models.map((m) => ({ value: m.id, label: m.id === t.recommended?.[0] ? `${m.label} · recommended` : m.label }));
+    models.map((m) => ({ value: m.id, label: m.label, badge: m.id === t.recommended?.[0] ? 'Recommended' : undefined }));
   const reasoningOptions = (t: any) =>
     levelsOf(t.model).map((r) => ({
       value: r.value,
-      label: t.model === t.recommended?.[0] && r.value === t.recommended?.[1] ? `${r.label} · recommended` : r.label,
+      label: r.label, badge: t.model === t.recommended?.[0] && r.value === t.recommended?.[1] ? 'Recommended' : undefined,
     }));
 
   async function setModel(t: any, model: string, reasoning: string | null) {
@@ -96,7 +136,7 @@
       <div class="hero-grid">
         <div>
           <h2>Rewrite anything you’ve written.</h2>
-          <p>Select text in any app, press a transform shortcut, and review the change before it replaces your selection. Transforms run on Claude, so the selected text, and any writing examples a transform keeps, are sent to Anthropic.</p>
+          <p>Select text in a supported editable surface, press a transform shortcut, and review the change before it replaces your selection. Read-only and unsupported surfaces offer a copy fallback. Transforms run on Claude, so the selected text, and any writing examples a transform keeps, are sent to Anthropic.</p>
           <div class="hero-cta">
             <Button variant="paper" onclick={() => navigate('scratchpad')}>Try it in Scratchpad</Button>
             <button type="button" class="link" onclick={() => (onboarding = true)}>How it works</button>
@@ -111,13 +151,24 @@
     </Hero>
   </div>
 
+  <div class="area-tabs"><Tabs items={areas} value={area} label="Transform work areas" onselect={selectArea} /></div>
+  {#if pendingArea || pendingSessionId}<div class="leave-check"><Note tone="warning" text="The prompt workspace has unsaved text." /><div class="create-actions"><Button size="sm" onclick={() => { pendingArea = null; pendingSessionId = null; }}>Keep editing</Button><Button size="sm" variant="danger" onclick={() => { workspace?.discardDraft(); if (pendingSessionId) { initialSessionId = pendingSessionId; area = 'workspace'; } else { initialSessionId = null; area = pendingArea!; } pendingArea = null; pendingSessionId = null; }}>Discard and switch</Button></div></div>{/if}
+  {#if area === 'workspace'}
+    {#key initialSessionId}<Workspace bind:this={workspace} {rows} {initialSessionId} onsaveTransform={(prompt) => authoring = { intention: `Create a reusable transform based on this prompt approach:\n\n${prompt}` }} />{/key}
+  {:else if area === 'memories'}<Memories />
+  {:else if area === 'projects'}<Projects />
+  {:else if area === 'suggestions'}<Suggestions onchoose={(suggestion) => authoring = { intention: suggestion.purpose, definition: suggestion.definition }} />
+  {:else}
   <div class="mine-head">
     <h2 class="serif mine">My Transforms</h2>
-    <Button variant="primary" onclick={() => (editor = { id: null })}>Create new</Button>
+    <div class="create-actions"><Button onclick={() => (editor = { id: null })}>Create manually</Button><Button variant="primary" onclick={() => authoring = {}}>Create with AI</Button></div>
   </div>
 
   {#if conflicts.length}
     <div class="note"><Note tone="warning" text={`Two transforms share the shortcut “${conflicts[0].shortcut}”.`} /></div>
+  {/if}
+  {#if tf?.keyboard_ready === false}
+    <div class="note"><Note tone="danger" text="Shortcuts are inactive. Enable LocalFlow in System Settings → Privacy & Security → Accessibility and Input Monitoring. Until access is enabled, these keys can type characters into the other app." /></div>
   {/if}
   {#if note}<div class="note"><Note tone={note.tone} text={note.text} ondismiss={() => (note = null)} /></div>{/if}
 
@@ -131,7 +182,7 @@
         <article class="card" class:off={!t.enabled}>
           <button type="button" class="card-open" onclick={() => (editor = { id: t.transform_id })} aria-label="Open {t.name}">
             <div class="key-row">
-              {#if t.hotkey}<Kbd>{t.hotkey_display}</Kbd>{:else}<span class="tag">No shortcut</span>{/if}
+              {#if t.hotkey && tf?.keyboard_ready !== false}<Kbd>{t.hotkey_display}</Kbd>{:else}<span class="tag">{t.hotkey ? 'Shortcut inactive' : 'No shortcut'}</span>{/if}
               <span class="tag">{ORIGIN[t.origin] ?? t.origin}</span>
               {#if t.auto_apply}<span class="tag lav">While dictating</span>{/if}
             </div>
@@ -168,16 +219,24 @@
       </button>
     </div>
   {/if}
+  {/if}
 </Page>
 
 {#if editor}
-  <Editor id={editor.id} {rows} onclose={() => (editor = null)} />
+  <Editor id={editor.id} {rows} onclose={() => (editor = null)} onduplicate={(prompt) => { editor = null; authoring = { definition: { id: '', name: 'Custom transform', mode: 'custom', prompt, examples: [], revision: 0 } }; }} />
 {/if}
+{#if authoring}<Authoring onclose={() => authoring = null} initialIntention={authoring.intention ?? ''} initialDefinition={authoring.definition} />{/if}
 {#if onboarding}
   <Onboarding onclose={() => (onboarding = false)} />
 {/if}
 
 <style>
+  .leave-check { margin-top: 18px; }
+  .area-tabs { margin-top: 30px; overflow-x: auto; padding-top: 4px; }
+  .area-tabs :global(.list) { gap: 24px; }
+  .area-tabs :global(.tab) { white-space: nowrap; font-size: var(--text-md); }
+  .create-actions { display: flex; flex-wrap: wrap; gap: 8px; }
+
   .where {
     display: inline-flex;
     align-items: center;
@@ -300,7 +359,7 @@
   }
   .card-model {
     display: grid;
-    grid-template-columns: 1fr 1fr;
+    grid-template-columns: 1fr;
     gap: 10px;
     padding: 0 24px 20px;
   }

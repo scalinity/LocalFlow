@@ -18,6 +18,7 @@ from __future__ import annotations
 
 import os
 import threading
+import time
 from typing import Optional, Protocol
 
 AX_MESSAGING_TIMEOUT = 0.2
@@ -123,6 +124,40 @@ class SystemInsertionHost:
             return self._owned.focused_element_for(pid)
         except Exception:
             return None
+
+    def prepare_text_capture(self, pid):
+        """Request Electron's documented AX support on the authorized app.
+
+        Called only on the selection queue, after app-policy admission. Native
+        apps that do not advertise AXManualAccessibility are left alone. The
+        renderer may build its first tree asynchronously; inspect roles only,
+        without reading field content, for a bounded first-use warmup.
+        """
+        import ApplicationServices as AS
+        try:
+            app = AS.AXUIElementCreateApplication(pid)
+            AS.AXUIElementSetMessagingTimeout(app, self.messaging_timeout)
+            error, enabled = AS.AXUIElementCopyAttributeValue(
+                app, "AXManualAccessibility", None)
+            if error != 0 or enabled is not False:
+                return
+            error, settable = AS.AXUIElementIsAttributeSettable(
+                app, "AXManualAccessibility", None)
+            if error != 0 or not settable:
+                return
+            if AS.AXUIElementSetAttributeValue(app, "AXManualAccessibility", True) != 0:
+                return
+            deadline = time.monotonic() + 2
+            while time.monotonic() < deadline:
+                if (self.frontmost() or {}).get("pid") != pid:
+                    return
+                element = self.focused_element_for(pid)
+                if element is not None and self.attribute(element, "AXRole") in (
+                        "AXTextField", "AXTextArea", "AXComboBox"):
+                    return
+                time.sleep(.05)
+        except Exception:
+            return
 
     def element_pid(self, el) -> Optional[int]:
         return self._owned.element_pid(el)
@@ -241,8 +276,22 @@ class SystemInsertionHost:
 # is reported unsupported rather than silently dropped or claimed.
 SUPPORTED_PASTEBOARD_TYPES = (
     "public.utf8-plain-text",
+    "NSStringPboardType",
+    "public.text",
+    # Materialized text and Universal Clipboard metadata seen on native copy.
+    # Restore the exact bytes; this does not admit deferred file promises.
+    "com.apple.is-remote-clipboard",
+    # Serializable Chromium text-copy metadata, observed alongside plain
+    # text. These are byte representations, not deferred file promises.
+    "org.chromium.internal.source-rfh-token",
+    "org.chromium.source-url",
     "public.rtf",
     "public.html",
+    "Apple HTML pasteboard type",
+    "NeXT Rich Text Format v1.0 pasteboard type",
+    "public.utf16-plain-text",
+    "public.utf16-external-plain-text",
+    "CorePasteboardFlavorType 0x75743136",
     "public.pdf",
     "public.png",
     "public.tiff",
@@ -293,6 +342,17 @@ class SystemPasteboard:
         return self.change_count() if ok else None
 
     def clear_and_write_items(self, items) -> Optional[int]:
+        if len(items) == 1:
+            # NSPasteboardItem accepts UTI names only. Native text copies also
+            # expose the NSStringPboardType alias, which the pasteboard's
+            # representation API can restore without a false write failure.
+            pairs = items[0]
+            self._pb.clearContents()
+            self._pb.declareTypes_owner_([ptype for ptype, _ in pairs], None)
+            ok = True
+            for ptype, data in pairs:
+                ok = bool(self._pb.setData_forType_(data, ptype)) and ok
+            return self.change_count() if ok else None
         from AppKit import NSPasteboardItem
         pb_items = []
         ok = True
@@ -318,12 +378,18 @@ class SystemKeyboard:
     exists anywhere in this package (S17/S18: non-execution by default)."""
 
     def post_paste(self) -> bool:
+        return self._post_command(KEY_V)
+
+    def post_copy(self) -> bool:
+        return self._post_command(8)  # ANSI C; never Return/Enter
+
+    def _post_command(self, key_code) -> bool:
         try:
             import Quartz
             src = Quartz.CGEventSourceCreate(
                 Quartz.kCGEventSourceStateHIDSystemState)
-            down = Quartz.CGEventCreateKeyboardEvent(src, KEY_V, True)
-            up = Quartz.CGEventCreateKeyboardEvent(src, KEY_V, False)
+            down = Quartz.CGEventCreateKeyboardEvent(src, key_code, True)
+            up = Quartz.CGEventCreateKeyboardEvent(src, key_code, False)
             Quartz.CGEventSetFlags(down, Quartz.kCGEventFlagMaskCommand)
             Quartz.CGEventSetFlags(up, Quartz.kCGEventFlagMaskCommand)
             Quartz.CGEventPost(Quartz.kCGHIDEventTap, down)

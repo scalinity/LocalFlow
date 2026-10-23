@@ -24,6 +24,7 @@ KEYCHAIN_ACCOUNT = "TRANSFORMS_ANTHROPIC_API_KEY"
 FALLBACK_BETA = "server-side-fallback-2026-07-01"
 MAX_TOKENS = 32000
 EFFORTS = ("low", "medium", "high", "xhigh", "max")
+CAPABILITY_VERIFIED_ON = "2026-10-22"
 # Thinking off is accepted only at effort high or below; it is sent at
 # high, the most thorough level that allows it.
 OFF_EFFORT = "high"
@@ -45,14 +46,18 @@ MODELS = {
 REASONING_LABELS = {"off": "Thinking off", "low": "Low", "medium": "Medium",
                     "high": "High", "xhigh": "Extra high", "max": "Max"}
 
-# The shipped default per transform kind, chosen by
-# scripts/v2/transform_model_eval.py (ADR-0002: highest test pass rate
-# among configurations with no injection failure or exact-carry loss,
-# ties broken on p50 latency). Custom transforms use Polish's pick.
+# Polish/Concise retain ADR-0002's execution selections. Prompt engineering
+# uses the intelligence evaluation's separate selection and frozen holdout;
+# definition authoring and memory extraction have their own bounded roles.
+# Custom transform execution retains Polish's selection.
 RECOMMENDED = {
     "polish": ("claude-opus-5-5", "medium"),
     "concise": ("claude-opus-5-5", "high"),
-    "prompt_engineer": ("claude-sonnet-5-5", "off"),
+    "prompt_engineer": ("claude-sonnet-5-5", "xhigh"),
+}
+ROLE_RECOMMENDED = {
+    "definition_authoring": ("claude-sonnet-5-5", "medium"),
+    "memory_extraction": ("claude-haiku-5-5", "off"),
 }
 
 
@@ -105,10 +110,11 @@ class TransformUnavailable(Exception):
     """A content-free reason the request produced no result; ``model``
     is the model that answered, when one did (a refusal, a cut-off)."""
 
-    def __init__(self, code: str, model=None):
+    def __init__(self, code: str, model=None, usage=None):
         super().__init__(code)
         self.code = code
         self.model = model
+        self.usage = usage
 
 
 def read_api_key():
@@ -131,22 +137,28 @@ def make_client(api_key):
     except ImportError as e:
         raise TransformUnavailable("sdk_missing") from e
     return anthropic.Anthropic(
-        api_key=api_key, max_retries=1,
+        api_key=api_key, max_retries=0,
         timeout=anthropic.Timeout(300.0, connect=5.0))
 
 
-def call(client, *, model, reasoning, system, messages, schema) -> dict:
+def call(client, *, model, reasoning, system, messages, schema=None,
+         tools=None, max_tokens=MAX_TOKENS) -> dict:
     """One Messages request → {text, model, reasoning, input_tokens,
     output_tokens, latency_ms}. Raises TransformUnavailable with a
     reason code for every outcome that is not a usable answer."""
     import anthropic  # LF-R25 allowlist (ADR-0002)
     opts = request_options(model, reasoning)
     output_config = dict(opts.pop("output_config"))
-    output_config["format"] = {"type": "json_schema", "schema": schema}
+    if schema is not None:
+        output_config["format"] = {"type": "json_schema", "schema": anthropic.transform_schema(schema)}
+    if tools:
+        opts["tools"] = [{**tool, "strict": True,
+            "input_schema": anthropic.transform_schema(tool["input_schema"])}
+            for tool in tools]
     t0 = time.monotonic()
     try:
         with client.beta.messages.stream(
-                model=model, max_tokens=MAX_TOKENS, system=system,
+                model=model, max_tokens=max_tokens, system=system,
                 messages=messages, output_config=output_config,
                 **opts) as stream:
             message = stream.get_final_message()
@@ -169,23 +181,39 @@ def call(client, *, model, reasoning, system, messages, schema) -> dict:
         raise TransformUnavailable(f"api_error_{e.status_code}") from e
     latency_ms = round((time.monotonic() - t0) * 1000.0, 1)
     served = getattr(message, "model", None) or model
+    usage = getattr(message, "usage", None)
+    measurement = {"model": served, "reasoning": reasoning,
+        "input_tokens": getattr(usage, "input_tokens", None),
+        "output_tokens": getattr(usage, "output_tokens", None),
+        "cache_read_input_tokens": getattr(usage, "cache_read_input_tokens", None),
+        "cache_creation_input_tokens": getattr(usage, "cache_creation_input_tokens", None),
+        "latency_ms": latency_ms}
     if message.stop_reason == "refusal":
-        raise TransformUnavailable("model_refused", served)
+        raise TransformUnavailable("model_refused", served, measurement)
     if message.stop_reason in ("max_tokens",
                                "model_context_window_exceeded"):
-        raise TransformUnavailable("output_limit", served)
+        raise TransformUnavailable("output_limit", served, measurement)
     blocks = list(message.content)
     start = max((i for i, b in enumerate(blocks)
                  if getattr(b, "type", None) == "fallback"), default=-1) + 1
     text = "".join(b.text for b in blocks[start:]
                    if getattr(b, "type", None) == "text")
     usage = getattr(message, "usage", None)
-    return {"text": text,
+    result = {"text": text,
             "model": getattr(message, "model", None) or model,
             "reasoning": reasoning,
             "input_tokens": getattr(usage, "input_tokens", None),
             "output_tokens": getattr(usage, "output_tokens", None),
+            "cache_read_input_tokens": getattr(usage, "cache_read_input_tokens", None),
+            "cache_creation_input_tokens": getattr(usage, "cache_creation_input_tokens", None),
             "latency_ms": latency_ms}
+    if tools is not None:
+        result["tool_calls"] = [{"id": b.id, "name": b.name, "input": b.input}
+            for b in blocks if getattr(b, "type", None) == "tool_use"]
+        # Continuation is in-memory transport state, never stored or shown.
+        result["_continuation"] = [b.model_dump() for b in blocks if hasattr(b, "model_dump")]
+        result["stop_reason"] = message.stop_reason
+    return result
 
 
 class Transformer:
@@ -202,6 +230,29 @@ class Transformer:
         self._key = None
         self._closed = False
         self._lock = threading.Lock()
+
+    def request(self, system, messages, schema, model=None, reasoning=None, *, max_tokens=MAX_TOKENS):
+        model = model or recommended("prompt_engineer")[0]
+        reasoning = reasoning or recommended("prompt_engineer")[1]
+        if not is_valid(model, reasoning):
+            raise TransformUnavailable("unsupported_configuration")
+        result = call(self._get_client(), model=model, reasoning=reasoning,
+                      system=system, messages=messages, schema=schema, max_tokens=max_tokens)
+        if self._closed:
+            raise TransformUnavailable("closed_in_flight")
+        return result
+
+    def tool_turn(self, system, messages, tools, model=None, reasoning=None, max_tokens=4096):
+        model = model or recommended("prompt_engineer")[0]
+        reasoning = reasoning or recommended("prompt_engineer")[1]
+        if not is_valid(model, reasoning):
+            raise TransformUnavailable("unsupported_configuration")
+        result = call(self._get_client(), model=model, reasoning=reasoning,
+                      system=system, messages=messages, tools=tools,
+                      max_tokens=max_tokens)
+        if self._closed:
+            raise TransformUnavailable("closed_in_flight")
+        return result
 
     def close(self):
         with self._lock:
@@ -225,18 +276,31 @@ class Transformer:
                 self._client, self._key = self._client_factory(key), key
             return self._client
 
-    def run(self, job, model=None, reasoning=None):
+    def run(self, job, model=None, reasoning=None, *, request_guard=None,
+            response_observer=None, context_current=None, cancelled=None):
         """Execute one TransformJob → TransformResult (never raises for
         a request failure: the result carries the reason)."""
         from . import engine
-        if not is_valid(model, reasoning):
+        if model is None and reasoning is None:
             model, reasoning = recommended(job.mode)
+        elif not is_valid(model, reasoning):
+            return engine.TransformResult(job=job, output=job.source,
+                path=engine.PATH_FALLBACK_ORIGINAL,
+                reason="transform_unavailable:unsupported_configuration",
+                validator_revision=engine.VALIDATOR_REVISION)
 
         def generate(system, messages, schema):
+            output_cap = MAX_TOKENS
+            if request_guard:
+                output_cap = request_guard(system, messages, schema) or MAX_TOKENS
+            if cancelled and cancelled():
+                raise TransformUnavailable("cancelled")
+            if context_current and not context_current(job.context_pack):
+                raise TransformUnavailable("context_revoked")
             client = self._get_client()
             try:
                 out = call(client, model=model, reasoning=reasoning,
-                           system=system, messages=messages, schema=schema)
+                           system=system, messages=messages, schema=schema, max_tokens=output_cap)
             except TransformUnavailable as e:
                 if e.code == "api_key_rejected":
                     with self._lock:
@@ -250,6 +314,22 @@ class Transformer:
                 raise
             if self._closed:
                 raise TransformUnavailable("closed_in_flight")
+            if response_observer:
+                response_observer(out)
+            return out
+        def verify(system, messages, schema):
+            output_cap = MAX_TOKENS
+            if request_guard:
+                output_cap = request_guard(system, messages, schema) or MAX_TOKENS
+            if cancelled and cancelled():
+                raise TransformUnavailable("cancelled")
+            if context_current and not context_current(job.context_pack):
+                raise TransformUnavailable("context_revoked")
+            from .quality import VERIFIER
+            out = self.request(system, messages, schema, *VERIFIER, max_tokens=output_cap)
+            if response_observer:
+                response_observer(out)
             return out
         return engine.run_transform(job, generate, model=model,
-                                    reasoning=reasoning)
+            reasoning=reasoning, verify=verify, context_current=context_current,
+            cancelled=cancelled)
