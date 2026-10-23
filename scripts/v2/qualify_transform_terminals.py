@@ -109,6 +109,13 @@ def codex_command(executable, workspace):
     return [str(executable), '--no-alt-screen', '-C', str(workspace)]
 
 
+def codex_version(result):
+    match = re.fullmatch(r'codex-cli (0\.(?:163|164)\.0)', result.stdout.strip())
+    if result.returncode != 0 or not match:
+        raise Blocked('installed_codex_version_not_qualified')
+    return match[1]
+
+
 def startup_reasons(output):
     text = re.sub(rb'\x1b\[[0-?]*[ -/]*[@-~]', b'', output).decode('utf-8', 'replace').lower()
     groups = {
@@ -584,10 +591,7 @@ def codex_case(repo, run, python, executable, budget, *, trusted_repo=False):
             if config.get('projects', {}).get(str(repo), {}).get('trust_level') != 'trusted':
                 raise Blocked('repository_not_already_trusted_in_native_config')
         version = metadata_command([str(executable), '--version'], environment, workspace, budget, seconds=5)
-        match = re.search(r'\b0\.163\.0\b', version.stdout)
-        if version.returncode != 0 or not match:
-            raise Blocked('installed_codex_version_is_not_0.163.0')
-        result['version'] = '0.163.0'
+        result['version'] = codex_version(version)
         result['version_command'] = version.args
         if not trusted_repo:
             initialized = metadata_command(['git', 'init', '--quiet', '--template=', str(workspace)],

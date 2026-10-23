@@ -222,7 +222,7 @@ PASS refers to stated scope. A blocked or unrun check is not counted as a pass.
 | AC03 Independence | PASS | All-source independent verification, literal/grounding and omission fixtures |
 | AC04 Native flow | PASS | Installed ChatGPT build 24 ordinary/full-screen and separate native status-menu path; earlier Claude/Chrome/TextEdit scopes retained; cleanup limits recorded |
 | AC05 Source accuracy | PASS | Exact native selections and ZLE/Codex composer readbacks; wrong-source strings excluded |
-| AC06 Terminal | PASS | Actual installed Ghostty ZLE and Codex editor round trips; PTY stale/region/Unicode cases, no execution |
+| AC06 Terminal | PASS | Actual installed Ghostty ZLE and Codex editor round trips; refreshed Codex 0.164.0 actual editor accept/reopen/cancel; PTY stale/region/Unicode cases, no execution |
 | AC07 Enter apply | PASS | Installed ChatGPT Return/keypad, terminal repeats, instrumented zero-Return counters; scope limits above |
 | AC08 Key lifecycle | PASS | Actual focus switch, menu, Japanese IME and restored input source; native Escape/repeats, real Hub text Returns, tap-gap/paired-release tests |
 | AC09 Replacement | PASS | Single authority, target/region/flank checks, uncertain-write refusal, collection-independent idempotence |
@@ -256,6 +256,10 @@ unknown-outcome retry reconciles that same note. This does not rewrite saved tex
 - `native-preview-panel26.log`: 5/5 actual AppKit panel cases, including visible
   Copy recovery; `final26-note-store.log` retains all note-store regressions.
 - `packaging26.log` and `packaging-installed26.log`: 16/16 each.
+- `codex164-pty-report.json`: actual current 0.164.0 native CLI external-editor
+  accept, independent composer readback and cancel exit 130; zero raw Returns or
+  unframed newlines, owned process closed. Synthetic decisions, zero model calls.
+  `codex164-guards.log`: 25 guard tests passed; unsupported versions still refuse.
 - Two static cross-vendor native-preview reviews and their finding dispositions
   are retained privately. Unsupported scenarios were checked against complete
   call sites; no static review is presented as native runtime certification.

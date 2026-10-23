@@ -75,6 +75,15 @@ class InputGuards(unittest.TestCase):
 
 
 class StartupAndEnvironmentGuards(unittest.TestCase):
+    def test_codex_version_guard_keeps_exact_tested_releases(self):
+        for version in ('0.163.0', '0.164.0'):
+            result = types.SimpleNamespace(returncode=0, stdout='codex-cli ' + version + '\n')
+            self.assertEqual(qualification.codex_version(result), version)
+        for output, code in [('codex-cli 0.165.0', 0), ('codex-cli 0.164.0-beta', 0),
+                             ('other 0.164.0', 0), ('codex-cli 0.164.0', 1)]:
+            with self.subTest(output=output, code=code), self.assertRaises(qualification.Blocked):
+                qualification.codex_version(types.SimpleNamespace(returncode=code, stdout=output))
+
     def test_codex_command_is_fresh_and_has_no_prompt_or_policy_override(self):
         command = qualification.codex_command('/managed/codex', '/owned/workspace')
         self.assertEqual(command, ['/managed/codex', '--no-alt-screen',
