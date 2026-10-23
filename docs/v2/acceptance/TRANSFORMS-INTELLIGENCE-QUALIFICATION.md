@@ -8,6 +8,9 @@ Qualification build 25 is installed in `/Applications/LocalFlow.app`. The comple
 
 - Repository: `scalinity/LocalFlow`; integrated branch `main`.
 - Implementation commit: `16c50dc846b94c8a6d21e2f7afb3623fdc72b939`, pushed to origin/main.
+- Completion-audit implementation: `8513e2397c02d15fd2e476954b0c9f81a958890b`, merged/pushed to main.
+  Installed production/frontend files match this committed source; the build
+  retains its honest pre-commit identity. The finished follow-up branch was removed locally and remotely after ancestry and open-PR checks.
 - Qualification build-time HEAD: `4a6d7624cdd24e28d38efa18d09f44f82c4121a7`
   plus the implementation snapshot. The containing source commit records that
   snapshot; BUILD.json retains the honest pre-commit dirty build identity.
@@ -54,7 +57,8 @@ credentials and recovery data remain outside public source.
    MAX(rowid) disagree with latest_revision_id, repeatedly failing profile refresh.
    Reads now follow the saved current revision, refresh changed evidence in the
    background and retain valid measurements on transient failure. Installed Home
-   previously verified 1,749/1,749 spoken words. Your Voice counts eligible speech
+   verified 1,749/1,749 spoken words again in installed build 25, including visible
+   Your Voice progress and zero provider requests. Your Voice counts eligible speech
    before cleanup; excluded evidence can legitimately differ from total speech.
 7. Tap interruption could miss a key release. Startup/recovery reconcile physical
    state while retaining still-held consumed keys. Enter routing uses the active
@@ -245,6 +249,11 @@ completion-audit checks (suites overlap and are not summed):
   `final25-integrations-unittest.log`: 109 passing cases;
   `final25-memory-unittest.log`: 42 passing cases, actual MiniLM recall 33/36
   and zero cross-scope disclosures.
+- `installed-home-counts25.json`: visible Home 1,749 words and Your Voice
+  1,749 of 2,000; both match the current retained counts, with zero paid calls.
+- `installed-semantic-setup25-3.json`: actual installed Hub setup action, real CPU
+  validation, existing assets reused, successful job and ready state. Earlier
+  startup/layout observation refusals remain separately recorded.
 - `installed-memory25-tests.log`: 18 passing real Store/bridge/job cases importing
   the installed modules; no live desktop calls, clipboard changes or paid calls.
   `completion-audit-native-remediation.log`: 17/17 actual coordinator cases,
@@ -353,7 +362,9 @@ worktree branches remain.
 The orchestration page has uncommitted changes and is left alone under its
 ownership rule. Its next realignment should show terminal, authoring and core Hub
 apply-back, microphone, Scratchpad and keyboard qualification complete, with the
-scoped limits in this report. Other M07/M14/M15/paper work is outside this slice.
+scoped limits in this report, plus build25 semantic setup, inherited context
+revocation and Git workspace identity; controller teardown remains blocked.
+Other M07/M14/M15/paper work is outside this slice.
 
 
 ## Completion-audit close-out

@@ -98,7 +98,7 @@
         "initial_ceiling_usd": 25
       },
       "source_deletion_regression": "Delete-everywhere now purges source-linked memory text, history, evidence, FTS/vectors and pending learning in the same writer transaction, with rollback and late-ingestion tests. Independently corrected memories and unrelated sources survive. Source review finding disposition retained privately.",
-      "word_count_regression": "Stable restored history had a latest_revision_id pointer different from insertion-order MAX(rowid); profile refresh repeatedly failed. Reader now follows saved current revision; Home retains old measurements on refresh failure. Installed 1,749/1,749 verified with zero provider requests.",
+      "word_count_regression": "Stable restored history had a latest_revision_id pointer different from insertion-order MAX(rowid); profile refresh repeatedly failed. Reader now follows saved current revision; Home retains old measurements on refresh failure. Installed 1,749/1,749 verified with zero provider requests. Rechecked in installed build25: Home 1,749 and Your Voice 1,749 of 2,000, with no provider request.",
       "inspector_regression": "Inspection had ignored selected context/model settings. Async inspection now shares preview context policy and compiler; frozen-copy validation includes source revisions and deletion. Empty-source output is explicitly a template. Installed Hub and real Store/compiler tests pass.",
       "cleanup": {
         "raw_app_copies_removed": 8,
@@ -119,10 +119,12 @@
         "removed_finished_remote_branches": [
           "fix/transform-panel-spacing",
           "feat/claude-transforms",
-          "feat/transforms-intelligence"
+          "feat/transforms-intelligence",
+          "fix/transforms-context-lifecycle"
         ],
         "removed_finished_local_branches": [
-          "feat/transforms-intelligence"
+          "feat/transforms-intelligence",
+          "fix/transforms-context-lifecycle"
         ],
         "followup_builds_22_23_removed": true,
         "followup_builds_22_through_25_removed": true,
@@ -130,7 +132,8 @@
       },
       "qualification_report": "docs/v2/acceptance/TRANSFORMS-INTELLIGENCE-QUALIFICATION.md",
       "implementation_commit": "16c50dc846b94c8a6d21e2f7afb3623fdc72b939",
-      "completion_audit": "Visible/cancellable semantic setup, complete ancestor-context revocation fencing, sanitized local Git workspace identity and missing-root fallback. Deliberate manual documents remain independent; revoked assistant branches cannot be reused as current grounded context."
+      "completion_audit": "Visible/cancellable semantic setup, complete ancestor-context revocation fencing, sanitized local Git workspace identity and missing-root fallback. Deliberate manual documents remain independent; revoked assistant branches cannot be reused as current grounded context.",
+      "completion_audit_commit": "8513e2397c02d15fd2e476954b0c9f81a958890b"
     }
   },
   "historical_implementation": {
