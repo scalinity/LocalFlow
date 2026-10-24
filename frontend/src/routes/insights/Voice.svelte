@@ -125,14 +125,14 @@
         <VoiceMark size={130} />
       </section>
     {:else if hasProfile}
-      <section class="lead card">
+      <section class="lead card written">
         <div class="lead-text">
           {#if f.headline}<p class="serif kicker">{f.headline}</p>{/if}
           <h2 class="serif title">{f.superpower_title}</h2>
           <p class="caps">Voice profile{f.persona ? ` · ${f.persona}` : ''}</p>
           <p class="body">{f.superpower_description}</p>
         </div>
-        <VoiceMark size={130} persona={f.persona} />
+        <div class="portrait-slot"><VoiceMark size={260} persona={f.persona} /></div>
       </section>
 
       <div class="grid">
@@ -263,6 +263,27 @@
   .lead-text {
     max-width: 60ch;
   }
+  .written {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) clamp(190px, 28%, 260px);
+    gap: 32px;
+  }
+  .written .lead-text {
+    max-width: none;
+    min-width: 0;
+  }
+  .written .title {
+    overflow-wrap: break-word;
+  }
+  .portrait-slot {
+    display: grid;
+    place-items: center;
+  }
+  .portrait-slot :global(.portrait) {
+    width: 100%;
+    height: auto;
+    max-width: 260px;
+  }
   .kicker {
     font-size: 17px;
     color: var(--text-2);
@@ -369,6 +390,12 @@
     font-style: italic;
   }
   @media (max-width: 1000px) {
+    .written {
+      gap: 24px;
+    }
+    .written .title {
+      font-size: 30px;
+    }
     .grid {
       grid-template-columns: 1fr;
     }
