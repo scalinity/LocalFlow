@@ -1,6 +1,6 @@
 <script lang="ts">
   // Your Voice: the written profile (ADR-0001) — a portrait Claude writes from
-  // a sample of your raw dictations at word milestones — over the measured
+  // retained eligible raw dictations at word milestones — over the measured
   // profile counted on this Mac. Every field renders as plain text.
   import Button from '../../components/Button.svelte';
   import Note from '../../components/Note.svelte';
@@ -214,7 +214,7 @@
     </details>
   {/if}
 
-  <p class="foot">Your dictations stay on this Mac. Only writing a profile sends a sample of them to Anthropic.</p>
+  <p class="foot">Dictation stays local. Writing a profile sends your retained eligible speech to Anthropic.</p>
 </div>
 
 <style>
