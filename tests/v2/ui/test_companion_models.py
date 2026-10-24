@@ -245,11 +245,12 @@ def test_voice_write_generates_and_refuses_overlap():
         assert vp["state"] == "current", vp
         fields = vp["record"]["fields"]
         assert fields["superpower_title"] == "Release Shepherd"
-        assert fields["peak_time_label"] == "Friday at 12 p.m."
-        assert fields["peak_time_top_app"] == "Notes"
+        assert fields["peak_time_label"] is None
+        assert fields["peak_time_top_app"] is None
+        assert fields["peak_time_description"] == ""
         assert set(vp) == {"state", "word_count", "milestone",
                            "next_milestone", "target_milestone", "fraction",
-                           "words_remaining", "min_local_words", "sample_budget",
+                           "words_remaining", "min_local_words",
                            "available",
                            "unavailable_reason", "running", "record"}
         assert len(calls) == 1

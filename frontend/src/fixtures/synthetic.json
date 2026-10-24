@@ -2079,7 +2079,6 @@
      "fraction": 0.073,
      "words_remaining": 9270,
      "min_local_words": 2000,
-     "sample_budget": 2000,
      "available": true,
      "unavailable_reason": null,
      "running": false,

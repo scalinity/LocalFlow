@@ -89,7 +89,7 @@ Beside the measured profile, `localflow.v2.voice_insights`
 headline, an archetype title and description, a catchphrase with a
 description, a persona (one of 22 categories) and a peak-time
 description, plus the locally computed peak time label and app, most
-used word, most removed word and the number of sampled dictations that
+used word, most removed word and the number of dictations sent that
 contain the catchphrase.
 
 - **Milestones** (cumulative dictated words, `SUM(final_words)` over
@@ -101,12 +101,20 @@ contain the catchphrase.
   the same raw transcripts `compute()` counts, minus user exclusions.
   Generating needs 2,000 / 5,000 / 10,000 / 20,000 stored words by
   milestone (`insufficient_local_words` otherwise, with the numbers);
-  the sample is the newest speech within 2,000 / 12,000 / 20,000 /
-  30,000 / 40,000 / 50,000 / 60,000 words and 350,000 characters.
+  all retained eligible speech is sent oldest first, with no milestone
+  word cutoff. A request exceeding 350,000 characters is refused as
+  `history_too_large` before sending anything, preserving any existing
+  profile rather than silently omitting old speech.
+- **Interpretation:** per-day word and dictation counts accompany the
+  history. The portrait describes habits repeated across dates and
+  contexts, not a catalogue of recent projects or apps. A weekly peak
+  requires the same weekday/hour on two distinct local dates (recorded
+  offsets), ranked by dates, then dictations, then earliest slot. Without
+  repetition, label/app are null and the peak description is forced empty.
 - **Request:** one structured-output Messages API call (`SCHEMA`), the
   newest active Opus supporting effort `xhigh` (Models API; fallback
   `claude-opus-5-5`), effort `xhigh`, server-side refusal fallback. Sent:
-  sampled text, local time and app per dictation, and the stats — no
+  all retained eligible text, local time and app per dictation, and the stats — no
   ids. Key from the Keychain (`LocalFlow` / `INSIGHTS_ANTHROPIC_API_KEY`),
   read only for the real store.
 - **When:** the idle pass writes once per newly reached milestone;

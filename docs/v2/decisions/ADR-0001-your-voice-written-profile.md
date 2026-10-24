@@ -41,11 +41,21 @@ out Flow uses an LLM.
 Your Voice gains a **written layer** beside the deterministic measured
 profile, which is unchanged:
 
-- `localflow/v2/voice_insights.py` builds the sample from the measured
+- `localflow/v2/voice_insights.py` reads all retained speech from the measured
   profile's eligible speech — live examples' own **raw** transcripts
-  (S22: the user's speech, never the cleanup model's style) — newest
-  first within Flow's budgets, computes the stats locally, and asks
+  (S22: the user's speech, never the cleanup model's style) — oldest
+  first, without a milestone word cutoff, computes the stats locally, and asks
   Claude for the fields through one structured-output Messages API call.
+  The 350,000-character request limit refuses an oversized history before
+  sending anything; it never silently substitutes recent speech. Existing
+  profiles remain intact on refusal.
+- **Portrait:** per-day word and dictation counts accompany the text.
+  The prompt describes communication habits recurring across dates and
+  contexts; a burst about one project is not a lasting identity. A weekly
+  peak requires the same weekday/hour on at least two distinct local dates,
+  using each dictation's recorded offset. Slots rank by distinct dates,
+  then dictation count. Without repetition the label and app are null and
+  the description is empty, even if the model invents one.
 - **Model:** the newest active Opus that supports effort `xhigh` and
   structured outputs, found through the Models API at generation time
   (fallback `claude-opus-5-5`), effort `xhigh`, adaptive thinking, the
@@ -62,9 +72,9 @@ profile, which is unchanged:
 
 ## What is sent, stored and cleared
 
-- **Sent:** the sampled raw dictation text, each one's local time and
-  app name, and the stats above. No ids, audio, context snapshots,
-  dictionary or history beyond the sample.
+- **Sent:** all retained eligible raw dictation text, each one's local time
+  and app name, and the stats above. Deleted, excluded or otherwise
+  ineligible speech stays out. No ids, audio, context snapshots or dictionary.
 - **Stored:** one row in `voice_insights` (schema v14) with the fields,
   milestone, model id, sample size and coverage, and the sampled example
   ids in `voice_insight_evidence`.
@@ -86,11 +96,12 @@ single allowlisted (module, import) pair: `voice_insights.py` may import
 
 - Ordinary dictation still needs no network; only writing a voice
   profile does, and the page says so before and after.
-- Each generation costs a few cents at the first milestone and up to
-  roughly a dollar at the 60,000-word budget.
+- Generation cost grows with the retained eligible history, up to the
+  request limit; the milestone controls when a profile is due, not how
+  many words are read.
 - The AppKit fallback Hub shows only the measured profile.
-- With short transcript retention, the written profile clears itself as
-  sampled dictations expire; the owner's retention keeps them.
+- With short transcript retention, expiry of any contributing dictation
+  clears the written profile; the current retention keeps them.
 
 ## Alternatives considered
 

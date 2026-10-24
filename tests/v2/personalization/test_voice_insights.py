@@ -1,6 +1,6 @@
 """Your Voice written layer (ADR-0001, contract profile.md "Written
 layer"): milestone/sample/statistics helpers, the page states and
-progress, the payload sent (newest first, budgeted, no ids), refusals,
+progress, the payload sent (full eligible history, oldest first, no ids), refusals,
 text clearing for every way sampled evidence dies (M14-AC03 rule),
 the exact-input publish fence, the idle-pass trigger, the pinned
 surface, and the Claude request shape against a fake client — never
@@ -111,9 +111,6 @@ def test_milestone_helpers():
     assert vi.reached_milestone(10 ** 7) == 662000
     assert [vi.min_local_words(m) for m in (2000, 12000, 37000, 87000)] \
         == [2000, 5000, 10000, 20000]
-    assert [vi.sample_budget(m) for m in vi.MILESTONES] == [
-        2000, 12000, 20000, 30000, 40000, 50000, 60000, 60000, 60000,
-        60000]
 
 
 def test_slots_words_and_fields():
@@ -126,12 +123,25 @@ def test_slots_words_and_fields():
     assert vi.format_slot(0, 0) == "Monday at 12 a.m."
     assert vi.format_slot(6, 23) == "Sunday at 11 p.m."
     assert vi.peak([]) == (None, None)
-    assert vi.peak([((4, 12), "Slack"), ((4, 12), "Mail"),
-                    ((4, 12), "Slack"), ((0, 9), "Xcode"), (None, "X")]) \
+    def at(day, hour=16):
+        return vi._local_time(f"2026-10-{day:02d}T{hour:02d}:00:00Z", -240)
+    # A single busy Friday is not a weekly routine, even with many messages.
+    assert vi.peak([(at(9), "Slack")] * 40 + [(at(5), "Xcode"),
+                                             (None, "X")]) == (None, None)
+    assert vi.peak([(at(9), "Slack"), (at(16), "Mail"),
+                    (at(16), "Slack"), (at(5), "Xcode"), (None, "X")]) \
         == ("Friday at 12 p.m.", "Slack")
     # Ties: earliest in the week, then alphabetical app.
-    assert vi.peak([((2, 9), "B"), ((1, 9), "C"), ((1, 9), "A"),
-                    ((2, 9), "B")]) == ("Tuesday at 9 a.m.", "A")
+    assert vi.peak([(at(7, 13), "B"), (at(14, 13), "B"),
+                    (at(6, 13), "C"), (at(13, 13), "A")]) \
+        == ("Tuesday at 9 a.m.", "A")
+    # More recurring dates beat a one-off burst in another qualified slot.
+    assert vi.peak([(at(9), "Slack")] * 40 + [(at(16), "Slack"),
+                    (at(5), "Notes"), (at(12), "Notes"),
+                    (at(19), "Notes")]) == ("Monday at 12 p.m.", "Notes")
+    # Date and weekday use the recorded offset, including a midnight crossing.
+    assert vi.peak([(at(10, 0), "Mail"), (at(17, 0), "Mail")]) \
+        == ("Friday at 8 p.m.", "Mail")
     assert vi.most_used_word(["Um the parser, the parser!",
                               "um um uh parser I a 42"]) == "parser"
     assert vi.most_used_word(["the and a", ""]) is None
@@ -175,7 +185,7 @@ def test_states_progress_and_payload():
                       applied=" ".join(["So ship the module"]
                                        + [f"w{i}x{j}" for j in range(75)]),
                       app="Slack" if i % 3 else "Mail",
-                      day=9 if i % 2 else 5, hour_utc=16 if i % 2 else 13)
+                      day=5 + i % 5, hour_utc=16 if i % 2 else 13)
             st = w.svc.status()
             assert st["word_count"] == 30 * 80
             assert st["state"] == "first_time_eligible"
@@ -184,20 +194,27 @@ def test_states_progress_and_payload():
             assert len(w.calls) == 1
             payload = w.calls[0]
             rows = payload["rows"]
-            # Newest first, within the 2,000-word budget at milestone 2000.
+            # Every eligible word across five days, including the oldest,
+            # survives the first 2,000-word unlock. The unlock is not a cap.
             # "when" is "Ddd YYYY-MM-DD HH:MM" — compare past the weekday.
             assert [r["when"][4:] for r in rows] == sorted(
-                (r["when"][4:] for r in rows), reverse=True)
-            assert sum(len(r["text"].split()) for r in rows) <= 2000
-            assert len(rows) == 25  # 25 × 80 words fills the budget
+                (r["when"][4:] for r in rows))
+            assert sum(len(r["text"].split()) for r in rows) == 2400
+            assert len(rows) == 30
+            assert {r["text"] for r in rows} == {
+                " ".join(["um so ship the module"] + [f"w{i}x{j}"
+                         for j in range(75)]) for i in range(30)}
             # No ids or job names travel.
             dumped = json.dumps(payload)
             assert "ex-" not in dumped and "job-" not in dumped
             assert set(rows[0]) == {"when", "app", "text"}
             stats = payload["stats"]
             assert stats["word_count_milestone"] == 2000
-            assert stats["peak_time_label"] in ("Friday at 12 p.m.",
-                                                "Monday at 9 a.m.")
+            assert stats["peak_time_label"] is None
+            assert stats["peak_time_top_app"] is None
+            assert stats["days"] == [
+                {"date": f"2026-10-{day:02d}", "dictations": 6, "words": 480}
+                for day in range(5, 10)]
             assert stats["most_removed_word"] == "um"
             assert stats["most_used_word"] == "ship" or \
                 stats["most_used_word"] == "module"
@@ -205,7 +222,14 @@ def test_states_progress_and_payload():
             assert out["state"] == "current"
             rec = out["record"]
             assert rec["fields"]["superpower_title"] == "Release Shepherd"
-            assert rec["fields"]["catch_phrase_dictations"] == 25
+            assert rec["fields"]["catch_phrase_dictations"] == 30
+            assert rec["fields"]["peak_time_description"] == ""
+            assert rec["sample_words"] == 2400
+            assert rec["sample_examples"] == 30
+            assert rec["coverage"][0].startswith("2026-10-05")
+            assert rec["coverage"][1].startswith("2026-10-09")
+            assert w.s.submit(lambda c: c.execute(
+                "SELECT prompt_version FROM voice_insights").fetchone()[0]) == 2
             assert rec["model_id"] == "claude-opus-test"
             assert rec["milestone"] == 2000
             assert out["next_milestone"] == 12000
@@ -292,6 +316,38 @@ def test_refusals():
             w.close()
 
 
+def test_oversized_history_is_never_silently_sampled():
+    with tempfile.TemporaryDirectory() as td:
+        w, _exs = world_with(pathlib.Path(td))
+        cap = vi.CHAR_CAP
+        try:
+            w.svc.generate()
+            original = w.fields_raw()
+            # Raw text fits, but dates/apps/JSON escaping exceed the request
+            # cap. Refuse before a paid call and preserve the existing profile.
+            vi.CHAR_CAP = sum(len(r["text"]) for r in w.calls[0]["rows"])
+            try:
+                w.svc.generate()
+            except vi.VoiceInsightsError as e:
+                assert e.code == "history_too_large"
+            else:
+                raise AssertionError("silently cropped history")
+            assert len(w.calls) == 1 and w.fields_raw() == original
+            # A single oversized transcript must also obey the cap.
+            w.add("word " * 2000)
+            vi.CHAR_CAP = 5000
+            try:
+                w.svc.generate()
+            except vi.VoiceInsightsError as e:
+                assert e.code == "history_too_large"
+            else:
+                raise AssertionError("sent an oversized transcript")
+            assert len(w.calls) == 1 and w.fields_raw() == original
+        finally:
+            vi.CHAR_CAP = cap
+            w.close()
+
+
 # ---- invalidation -----------------------------------------------------------
 
 
@@ -312,10 +368,10 @@ def test_every_dead_evidence_clears_the_text():
             assert "Release Shepherd" in w.fields_raw()[0]
             sampled = set(w.s.submit(lambda c: [r[0] for r in c.execute(
                 "SELECT example_id FROM voice_insight_evidence")]))
-            unsampled = [(e, j) for e, j in exs if e not in sampled]
-            assert unsampled, "the budget should leave some examples out"
-            # Deleting speech the profile never read leaves it current.
-            w.s.delete_everywhere("example", unsampled[0][0])
+            assert sampled == {e for e, _j in exs}
+            # Deleting speech added after generation leaves it current.
+            new_ex, _job = w.add("new speech after the profile")
+            w.s.delete_everywhere("example", new_ex)
             assert w.svc.status()["state"] == "current"
             order = [e for e, _j in exs if e in sampled]
 

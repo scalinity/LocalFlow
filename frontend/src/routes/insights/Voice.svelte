@@ -45,6 +45,7 @@
     model_refused: 'Claude declined to write this profile.',
     model_output_truncated: 'The profile came back incomplete. Try again.',
     model_output_invalid: 'The profile came back in an unexpected shape. Try again.',
+    history_too_large: 'Your retained dictation history is too long for one profile request. Nothing was sent; any written profile is unchanged.',
     evidence_changed: 'Your dictations changed while the profile was being written. Try again.',
     already_running: 'A profile is already being written.',
     not_eligible: 'There is not enough dictation yet to write a profile.',
@@ -120,7 +121,7 @@
       <section class="lead card">
         <div class="lead-text">
           <h2 class="serif title">Writing your voice profile…</h2>
-          <p class="body">Claude is reading your recent dictations. This can take a few minutes; you can keep dictating.</p>
+          <p class="body">Claude is reading your retained dictation history. This can take a few minutes; you can keep dictating.</p>
         </div>
         <VoiceMark size={130} />
       </section>
@@ -153,10 +154,11 @@
           </article>
         </div>
         <article class="card tall">
-          <p class="serif value">{f.peak_time_label ?? '—'}</p>
+          <p class="serif value">{f.peak_time_label ?? 'Still learning your routine'}</p>
           <p class="caps">Your peak time &amp; place</p>
           {#if f.peak_time_top_app}<p class="app">{f.peak_time_top_app}</p>{/if}
           {#if f.peak_time_description}<p class="body">{f.peak_time_description}</p>{/if}
+          {#if !f.peak_time_label}<p class="body">A weekly peak appears once the same day and hour recur on separate dates.</p>{/if}
         </article>
       </div>
 
@@ -202,7 +204,7 @@
 
     {#if vp.available && (st === 'first_time_eligible' || st === 'refresh_eligible' || st === 'invalidated' || hasProfile)}
       <p class="disclosure">
-        Writing sends about {num(vp.sample_budget)} words of your most recent dictations — what you said, when, and in which app — to Anthropic's Claude API. It happens automatically at each word milestone, or when you press {actionLabel}.
+        Writing sends all your retained eligible dictations — what you said, when, and in which app — to Anthropic's Claude API. Deleted or excluded speech is left out. It happens automatically at each word milestone, or when you press {actionLabel}.
       </p>
     {/if}
 
