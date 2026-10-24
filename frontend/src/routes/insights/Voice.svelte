@@ -132,7 +132,7 @@
           <p class="caps">Voice profile{f.persona ? ` · ${f.persona}` : ''}</p>
           <p class="body">{f.superpower_description}</p>
         </div>
-        <VoiceMark size={130} />
+        <VoiceMark size={130} persona={f.persona} />
       </section>
 
       <div class="grid">

@@ -46,8 +46,14 @@
 
   const usage = $derived(data?.usage);
   const profile = $derived(data?.profile);
+  const vp = $derived(data?.voice_profile);
+  const voiceFields = $derived(vp?.record?.fields ?? {});
+  const hasWrittenProfile = $derived(vp?.state !== 'invalidated' && !!voiceFields.superpower_title);
+  const voiceTitle = $derived(hasWrittenProfile ? voiceFields.superpower_title : 'Your Voice');
   const voiceLine = $derived.by(() => {
     if (!data) return '';
+    if (hasWrittenProfile) return voiceFields.headline ?? '';
+    if (vp?.state === 'invalidated') return 'Needs rewriting — its dictations changed.';
     if (!data.profile_available) return 'Your Voice is unavailable.';
     if (!profile) return data.profile_error ? 'Word progress could not load.' : 'Loading word progress…';
     if (profile.state === 'invalidated') return 'Needs regenerating — its evidence changed.';
@@ -117,18 +123,21 @@
           <dd>{data?.summary?.today_count === 1 ? 'dictation today' : 'dictations today'}</dd>
         </div>
       </dl>
-      <button type="button" class="voice" onclick={() => navigate('insights')}>
+      <button type="button" class="voice" onclick={async () => { await act('insights.subview', { subview: 'voice' }); await navigate('insights'); }}>
         <div class="voice-text">
-          <p class="voice-title">Your Voice</p>
+          <p class="voice-title">{voiceTitle}</p>
           <p class="voice-line">{voiceLine}</p>
+          {#if data?.voice_profile_error}
+            <p class="voice-basis">Written profile could not refresh.</p>
+          {/if}
           {#if profile && data?.profile_error}
             <p class="voice-basis">Word progress could not refresh.</p>
           {/if}
-          {#if profile?.state === 'current' && !profile.cards?.length}
+          {#if !hasWrittenProfile && profile?.state === 'current' && !profile.cards?.length}
             <p class="voice-basis">Eligible speech before cleanup.</p>
           {/if}
         </div>
-        <VoiceMark size={86} />
+        <VoiceMark size={86} persona={hasWrittenProfile ? voiceFields.persona : null} />
       </button>
       {#if data?.recovery?.recoverable}
         <div class="recover">

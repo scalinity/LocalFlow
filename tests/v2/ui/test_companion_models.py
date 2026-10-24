@@ -254,12 +254,61 @@ def test_voice_write_generates_and_refuses_overlap():
                            "unavailable_reason", "running", "record"}
         assert len(calls) == 1
         assert model["profile_note"] is None
+        snapshot = w.d._profile.current()
+        evidence = w.d.store.submit(lambda c: c.execute(
+            "SELECT example_id FROM voice_insight_evidence LIMIT 1"
+        ).fetchone()[0])
+        w.d._profile.exclude_evidence(snapshot["snapshot_id"], evidence)
+        w.select("home")
+        cleared = w.host.latest("home")["data"]["voice_profile"]
+        assert cleared["state"] == "invalidated", cleared
+        assert cleared["record"]["fields"] == {}, cleared
         w.ctl.state.voice_insights_service = None
         out = w.host.send("voice.write")
         assert out["status"] == "unavailable" and \
             out["reason_code"] == "voice_insights_unavailable", out
     print("ok  your voice: Generate writes the Claude profile off the main"
           " thread, refuses overlap, and reads no Keychain in a harness")
+
+
+def test_home_reads_written_voice_and_drops_it_on_read_failure():
+    """Home and Insights expose the same written record; failed reads do
+    not retain a cached character title, and private fields stay out."""
+    from unittest.mock import patch
+
+    class WrittenVoice:
+        def status(self):
+            return {"state": "current", "running": False,
+                    "record": {"fields": {
+                        "superpower_title": "Release Shepherd",
+                        "headline": "Shipping Ideas Out Loud",
+                        "persona": "Organize",
+                        "private_canary": "not_for_the_page"}}}
+
+    with CWorld() as w:
+        svc = WrittenVoice()
+        w.ctl.state.voice_insights_service = svc
+        w.select("home")
+        home = w.host.latest("home")["data"]
+        fields = home["voice_profile"]["record"]["fields"]
+        assert fields == {"superpower_title": "Release Shepherd",
+                          "headline": "Shipping Ideas Out Loud",
+                          "persona": "Organize"}, fields
+        w.select("insights")
+        w.host.send("insights.subview", {"subview": "voice"})
+        w.drain()
+        assert w.host.latest("insights")["data"]["voice_profile"] == \
+            home["voice_profile"]
+        with patch.object(svc, "status", side_effect=RuntimeError):
+            w.select("home")
+            failed = w.host.latest("home")["data"]
+            assert failed["voice_profile"] is None, failed
+            assert failed["voice_profile_error"] == "RuntimeError"
+            assert failed["profile"] is not None
+        w.ctl.state.voice_insights_service = None
+        w.ctl.state.reload_current()
+        w.drain()
+        assert w.host.latest("home")["data"]["voice_profile"] is None
 
 
 class SavePanels(Panels):
@@ -306,5 +355,6 @@ if __name__ == "__main__":
             test_export_and_validate_bind_to_the_chosen_folder,
             test_voice_exclusion_names_the_rendered_snapshot,
             test_voice_write_generates_and_refuses_overlap,
+            test_home_reads_written_voice_and_drops_it_on_read_failure,
             test_diagnostics_export_writes_the_rendered_window_redacted):
         test()

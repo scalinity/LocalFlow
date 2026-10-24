@@ -13,6 +13,8 @@ from __future__ import annotations
 
 import datetime as dt
 
+from .surfaces.insights import _voice_profile
+
 
 def _local_time(iso, tz):
     """'2026-09-29T09:45:00.000Z' → '9:45 am' in the History zone."""
@@ -92,6 +94,8 @@ def home(ctl):
         "profile": _profile_summary(profile),
         "profile_error": data.get("profile_error"),
         "profile_available": ctl.state.profile_service is not None,
+        "voice_profile": _voice_profile(data.get("voice_profile")),
+        "voice_profile_error": data.get("voice_profile_error"),
     }
     return out
 

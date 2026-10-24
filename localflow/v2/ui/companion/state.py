@@ -132,6 +132,11 @@ class CompanionState(HubState):
                 data["profile"] = self.profile_service.current()
             except Exception as e:
                 data["profile_error"] = type(e).__name__
+        if self.voice_insights_service is not None:
+            try:
+                data["voice_profile"] = self.voice_insights_service.status()
+            except Exception as e:
+                data["voice_profile_error"] = type(e).__name__
         self._publish_locked("home", req, error=None, loading=False,
                              data=data)
 
