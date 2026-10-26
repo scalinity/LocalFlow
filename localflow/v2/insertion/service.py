@@ -533,9 +533,32 @@ class InsertionService:
 
     # ---- queue thread --------------------------------------------------
 
+    def _pending_wait(self) -> Optional[float]:
+        """Seconds until a pending clipboard payload's lifetime ends (None
+        when nothing is pending: the queue wait is then unbounded). The
+        extra tick puts the wake past the strict ``>`` in
+        ``_resolve_pending``."""
+        with self._lock:
+            p = self._pending_paste
+        if p is None:
+            return None
+        left = PENDING_PAYLOAD_SEC - (self._clock() - p["at"])
+        return max(left, 0.0) + READBACK_POLL_SEC
+
     def _run(self):
         while True:
-            item = self._q.get()
+            try:
+                item = self._q.get(timeout=self._pending_wait())
+            except queue_mod.Empty:
+                # Idle until the pending payload's lifetime ran out:
+                # reconcile it now, not at the next job, so the user's
+                # clipboard is not left holding the dictation.
+                try:
+                    self._resolve_pending()
+                except Exception:
+                    with self._lock:
+                        self._pending_paste = None
+                continue
             # Undo writes AX state on this thread too — the busy flag's
             # contract (a focus change could derail an in-flight write)
             # covers it exactly as it covers inserts.

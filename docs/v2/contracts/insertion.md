@@ -197,8 +197,10 @@ destination is not read again), or when its lifetime has passed
 (`PENDING_PAYLOAD_SEC`, 5 s after the post: the paste never landed, and
 the payload is restored away while the board is still ours). Resolution
 happens at the next clipboard publication, copy offer or recovery
-offer; until then the dictation stays on the clipboard for a manual
-paste.
+offer, or — when none arrives — on the queue thread as soon as the
+lifetime has passed, so an idle service never leaves the dictation on
+the clipboard. A dictation that did not land stays recoverable from
+History.
 
 ## Result states, readback and units (never the clipboard)
 

@@ -1252,6 +1252,43 @@ def test_r01_dropped_paste_stops_blocking_after_its_lifetime():
 
 
 @case("M08-REVIEW-R1")
+def test_r01_idle_pending_payload_lapses_without_another_job():
+    """The lifetime ends on its own, not only when a later job arrives: a
+    paste the readback never attributes (a terminal's screen buffer)
+    leaves the payload pending, and with no further dictation the user's
+    clipboard still comes back once the lifetime has passed."""
+    with patched(service_mod, "PENDING_PAYLOAD_SEC", 0.4):
+        env = clipboard_env(text_f1="abc", sel_f1=(3, 3), settle=0.1)
+        pb, kb = env.pb, env.kb
+        kb.mode = "drop"
+        r1 = env.run("first dictation", job("job-1", snap(env.w)))
+        assert r1.reason_code == "readback_pending", r1.reason_code
+        assert pb.plain() == "first dictation", \
+            f"restored inside the lifetime: {pb.plain()!r}"
+        assert wait_for(lambda: pb.plain() == OLD_CLIP, 3), \
+            f"clipboard never came back: {pb.plain()!r}"
+        assert not env.svc.clipboard_payload_pending
+        env.close()
+
+
+@case("M08-REVIEW-R1")
+def test_r01_idle_lapse_leaves_a_user_copy_alone():
+    """A copy made while the payload was pending wins at the lapse too:
+    the board is not LocalFlow's any more, so nothing is written back,
+    and the payload stops being pending."""
+    with patched(service_mod, "PENDING_PAYLOAD_SEC", 0.4):
+        env = clipboard_env(text_f1="abc", sel_f1=(3, 3), settle=0.1)
+        pb, kb = env.pb, env.kb
+        kb.mode = "drop"
+        env.run("first dictation", job("job-1", snap(env.w)))
+        pb.user_copy("CANARY_NEW_COPY")
+        assert wait_for(lambda: not env.svc.clipboard_payload_pending, 3), \
+            "the lapsed payload stayed pending"
+        assert pb.plain() == "CANARY_NEW_COPY", pb.plain()
+        env.close()
+
+
+@case("M08-REVIEW-R1")
 def test_r01_normalized_paste_counts_as_consumed():
     """The destination consumed the paste but rewrote it (a single-line
     input turning the newline into a space): the field grew by exactly
