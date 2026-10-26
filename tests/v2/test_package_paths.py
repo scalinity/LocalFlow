@@ -35,6 +35,20 @@ def test_data_home():
     print("ok  default home unchanged; isolated config loaded; relative override refused")
 
 
+def test_override_without_a_model_keeps_the_cleanup_model():
+    # The Hub's settings write a one-key override, and load() takes the first
+    # file that exists, so that file must never be able to change the model.
+    shipped = json.loads((config.ROOT / "config.json").read_text())
+    assert shipped["cleanup_model"] == config.DEFAULTS["cleanup_model"]
+    with tempfile.TemporaryDirectory() as directory:
+        with patch.dict(os.environ, {"LOCALFLOW_DATA_HOME": directory}, clear=True):
+            path = config.user_override_path()
+            path.parent.mkdir(parents=True)
+            path.write_text('{"retention_usage_days":"keep"}')
+            assert config.load()["cleanup_model"] == shipped["cleanup_model"]
+    print("ok  an override without a model keeps the shipped cleanup model")
+
+
 def test_package_revision():
     with tempfile.TemporaryDirectory() as directory:
         root = pathlib.Path(directory)
@@ -54,4 +68,5 @@ def test_package_revision():
 
 if __name__ == "__main__":
     test_data_home()
+    test_override_without_a_model_keeps_the_cleanup_model()
     test_package_revision()

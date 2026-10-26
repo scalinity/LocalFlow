@@ -25,6 +25,7 @@ import threading
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent.parent.parent))
 
 import scripts.v2.baseline_probe as probe  # noqa: E402
+from localflow.config import DEFAULTS  # noqa: E402
 
 CALLS = []
 
@@ -169,7 +170,7 @@ def test_configured_v1_and_v1_control_override_are_labelled():
         rc, r, _ = run(td, {"cleanup": "llm", "cleanup_implementation": "v2"},
                        "--cleanup-implementation", "v1")
     assert rc == 0 and ("v1.init", "llm",
-                        "mlx-community/Qwen3-4B-Instruct-2507-4bit") in CALLS
+                        DEFAULTS["cleanup_model"]) in CALLS
     sel = r["cleanup_selection"]
     assert sel["selected_by"] == "command-line override"
     assert sel["role"].startswith("V1 control")

@@ -25,6 +25,7 @@ import scripts.v2.build_baseline_manifest as bm  # noqa: E402
 import scripts.v2.m01_verify_summary as vs  # noqa: E402
 import scripts.v2.parse_legacy_log as pl  # noqa: E402
 import scripts.v2.snapshot_user_data as su  # noqa: E402
+from localflow.config import DEFAULTS  # noqa: E402
 
 
 def summarize(kind, path):
@@ -115,7 +116,7 @@ def test_manifest_summary():
                        check=True)
         hub = td / "hub"
         for mid in ("mlx-community/parakeet-tdt-0.6b-v3",
-                    "mlx-community/Qwen3-4B-Instruct-2507-4bit"):
+                    DEFAULTS["cleanup_model"]):
             snap = hub / ("models--" + mid.replace("/", "--")) / "snapshots" / "r1"
             snap.mkdir(parents=True)
             (snap / "config.json").write_text("{}")

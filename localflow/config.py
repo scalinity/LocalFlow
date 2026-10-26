@@ -25,7 +25,11 @@ DEFAULTS = {
     # Transcript cleanup: "llm" (fillers, self-corrections, formatting via a
     # small local model), "basic" (instant regex filler removal), or "off"
     "cleanup": "llm",
-    "cleanup_model": "mlx-community/Qwen3-4B-Instruct-2507-4bit",
+    # The LocalFlow-tuned cleanup model (M2), served from the local Hugging
+    # Face cache. The shipped config.json names the same model: load() takes
+    # the first config file that exists, so an override file that omits the
+    # key (the Hub's settings write exactly that) must still land on M2.
+    "cleanup_model": "local/LocalFlow-Cleanup-M2-Qwen3.5-4B-4bit",
     # M07 (Spec S13–S14): which cleanup implementation "llm" mode runs —
     # "v2" = faithful cleanup (complete-block windows, offset-anchored
     # corrections, validation and fallback ladder); "v1" = the original
