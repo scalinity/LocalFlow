@@ -780,7 +780,7 @@ class InsertionService:
             return self._ax_insert(text, lease, job, common, facts,
                                    on_observation)
         return self._clipboard_insert(text, lease, job, common, facts,
-                                      on_observation)
+                                      on_observation, category)
 
     def _ax_write_ignored(self, bundle) -> bool:
         """Web-content fields that acknowledge an AXSelectedText write
@@ -1034,7 +1034,7 @@ class InsertionService:
     # ---- clipboard transaction -------------------------------------------
 
     def _clipboard_insert(self, text, lease, job, common, facts,
-                          on_observation):
+                          on_observation, category="unknown"):
         el = lease.element
         n = utf16_len(text)
         # An earlier payload still waiting for its late consumer: the
@@ -1057,8 +1057,13 @@ class InsertionService:
         # match is ambiguous — it may be the pre-existing text, not our
         # paste landing — and must never confirm or trigger an early
         # restore (the paste could still be pending).
+        # A terminal is not read: its accessibility text is the screen
+        # buffer, which no readback attributes a paste in, and it reads
+        # the pasteboard while it handles the key event. It restores at
+        # the settle bound like any surface that cannot be observed.
         pre = self._pre_state(lease, el, n) \
-            if (lease.read_allowed and el is not None) else None
+            if (lease.read_allowed and el is not None
+                and category != "terminal") else None
         if pre is not None:
             facts["owned"] = (pre["start"], pre["start"] + n)
         before_text = pre["replaced_text"] if pre is not None else ""

@@ -170,7 +170,9 @@ Publish the transcript (owned generation); a refused native write
 post, the original is restored while the board is still ours
 (`failed/clipboard_publish_failed`). Post the paste; wait the settle
 bound (0.6 s — readback polls cut it short when the destination may be
-read); then restore **only if the pasteboard still holds LocalFlow's
+read; a terminal is never read, because its accessibility text is the
+screen buffer, where a paste cannot be attributed, so it always waits
+the full bound and then restores); then restore **only if the pasteboard still holds LocalFlow's
 generation** — a user copy always wins (`restore_skipped_reason:
 user_copy_won`); a refused restore write is disclosed
 (`restore_failed`), never claimed.
@@ -527,7 +529,7 @@ benchmark cases.
   overwritten). The effect-boundary check and the effect are not atomic
   either. Pasteboard atomicity does not exist to close these.
 - A target consuming the paste later than the settle bound on a surface
-  whose content may not be read pastes after restore — the documented
+  whose content may not be read, or on a terminal, pastes after restore — the documented
   residual of `posted_unverified`; readable surfaces keep ownership
   for `PENDING_PAYLOAD_SEC` (5 s) — a consumer later than that, after
   the payload was restored away, pastes the user's clipboard.

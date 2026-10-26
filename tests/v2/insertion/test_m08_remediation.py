@@ -1288,6 +1288,50 @@ def test_r01_idle_lapse_leaves_a_user_copy_alone():
         env.close()
 
 
+def draw_paste_in_chrome(env):
+    """The target lands the paste inside its own chrome (a TUI re-drawing
+    it in a box): the text is there, but it no longer reads back at the
+    owned range."""
+    real = env.kb._consume
+
+    def boxed():
+        with env.pb.lock:
+            for it in env.pb.items:
+                if PLAIN in it:
+                    it[PLAIN] = b"| " + it[PLAIN] + b" |"
+        real()
+    env.kb._consume = boxed
+
+
+@case("M08-REVIEW-R1")
+def test_r01_terminal_restores_at_the_settle_bound():
+    """A terminal reads the pasteboard while it handles the key event and
+    its accessibility text is the screen buffer, so no readback can
+    attribute the paste there. Holding the clipboard for the pending
+    lifetime would protect no late consumer: the user's clipboard comes
+    back at the settle bound, like any surface that cannot be observed."""
+    env = clipboard_env(text_f1="abc", sel_f1=(3, 3), settle=0.1)
+    draw_paste_in_chrome(env)
+    t0 = time.monotonic()
+    r = env.run("first dictation",
+                job("job-1", snap(env.w, category="terminal")))
+    assert r.state == "posted_unverified", (r.state, r.reason_code)
+    assert env.pb.plain() == OLD_CLIP, \
+        f"clipboard held after the settle bound: {env.pb.plain()!r}"
+    assert not env.svc.clipboard_payload_pending
+    assert time.monotonic() - t0 < 2.0, "restored only after the lifetime"
+    env.close()
+    # Control: an ordinary readable surface that reads back the same way
+    # keeps the payload pending for a late consumer.
+    env = clipboard_env(text_f1="abc", sel_f1=(3, 3), settle=0.1)
+    draw_paste_in_chrome(env)
+    r = env.run("first dictation", job("job-2", snap(env.w)))
+    assert r.reason_code == "readback_mismatch", r.reason_code
+    assert env.pb.plain() != OLD_CLIP, "restored on an ordinary surface"
+    assert env.svc.clipboard_payload_pending
+    env.close()
+
+
 @case("M08-REVIEW-R1")
 def test_r01_normalized_paste_counts_as_consumed():
     """The destination consumed the paste but rewrote it (a single-line
