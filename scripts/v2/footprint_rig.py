@@ -8,7 +8,10 @@ own memory counters at six labels, and per-request stage time, round-trip
 time and output digests. Side A is the baseline code root and side B the
 candidate; pass the same root twice for an A/A run, which proves the rig is
 quiet enough to gate anything (Rig validity). Latency is measured on two
-resident workers in paired blocks that alternate A,B,B,A and B,A,A,B.
+resident workers in paired blocks that alternate A,B,B,A and B,A,A,B. In
+the ASR bands each ASR request is followed by one unmeasured short cleanup
+request to the same worker, as a real dictation ends with one; it is part of
+no verdict, digest, pair or request count.
 
 Thresholds and rule names follow the worker-footprint spec's Gate table.
 Reports hold counters, timings, SHA-256 digests, identifiers and
@@ -1299,6 +1302,15 @@ MODE_COUNTS = {
     "shipping": {"warm": 7, "cold": 5, "burst": 3, "first": 10, "gap": 30}}
 
 
+ASR_RESET_NOTE = (
+    "The ASR latency bands (warmup blocks included) interleave one unmeasured"
+    " cleanup request after each ASR request, fixture `{case}`, the same on"
+    " both sides and part of no verdict, digest, pair or request count: a"
+    " real dictation ends with a cleanup, which hands the allocator's cached"
+    " memory back, while ASR-only requests of differing lengths keep growing"
+    " that cache.")
+
+
 def asr_request(clip):
     return "transcribe", {"audio": {"name": clip}, "sample_rate": 16000}
 
@@ -1496,12 +1508,41 @@ def run_identity(ctx, sessions):
             + [n for n, r in asr.items() if not r["match"]]}
 
 
+def cache_reset_case(ctx):
+    """The fixture that resets the allocator cache after an ASR request: the
+    shortest of the 1 to 20 word band (fewest words, then the lower id), so
+    it costs next to nothing and is the same on both sides."""
+    ids = ctx.bands["cleanup"]["members"]["1-20"]
+    if not ids:
+        raise RigStop("no cleanup fixture in the 1-20 word band to reset the"
+                      " allocator cache with")
+    return min(ids, key=lambda i: (ctx.cases[i]["words"], i))
+
+
+def reset_cache(ctx, session):
+    """One unmeasured cleanup request. A real dictation ends with a cleanup
+    request, which hands the allocator's cached memory back; ASR-only
+    streams never do, and each clip's different length leaves the cache
+    unable to reuse a buffer, so it only grows. The result is read for
+    faults (the guard) and degradation, never timed or digested."""
+    frame = session.request(
+        *clean_request(ctx.cases[cache_reset_case(ctx)]))["frame"]
+    ctx.seen.add(frame.get("text") or "")
+    if frame.get("path") != "llm":
+        raise RigStop("the unmeasured cleanup after an ASR request came back"
+                      f" degraded (path {_token(frame.get('path'))}, reason"
+                      f" {_token(frame.get('fallback_reason'))})")
+
+
 def run_blocks(ctx, sessions, case_ids, used, make_request, kind):
     blocks = []
     for case_id, order in zip(case_ids, block_orders(case_ids, used)):
         op, fields = make_request(case_id)
-        recs = [timed(ctx, sessions[side], op, fields, kind)
-                for side in order]
+        recs = []
+        for side in order:
+            recs.append(timed(ctx, sessions[side], op, fields, kind))
+            if kind == "asr":
+                reset_cache(ctx, sessions[side])
         thermal = thermal_state()
         if not thermal["ok"]:
             ctx.thermal_events.append({"case": case_id,
@@ -1776,6 +1817,9 @@ def render_summary(report):
     for kind in ("cleanup", "asr"):
         out.append(f"- {kind}: {json.dumps(b['counts'][kind])}; unbanded:"
                    f" {len(b[kind]['unbanded'])}")
+    if "resident" in r["rig"]["phases"]:
+        out += ["", "## Method", "", ASR_RESET_NOTE.format(
+            case=r["rig"]["cache_reset_case"])]
     fp = r.get("footprint")
     if fp:
         out += ["", "## Idle footprint and launch peak (fresh spawns)", "",
@@ -2059,6 +2103,7 @@ def measure(ctx, phases, started):
                       "started_at": started, "finished_at": None,
                       "complete": False, "phases": [],
                       "counts": ctx.counts,
+                      "cache_reset_case": cache_reset_case(ctx),
                       "aa_report": {"sha256": ctx.aa["sha256"],
                                     "run_id": ctx.aa["run_id"]}
                       if ctx.aa else None},

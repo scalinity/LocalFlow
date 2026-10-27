@@ -782,6 +782,101 @@ def test_warm_preparation_leaves_the_files_resident_and_says_so():
           " (mincore), no files reads as 0")
 
 
+# ---- the ASR bands' unmeasured cleanup ----------------------------------------------------------
+
+class _FakeSession:
+    """Answers like the worker's result frames and keeps what it was sent."""
+
+    def __init__(self, clean_path="llm"):
+        self.sent = []
+        self._clean_path = clean_path
+
+    def request(self, op, fields=None, timeout=300.0):
+        self.sent.append((op, dict(fields or {})))
+        if op == "transcribe":
+            frame = {"text": "heard it", "duration_ms": 10.0,
+                     "decode_ranges": [[0, 160]], "sample_count": 160}
+        else:
+            frame = {"text": "cleaned it", "duration_ms": 5.0,
+                     "path": self._clean_path, "observations": [],
+                     "fallback_reason": None if self._clean_path == "llm"
+                     else "cleanup_engine_failed"}
+        return {"frame": frame, "received_at": 0.0, "sent_at": 0.0,
+                "rtt_ms": 12.0}
+
+
+def _block_ctx():
+    import types
+    cases = fr.load_cleanup_cases(ROOT)
+    bands = {"cleanup": fr.freeze_bands(
+        [(cid, c["words"]) for cid, c in cases.items()], fr.CLEANUP_BANDS)}
+    return types.SimpleNamespace(cases=cases, bands=bands, seen=set(),
+                                 thermal_events=[])
+
+
+def test_asr_blocks_follow_every_request_with_an_unmeasured_cleanup():
+    ctx = _block_ctx()
+    sessions = {"A": _FakeSession(), "B": _FakeSession()}
+    ids = ["clip-1.wav", "clip-2.wav"]
+    blocks = fr.run_blocks(ctx, sessions, ids, ids, fr.asr_request, "asr")
+    # Each block is A,B,B,A or B,A,A,B: two ASR requests per side, so two
+    # blocks give each side four, each followed by one cleanup.
+    for side, s in sessions.items():
+        assert [op for op, _ in s.sent] == ["transcribe", "clean"] * 4, side
+    assert sessions["A"].sent[1::2] == sessions["B"].sent[1::2], \
+        "both sides get the identical cleanup request"
+    op, fields = sessions["A"].sent[1]
+    case = next(c for c in ctx.cases.values()
+                if c["text"] == fields["raw_text"])
+    assert case["words"] <= 20 and (op, fields) == fr.clean_request(case), \
+        "a short fixture from the 1 to 20 word band"
+    # The extra request is no part of a block's record: four measured ASR
+    # requests per block, and only the transcript digests.
+    heard = hashlib.sha256(b"heard it").hexdigest()
+    for b in blocks:
+        assert len(b["rtt_ms"]) == len(b["stage_ms"]) == 4
+        assert b["text_sha256"] == [heard] * 4
+    assert "cleaned it" in ctx.seen, "the report guard still sees its output"
+    print("ok  ASR blocks: one unmeasured cleanup after each ASR request,"
+          " the same fixture on both sides, absent from the block records")
+
+
+def test_cleanup_blocks_send_no_extra_request():
+    ctx = _block_ctx()
+    sessions = {"A": _FakeSession(), "B": _FakeSession()}
+    ids = sorted(ctx.bands["cleanup"]["members"]["21-50"])[:2]
+    fr.run_blocks(ctx, sessions, ids, ids,
+                  lambda cid: fr.clean_request(ctx.cases[cid]), "clean")
+    for side, s in sessions.items():
+        assert [op for op, _ in s.sent] == ["clean"] * 4, side
+    print("ok  cleanup blocks: no extra request, only the measured ones")
+
+
+def test_a_degraded_unmeasured_cleanup_stops_the_run():
+    ctx = _block_ctx()
+    sessions = {"A": _FakeSession("llm_fallback_normalized"),
+                "B": _FakeSession()}
+    msg = _stops(lambda: fr.run_blocks(
+        ctx, sessions, ["clip-1.wav"], ["clip-1.wav"], fr.asr_request, "asr"),
+        "degraded", "llm_fallback_normalized", "cleanup_engine_failed")
+    assert "cleaned it" not in msg
+    print("ok  a degraded cache-reset cleanup stops the run, reason codes only")
+
+
+def test_the_cache_reset_fixture_is_the_shortest_of_the_short_band():
+    import types
+    cases = {"s:long": {"words": 7}, "s:b": {"words": 3},
+             "s:a": {"words": 3}}
+    ctx = types.SimpleNamespace(
+        cases=cases, bands={"cleanup": {"members": {
+            "1-20": ["s:long", "s:b", "s:a"], "21-50": []}}})
+    assert fr.cache_reset_case(ctx) == "s:a", "fewest words, then the lower id"
+    ctx.bands["cleanup"]["members"]["1-20"] = []
+    _stops(lambda: fr.cache_reset_case(ctx), "1-20")
+    print("ok  cache-reset fixture: fewest words in the 1-20 band, ties by"
+          " id, a stop when the band is empty")
+
+
 # ---- summaries -----------------------------------------------------------------------------------
 
 def _spawn(side, label, total, gpu, peak, load_ms, resident):

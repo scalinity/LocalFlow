@@ -121,9 +121,11 @@ def test_back_to_back_sends_return_in_order():
           " arrival times for the gap")
 
 
-def _shim_context(td, counts):
+def _shim_context(td, counts, record=False):
     """A run context over the shimmed production worker and a tiny
-    synthetic corpus: one clip pair per ASR band, the real fixtures."""
+    synthetic corpus: one clip pair per ASR band, the real fixtures. With
+    ``record`` each side's worker logs the requests its shims were given to
+    ``ctx.records[side]`` (JSON lines)."""
     td = pathlib.Path(td)
     corpus = td / "corpus"
     seconds = {"clip-under-10s": 1, "clip-10-30s": 11, "clip-30-90s": 31,
@@ -148,8 +150,13 @@ def _shim_context(td, counts):
         "asr": fr.freeze_bands(
             [(c["name"], c["duration_s"]) for c in clips
              if not c["name"].startswith("identity")], fr.ASR_BANDS)}
-    plan = td / "plan.json"
-    plan.write_text(json.dumps({"hold_gpu_mib": 64}))
+    plans, records = {}, {}
+    for side in ("A", "B"):
+        plans[side] = td / f"plan-{side}.json"
+        records[side] = td / f"records-{side}.jsonl"
+        plans[side].write_text(json.dumps(
+            {"hold_gpu_mib": 64, **({"record": str(records[side])}
+                                    if record else {})}))
     ctx = types.SimpleNamespace(
         run_id="shim-test", mode="early", counts=counts, aa=None,
         roots={"A": ROOT, "B": ROOT}, identity=IDENTITY, revisions={},
@@ -158,13 +165,13 @@ def _shim_context(td, counts):
         fixture_texts={c["text"] for c in cases.values()}, weights=[],
         evict_pool=str(td), protect_tokens=[], purge_allowed=False,
         installed_pid=None, installed_pid_now=lambda: None,
-        manifest=manifest)
+        manifest=manifest, records=records)
     ctx.run_dir.mkdir()
     ctx.scratch.mkdir()
     ctx.make_session = lambda side, diag: fr.WorkerSession(
         ROOT, corpus, IDENTITY, memory_diag=diag,
         cmd=[sys.executable, str(PROD), "--audio-root", str(corpus)],
-        env={"LOCALFLOW_PROD_WORKER_PLAN": str(plan),
+        env={"LOCALFLOW_PROD_WORKER_PLAN": str(plans[side]),
              "LOCALFLOW_CODE_ROOT": str(ROOT)})
     return ctx
 
@@ -262,13 +269,65 @@ def test_whole_run_against_the_shim_worker_writes_a_content_free_report():
           " report")
 
 
+def _requests_seen(path):
+    """The worker's own record of what it was asked, in order: ``transcribe``
+    and ``engine_clean`` events only."""
+    events = [json.loads(line)["event"]
+              for line in pathlib.Path(path).read_text().splitlines()]
+    return [e for e in events if e in ("transcribe", "engine_clean")]
+
+
+def test_asr_bands_interleave_an_unmeasured_cleanup_on_both_sides():
+    counts = {"warm": 1, "cold": 1, "burst": 1, "first": 2, "gap": 2}
+    with tmpdir() as td:
+        ctx = _shim_context(td, counts, record=True)
+        fr.measure(ctx, ["resident"], "2026-10-26T00:00:00-04:00")
+        report = json.loads((ctx.run_dir / "report.json").read_text())
+        res = report["resident"]
+        per_side = {side: _requests_seen(path)
+                    for side, path in ctx.records.items()}
+        assert per_side["A"] == per_side["B"], \
+            "both sides received exactly the same requests"
+        seen = per_side["A"]
+        # Worked counts, from the report's own record of what was measured:
+        # a band's blocks (and warmup blocks) hold four requests, two per
+        # side; the gap blocks send four cleanups to each side.
+        lat = res["latency"]
+        asr = 2 * sum(len(b["warmup_blocks"]) + len(b["blocks"])
+                      for b in lat["asr"].values())
+        clean = 2 * sum(len(b["warmup_blocks"]) + len(b["blocks"])
+                        for b in lat["cleanup"].values())
+        gap = 4 * len(res["gap"]["blocks"])
+        identity_clips = len(fr.IDENTITY_CLIPS)
+        assert seen.count("transcribe") == identity_clips + asr
+        assert seen.count("engine_clean") == \
+            len(ctx.cases) + clean + gap + asr, \
+            "one unmeasured cleanup per measured ASR request, no others"
+        # every ASR request outside the identity pass is followed at once
+        # by a cleanup
+        at = [i for i, e in enumerate(seen) if e == "transcribe"]
+        for i in at[identity_clips:]:
+            assert seen[i + 1] == "engine_clean", i
+        # the extra requests never reach a verdict, pair or block record
+        for b in lat["asr"].values():
+            for block in b["warmup_blocks"] + b["blocks"]:
+                assert len(block["rtt_ms"]) == 4
+        summary = (ctx.run_dir / "SUMMARY.md").read_text()
+        assert "## Method" in summary
+        assert ("interleave one unmeasured cleanup request after each ASR"
+                " request") in summary
+    print("ok  shim run: every ASR request is followed by one unmeasured"
+          " cleanup, identical on both sides, outside every record")
+
+
 def main():
     run([test_session_runs_both_requests_and_times_them,
          test_session_captures_the_six_memory_labels,
          test_session_stops_when_an_engine_fails_to_load,
          test_session_stops_on_a_worker_fault,
          test_back_to_back_sends_return_in_order,
-         test_whole_run_against_the_shim_worker_writes_a_content_free_report],
+         test_whole_run_against_the_shim_worker_writes_a_content_free_report,
+         test_asr_bands_interleave_an_unmeasured_cleanup_on_both_sides],
         "footprint rig session tests")
 
 
