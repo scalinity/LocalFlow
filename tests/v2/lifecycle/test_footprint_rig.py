@@ -534,6 +534,42 @@ def test_clip_plan_names_are_safe_and_targets_sit_inside_their_band():
           " safe names, targets inside their band")
 
 
+def test_corpus_builder_retries_each_clip_into_its_band_window():
+    # A synthesizer that speaks at 3.0 words/s, slower than the planner's
+    # assumption: the first attempts land in the wrong band and are redone.
+    def stub(text, voice, rate, out_path):
+        words = len(text.split())
+        return {"sha256": "0" * 64, "duration_s": round(words / 3.0, 3),
+                "voice": voice, "rate": rate, "words": words}
+    real = fr.synthesize_clip
+    fr.synthesize_clip = stub
+    try:
+        with tempfile.TemporaryDirectory() as td:
+            manifest = fr.build_corpus(pathlib.Path(td), 6)
+    finally:
+        fr.synthesize_clip = real
+    by_band = {}
+    for clip in manifest["clips"]:
+        if clip["band"]:
+            by_band.setdefault(clip["band"], []).append(clip)
+            lo, hi = fr.CLIP_WINDOWS[clip["band"]]
+        else:
+            lo, hi = fr.CLIP_WINDOWS[clip["name"]]
+        assert lo <= clip["duration_s"] and (hi is None
+                                             or clip["duration_s"] <= hi), clip
+    assert {b: len(c) for b, c in by_band.items()} == {
+        "under-10s": 6, "10-30s": 6, "30-90s": 6, "over-90s": 6}
+    ident = {c["name"]: c["duration_s"] for c in manifest["clips"]
+             if not c["band"]}
+    assert ident["identity-under90.wav"] < 90 < 95 < \
+        ident["identity-over95.wav"]
+    # each band's clips are assigned to the band they were aimed at
+    assert all(fr.assign_band(c["duration_s"], fr.ASR_BANDS) == c["band"]
+               for cs in by_band.values() for c in cs)
+    print("ok  corpus builder: every clip lands inside its band window,"
+          " identity clips on both sides of the chunker threshold")
+
+
 def test_the_measurement_lock_is_exclusive():
     import os
     with tempfile.TemporaryDirectory() as td:

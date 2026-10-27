@@ -784,12 +784,18 @@ SENTENCES = (
     "The lighthouse at the end of the pier was built over a century ago and is still used by sailors today.",
     "Please read the instructions twice before starting, and keep the receipt in case anything has to be returned.",
 )
-_WORDS_PER_SECOND = 2.9  # at 175 words per minute
-# Where each band's clip durations are aimed, well inside the band edges
-# (the measured duration, not the aim, decides band membership).
-_TARGET_RANGES = {"under-10s": (3.0, 8.0), "10-30s": (13.0, 26.0),
+_WORDS_PER_SECOND = 3.45  # measured with say at 175 words per minute
+# Where each band's clip durations are first aimed. Sentences are whole, so
+# the measured duration is what counts: a clip is redone until it lands
+# inside its window, kept clear of the band edges (and, for the identity
+# clips, on the right side of the 90 s chunker threshold).
+_TARGET_RANGES = {"under-10s": (3.0, 6.0), "10-30s": (13.0, 26.0),
                   "30-90s": (40.0, 80.0), "over-90s": (100.0, 125.0)}
 IDENTITY_CLIPS = ("identity-under90.wav", "identity-over95.wav")
+CLIP_WINDOWS = {"under-10s": (0.5, 9.0), "10-30s": (10.5, 29.0),
+                "30-90s": (31.0, 88.0), "over-90s": (93.0, None),
+                IDENTITY_CLIPS[0]: (45.0, 88.0),
+                IDENTITY_CLIPS[1]: (96.0, None)}
 
 
 def clip_plan(per_band):
@@ -803,7 +809,7 @@ def clip_plan(per_band):
                                   1),
                 "voice": VOICES[j % len(VOICES)],
                 "rate": 165 + (j * 7) % 31,
-                "offset": (j * 5 + b * 11) % len(SENTENCES)})
+                "offset": (j * 7 + b * 11) % len(SENTENCES)})
     plan.append({"name": IDENTITY_CLIPS[0], "band": None, "target_s": 60.0,
                  "voice": "Samantha", "rate": 175, "offset": 0})
     plan.append({"name": IDENTITY_CLIPS[1], "band": None, "target_s": 115.0,
@@ -891,29 +897,32 @@ def verify_corpus(manifest, corpus_dir):
 
 
 def build_corpus(corpus_dir, per_band):
-    """Synthesize every planned clip once. The two identity clips must
-    land where the chunker decides: one under 90 s, one over 95 s."""
+    """Synthesize every planned clip once. A clip whose measured duration
+    falls outside its window is redone with a rescaled aim, so every band
+    gets its full count and the identity clips land where the chunker
+    decides: one under 90 s, one over 95 s."""
     corpus_dir = pathlib.Path(corpus_dir)
     corpus_dir.mkdir(parents=True, exist_ok=True)
-    limits = {IDENTITY_CLIPS[0]: lambda d: 45 < d < 90,
-              IDENTITY_CLIPS[1]: lambda d: d > 95}
     clips = []
     for spec in clip_plan(per_band):
+        lo, hi = CLIP_WINDOWS[spec["band"] or spec["name"]]
+        want = lo * 1.15 if hi is None else (lo + hi) / 2
         target = spec["target_s"]
-        for _ in range(4):
+        for _ in range(6):
             text = compose_text(spec["offset"], target, spec["rate"])
             rec = synthesize_clip(text, spec["voice"], spec["rate"],
                                   corpus_dir / spec["name"])
-            check = limits.get(spec["name"])
-            if check is None or check(rec["duration_s"]):
+            if lo <= rec["duration_s"] \
+                    and (hi is None or rec["duration_s"] <= hi):
                 break
-            target *= 1.15 if spec["name"] == IDENTITY_CLIPS[1] else 0.85
+            target *= min(2.0, max(0.5, want / rec["duration_s"]))
         else:
-            raise RigStop(f"{spec['name']} did not reach its duration limit")
+            raise RigStop(f"{spec['name']} did not land inside its duration"
+                          " window")
         clips.append({"name": spec["name"],
                       "band": assign_band(rec["duration_s"], ASR_BANDS)
                       if spec["band"] else None,
-                      "target_s": spec["target_s"], **rec})
+                      "target_s": round(target, 1), **rec})
     manifest = {"sample_rate": 16000, "format": "float32 mono",
                 "synthesizer": "say + afconvert", "clips": clips}
     (corpus_dir / "manifest.json").write_text(json.dumps(manifest, indent=1))
