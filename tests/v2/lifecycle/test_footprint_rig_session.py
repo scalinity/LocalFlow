@@ -202,6 +202,12 @@ def test_whole_run_against_the_shim_worker_writes_a_content_free_report():
         assert len(report["first_request"]["pairs"]) == counts["first"]
         res = report["resident"]
         assert not res["identity"]["mismatches"]
+        blocks = res["latency"]["asr"]["10-30s"]["blocks"]
+        assert [b["order"] for b in blocks].count("ABBA") == 4
+        for clip in {b["case"] for b in blocks}:
+            mine = [b["order"] for b in blocks if b["case"] == clip]
+            assert all(a != b for a, b in zip(mine, mine[1:])), (clip, mine)
+        assert [b["order"] for b in res["gap"]["blocks"]] == ["ABBA", "BAAB"]
         band = res["latency"]["cleanup"]["51-100"]
         assert len(band["warmup_blocks"]) == len(band["plan"]["cases_used"])
         assert len(band["blocks"]) == 8, "warmup blocks are not measured"

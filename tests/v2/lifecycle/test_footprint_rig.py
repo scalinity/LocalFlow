@@ -84,6 +84,43 @@ def test_paired_difference_cancels_linear_drift():
     print("ok  ABBA block: linear drift cancels, a real +10 ms shows as +10")
 
 
+def test_block_order_alternates_and_splits_by_side():
+    assert [fr.block_order(i) for i in range(4)] == [
+        "ABBA", "BAAB", "ABBA", "BAAB"]
+    assert fr.by_side("ABBA", [1, 2, 3, 4]) == {"A": [1, 4], "B": [2, 3]}
+    assert fr.by_side("BAAB", [1, 2, 3, 4]) == {"A": [2, 3], "B": [1, 4]}
+    print("ok  blocks alternate A,B,B,A and B,A,A,B; times split by side")
+
+
+def test_each_case_alternates_its_block_order():
+    used = ["c0", "c1", "c2"]
+    seq = used * 2 + ["c0", "c1"]
+    # odd case count: the sequence alternates in time as well
+    assert fr.block_orders(seq, used) == ["ABBA", "BAAB"] * 4
+    # even case count: the order still alternates per case, so a bias that
+    # depends on the case is cancelled by that case's own repeats
+    two = ["c0", "c1"] * 3
+    orders = fr.block_orders(two, ["c0", "c1"])
+    for case in ("c0", "c1"):
+        mine = [o for c, o in zip(two, orders) if c == case]
+        assert mine == ["ABBA", "BAAB", "ABBA"] or \
+            mine == ["BAAB", "ABBA", "BAAB"], (case, mine)
+    assert fr.block_orders([], []) == []
+    print("ok  block order: each case alternates between A,B,B,A and"
+          " B,A,A,B across its occurrences")
+
+
+def test_block_differences_do_not_depend_on_block_order():
+    blocks = [{"order": "ABBA", "rtt_ms": [100, 110, 114, 104]},
+              {"order": "BAAB", "rtt_ms": [110, 100, 104, 114]},
+              {"order": "BAAB", "rtt_ms": [105, 101, 103, 105]}]
+    assert fr.block_differences(blocks, "rtt_ms") == [10.0, 10.0, 3.0]
+    assert fr.block_baseline(blocks, "rtt_ms") == [
+        100, 104, 100, 104, 101, 103]
+    print("ok  paired difference is mean B minus mean A whatever the order;"
+          " the baseline times are the A times")
+
+
 def test_median_and_nearest_rank_p95():
     assert fr.median([3, 1, 2]) == 2
     assert fr.median([4, 1, 3, 2]) == 2.5

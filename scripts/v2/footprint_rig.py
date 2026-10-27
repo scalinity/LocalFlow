@@ -145,6 +145,48 @@ def paired_differences(blocks):
     return [(b1 + b2) / 2 - (a1 + a2) / 2 for a1, b1, b2, a2 in blocks]
 
 
+def block_order(index):
+    """Blocks alternate A,B,B,A and B,A,A,B. With A,B,B,A alone the first
+    request of a block always follows the same process's own previous
+    request on side A and another process's on side B, which showed up as
+    an offset on new inputs in an identical-code A/A."""
+    return ("ABBA", "BAAB")[index % 2]
+
+
+def block_orders(case_ids, used):
+    """The order of each block in ``case_ids``: a case alternates between
+    the two orders at each of its occurrences, so a bias that depends on
+    the case is cancelled by that case's own repeats."""
+    seen, out = {}, []
+    for case in case_ids:
+        out.append(block_order(used.index(case) + seen.get(case, 0)))
+        seen[case] = seen.get(case, 0) + 1
+    return out
+
+
+def by_side(order, values):
+    """Split a block's values (in send order) into side A's and side B's."""
+    out = {"A": [], "B": []}
+    for side, value in zip(order, values):
+        out[side].append(value)
+    return out
+
+
+def _quad(block, field):
+    sides = by_side(block["order"], block[field])
+    return (sides["A"][0], sides["B"][0], sides["B"][1], sides["A"][1])
+
+
+def block_differences(blocks, field):
+    """Paired difference per block, whichever order it ran in."""
+    return paired_differences([_quad(b, field) for b in blocks])
+
+
+def block_baseline(blocks, field):
+    """Side A's times, the Latency rule's baseline, over all blocks."""
+    return [t for b in blocks for t in by_side(b["order"], b[field])["A"]]
+
+
 def latency_verdict(diffs, baseline_times):
     """The Latency rule on paired candidate-minus-baseline differences."""
     base_median = median(baseline_times)
@@ -1349,9 +1391,6 @@ def phase_first(ctx):
 
 # ---- the resident pair: identity, paired latency, back-to-back gap -----------------------------
 
-ABBA = ("A", "B", "B", "A")
-
-
 def run_identity(ctx, sessions):
     """Every committed cleanup fixture and the two identity clips on both
     sides; the digests and per-pass token counts are the reference every
@@ -1383,17 +1422,17 @@ def run_identity(ctx, sessions):
             + [n for n, r in asr.items() if not r["match"]]}
 
 
-def run_blocks(ctx, sessions, case_ids, make_request, kind):
+def run_blocks(ctx, sessions, case_ids, used, make_request, kind):
     blocks = []
-    for case_id in case_ids:
+    for case_id, order in zip(case_ids, block_orders(case_ids, used)):
         op, fields = make_request(case_id)
         recs = [timed(ctx, sessions[side], op, fields, kind)
-                for side in ABBA]
+                for side in order]
         thermal = thermal_state()
         if not thermal["ok"]:
             ctx.thermal_events.append({"case": case_id,
                                        "warning": thermal["warning"]})
-        blocks.append({"case": case_id,
+        blocks.append({"case": case_id, "order": order,
                        "rtt_ms": [r["rtt_ms"] for r in recs],
                        "stage_ms": [r["stage_ms"] for r in recs],
                        "text_sha256": [r["text_sha256"] for r in recs],
@@ -1402,9 +1441,8 @@ def run_blocks(ctx, sessions, case_ids, make_request, kind):
 
 
 def _block_verdict(blocks, field):
-    quads = [tuple(b[field]) for b in blocks]
-    base = [x for a1, _, _, a2 in quads for x in (a1, a2)]
-    return latency_verdict(paired_differences(quads), base)
+    return latency_verdict(block_differences(blocks, field),
+                           block_baseline(blocks, field))
 
 
 def band_result(plan, blocks, warmup_blocks):
@@ -1438,7 +1476,8 @@ def run_gap(ctx, sessions):
     for k in range(ctx.counts["gap"]):
         first_id, second_id = ids[k % len(ids)], ids[(k + 1) % len(ids)]
         gaps = []
-        for side in ABBA:
+        order = block_order(k)
+        for side in order:
             s = sessions[side]
             one = s.send(*clean_request(ctx.cases[first_id]))
             two = s.send(*clean_request(ctx.cases[second_id]))
@@ -1448,11 +1487,11 @@ def run_gap(ctx, sessions):
             gaps.append(back_to_back_gap_ms(
                 r1["received_at"], r2["received_at"],
                 r2["frame"]["duration_ms"]))
-        blocks.append({"cases": [first_id, second_id], "gap_ms": gaps})
-    verdict = gap_verdict([(g["gap_ms"][0] + g["gap_ms"][3]) / 2
-                           for g in blocks],
-                          [(g["gap_ms"][1] + g["gap_ms"][2]) / 2
-                           for g in blocks])
+        blocks.append({"cases": [first_id, second_id], "order": order,
+                       "gap_ms": gaps})
+    sides = [by_side(b["order"], b["gap_ms"]) for b in blocks]
+    verdict = gap_verdict([sum(x["A"]) / 2 for x in sides],
+                          [sum(x["B"]) / 2 for x in sides])
     return {"blocks": blocks, "verdict": verdict}
 
 
@@ -1482,10 +1521,12 @@ def phase_resident(ctx):
                       f"{', short of the claim' if plan['short_of_claim'] else ''})",
                       flush=True)
                 step = "clean" if kind == "cleanup" else "asr"
-                warm = run_blocks(ctx, sessions, plan["warmup"], make, step)
+                used = plan["cases_used"]
+                warm = run_blocks(ctx, sessions, plan["warmup"], used, make,
+                                  step)
                 out["latency"][kind][band] = band_result(
-                    plan, run_blocks(ctx, sessions, plan["blocks"], make,
-                                     step), warm)
+                    plan, run_blocks(ctx, sessions, plan["blocks"], used,
+                                     make, step), warm)
         print(f"  back-to-back gap: {ctx.counts['gap']} ABBA blocks",
               flush=True)
         out["gap"] = run_gap(ctx, sessions)
