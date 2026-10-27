@@ -641,7 +641,7 @@ def parse_thermal(text):
     warning level; anything else is kept verbatim."""
     ok = ("No thermal warning level has been recorded" in text
           and "No performance warning level has been recorded" in text)
-    return {"ok": ok, "text": None if ok else text.strip()}
+    return {"ok": ok, "warning": None if ok else text.strip()}
 
 
 def parse_ps(text):
@@ -1146,9 +1146,19 @@ def thermal_state():
     return parse_thermal(_tool_text(["pmset", "-g", "therm"]))
 
 
+_EASTERN = zoneinfo.ZoneInfo("America/New_York")
+
+
 def now_et():
-    return datetime.datetime.now(zoneinfo.ZoneInfo("America/New_York")
-                                 ).isoformat(timespec="seconds")
+    return datetime.datetime.now(_EASTERN).isoformat(timespec="seconds")
+
+
+def et_label(iso):
+    """A report timestamp as US Eastern with its zone label."""
+    if not iso:
+        return "n/a"
+    when = datetime.datetime.fromisoformat(iso).astimezone(_EASTERN)
+    return when.strftime("%Y-%m-%d %-I:%M %p %Z")
 
 
 # ---- requests -------------------------------------------------------------------------------------------
@@ -1369,7 +1379,7 @@ def run_blocks(ctx, sessions, plan, make_request, kind):
         thermal = thermal_state()
         if not thermal["ok"]:
             ctx.thermal_events.append({"case": case_id,
-                                       "text": thermal["text"]})
+                                       "warning": thermal["warning"]})
         blocks.append({"case": case_id,
                        "rtt_ms": [r["rtt_ms"] for r in recs],
                        "stage_ms": [r["stage_ms"] for r in recs],
@@ -1560,8 +1570,9 @@ def _yes(flag):
 def render_summary(report):
     r = report
     out = [f"# Footprint rig run {r['rig']['run_id']}", "",
-           f"Mode {r['rig']['mode']}; started {r['rig']['started_at']},"
-           f" finished {r['rig'].get('finished_at')}; complete:"
+           f"Mode {r['rig']['mode']}; started"
+           f" {et_label(r['rig']['started_at'])}, finished"
+           f" {et_label(r['rig'].get('finished_at'))}; complete:"
            f" {r['rig']['complete']}; phases: {', '.join(r['rig']['phases'])}.",
            "", "Sizes are MiB (the footprint tool's MB). Times are US Eastern.",
            ""]
@@ -1869,8 +1880,7 @@ def run(args):
     lock_fd = acquire_lock(args.lock)
     try:
         started = now_et()
-        run_id = args.run_id or datetime.datetime.now(
-            zoneinfo.ZoneInfo("America/New_York")).strftime(
+        run_id = args.run_id or datetime.datetime.now(_EASTERN).strftime(
             "%Y%m%d-%H%M%S") + "-" + args.mode
         run_dir = evidence_root / run_id
         run_dir.mkdir(parents=True, exist_ok=False)

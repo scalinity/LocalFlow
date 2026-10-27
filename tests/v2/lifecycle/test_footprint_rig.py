@@ -400,10 +400,10 @@ def test_power_and_thermal_text():
     ok = ("Note: No thermal warning level has been recorded\n"
           "Note: No performance warning level has been recorded\n"
           "Note: No CPU power status has been recorded\n")
-    assert fr.parse_thermal(ok) == {"ok": True, "text": None}
+    assert fr.parse_thermal(ok) == {"ok": True, "warning": None}
     warn = "CPU_Scheduler_Limit \t= 80\nCPU_Speed_Limit \t= 80\n"
     got = fr.parse_thermal(warn)
-    assert got["ok"] is False and "CPU_Speed_Limit" in got["text"]
+    assert got["ok"] is False and "CPU_Speed_Limit" in got["warning"]
     print("ok  power source and thermal state read from pmset text")
 
 
@@ -412,6 +412,17 @@ PS_TEXT = """\
  75089 75081 /opt/py/Python.app/Contents/MacOS/Python -m localflow.v2.worker --audio-root /x
  20116     1 /usr/local/bin/node serve
 """
+
+
+def test_report_times_are_labelled_us_eastern():
+    assert fr.et_label("2026-10-26T21:25:48-04:00") == \
+        "2026-10-26 9:25 PM EDT"
+    assert fr.et_label("2026-12-01T09:00:00-05:00") == \
+        "2026-12-01 9:00 AM EST"
+    assert fr.et_label("2026-10-27T01:25:48+00:00") == \
+        "2026-10-26 9:25 PM EDT", "a UTC stamp is converted, not echoed"
+    assert fr.et_label(None) == "n/a"
+    print("ok  report times: converted to US Eastern and labelled EDT/EST")
 
 
 def test_process_table_separates_the_installed_worker_from_strays():
