@@ -21,6 +21,12 @@ value beyond the two model identifiers.
 Only one measurement runs at a time on this machine: the run holds an
 exclusive lock for its whole length and fails fast when it is taken.
 
+A watchdog thread guards the machine while the phases run: every
+WATCHDOG_INTERVAL_S it reads each live rig worker's footprint and the swap
+used, and past either limit it kills the rig's own workers (only the pids the
+rig spawned), marks the report aborted with the reason and stops the run with
+a non-zero exit instead of waiting for the host to reap it.
+
 Run: .venv/bin/python scripts/v2/footprint_rig.py --code-root-a <dir>
      [--code-root-b <dir>] [--mode early|shipping]
 """
@@ -70,6 +76,13 @@ BACK_TO_BACK_LIMIT_MS = 50.0
 # Idle floor and Peak floor (the footprint tool's "MB" is MiB).
 IDLE_FLOOR_BYTES = 100 * MIB
 PEAK_FLOOR_BYTES = 500 * MIB
+# Watchdog. A worker's footprint after even a long clip is normally about 6
+# to 8 GiB, so one past 16 GiB is runaway allocator growth; a quiet run does
+# not page, so swap growing by more than 2 GiB over its value at the start
+# means two resident workers are already too much for the machine.
+WATCHDOG_INTERVAL_S = 2.0
+WATCHDOG_FOOTPRINT_LIMIT_BYTES = 16 * 1024 ** 3
+WATCHDOG_SWAP_GROWTH_LIMIT_BYTES = 2 * 1024 ** 3
 
 
 # ---- length bands ---------------------------------------------------------
@@ -600,6 +613,19 @@ class WorkerSession:
     def pid(self):
         return self._proc.pid
 
+    def live_pid(self):
+        """The worker's pid while it runs, otherwise None. Safe to call from
+        another thread, which is how the watchdog finds its workers."""
+        proc = self._proc
+        return proc.pid if proc is not None and proc.poll() is None else None
+
+    def kill(self):
+        """Kill the worker if it still runs; the owner's own close() reaps
+        it."""
+        proc = self._proc
+        if proc is not None and proc.poll() is None:
+            proc.kill()
+
     def start(self, timeout=120.0):
         self._stderr = tempfile.TemporaryFile()
         self._proc = subprocess.Popen(
@@ -793,6 +819,14 @@ def classify_workers(rows):
         else:
             strays.append(pid)
     return installed, strays
+
+
+def parse_swap_used(text):
+    """Bytes in the ``used`` field of ``sysctl -n vm.swapusage``."""
+    m = re.search(r"\bused\s*=\s*([0-9.]+)([BKMG]?)", text)
+    if not m:
+        raise RigStop("the swap usage could not be read")
+    return int(float(m.group(1)) * _VMMAP_UNITS[m.group(2)])
 
 
 def parse_cputime(text):
@@ -1276,6 +1310,10 @@ def power_state():
 
 def thermal_state():
     return parse_thermal(_tool_text(["pmset", "-g", "therm"]))
+
+
+def read_swap_used():
+    return parse_swap_used(_tool_text(["sysctl", "-n", "vm.swapusage"]))
 
 
 _EASTERN = zoneinfo.ZoneInfo("America/New_York")
@@ -1927,6 +1965,127 @@ def render_summary(report):
     return "\n".join(out) + "\n"
 
 
+# ---- the watchdog --------------------------------------------------------------------------------------
+
+_UNREADABLE = (RigStop, OSError, subprocess.TimeoutExpired, ValueError)
+
+
+def _gib(n):
+    return f"{n / 1024 ** 3:.2f} GiB"
+
+
+def watchdog_reason(footprints, swap_used, swap_start):
+    """Why the run must stop now, or None. ``footprints`` maps each live rig
+    worker's pid to its total footprint in bytes. The reason carries pids
+    and sizes only."""
+    for pid, total in sorted(footprints.items()):
+        if total > WATCHDOG_FOOTPRINT_LIMIT_BYTES:
+            return (f"worker pid {pid} footprint {_gib(total)} is over the"
+                    f" {_gib(WATCHDOG_FOOTPRINT_LIMIT_BYTES)} limit")
+    grown = swap_used - swap_start
+    if grown > WATCHDOG_SWAP_GROWTH_LIMIT_BYTES:
+        return (f"swap used grew {_gib(grown)} since the run started, over"
+                f" the {_gib(WATCHDOG_SWAP_GROWTH_LIMIT_BYTES)} limit")
+    return None
+
+
+class Watchdog:
+    """Reads the machine from its own thread while the phases run and kills
+    the rig's workers when ``watchdog_reason`` says to stop. It knows only
+    the sessions made through ``wrap``, so no other process (the installed
+    app's idle worker included) is read or signalled. The main thread learns
+    of a trip by its worker's stream closing, or by ``raise_if_tripped``
+    when it next asks for a worker; ``measure`` turns either into the
+    aborted report. It reads footprints into a folder of its own, because
+    ``read_footprint`` names its file by pid and the run's own read of the
+    same worker would otherwise delete the file mid-read."""
+
+    def __init__(self, scratch):
+        self._scratch = pathlib.Path(scratch)
+        self._lock = threading.Lock()
+        self._sessions = []
+        self._stop = threading.Event()
+        self._thread = None
+        self._swap_start = None
+        self.reason = None
+
+    def wrap(self, make_session):
+        """``make_session`` with every session it makes watched, and no new
+        worker once the watchdog has tripped."""
+        def make(side, diag):
+            self.raise_if_tripped()
+            session = make_session(side, diag)
+            with self._lock:
+                self._sessions.append(session)
+            return session
+        return make
+
+    def raise_if_tripped(self):
+        if self.reason:
+            raise RigStop(f"aborted by the watchdog: {self.reason}")
+
+    def __enter__(self):
+        self._scratch.mkdir(parents=True, exist_ok=True)
+        self._swap_start = read_swap_used()
+        self._thread = threading.Thread(target=self._run, daemon=True)
+        self._thread.start()
+        return self
+
+    def __exit__(self, *exc):
+        self._stop.set()
+        self._thread.join()
+        return False
+
+    def _live(self):
+        """``(session, pid)`` for each watched worker that still runs."""
+        with self._lock:
+            sessions = list(self._sessions)
+        pids = [(s, s.live_pid()) for s in sessions]
+        return [(s, pid) for s, pid in pids if pid]
+
+    def poll(self):
+        """One reading; True when it tripped the watchdog. A reading that
+        fails is skipped for this tick, never a trip: a worker still
+        importing has no GPU line for ``read_footprint`` to find and one that
+        is shutting down cannot be read, so a failure says nothing about a
+        size. The run's own reads of a worker surface a persistent failure."""
+        footprints = {}
+        for _, pid in self._live():
+            try:
+                footprints[pid] = read_footprint(
+                    pid, self._scratch)["total_bytes"]
+            except _UNREADABLE:
+                continue
+        try:
+            swap_used = read_swap_used()
+        except _UNREADABLE:
+            swap_used = self._swap_start
+        reason = watchdog_reason(footprints, swap_used, self._swap_start)
+        return self._trip(reason) if reason else False
+
+    def _trip(self, reason):
+        self.reason = reason
+        clock = datetime.datetime.now(_EASTERN).strftime("%-I:%M:%S %p %Z")
+        print(f"WATCHDOG ABORT {clock}: {reason}", flush=True)
+        for session, _ in self._live():
+            session.kill()
+        return True
+
+    def _run(self):
+        while not self._stop.wait(WATCHDOG_INTERVAL_S):
+            if self.poll():
+                return
+
+
+def abort(ctx, report, reason):
+    """Mark the report aborted and stop the run (the caller's finally
+    releases the lock; ``main`` turns the stop into a non-zero exit)."""
+    report["rig"]["complete"] = False
+    report["rig"]["aborted"] = {"reason": reason, "at": now_et()}
+    write_report(ctx, report)
+    raise RigStop(f"aborted by the watchdog: {reason}")
+
+
 # ---- the run -------------------------------------------------------------------------------------------
 
 DEFAULT_EVIDENCE_ROOT = pathlib.Path.home() / "Library" / \
@@ -2113,11 +2272,20 @@ def measure(ctx, phases, started):
                              "name", "sha256", "duration_s", "band")}
                              for c in ctx.manifest["clips"]]}}
     write_report(ctx, report)
+    dog = Watchdog(ctx.scratch / "watchdog")
+    ctx.make_session = dog.wrap(ctx.make_session)
     try:
-        execute(ctx, report, phases)
-        finish(ctx, report)
+        with dog:
+            execute(ctx, report, phases)
+            finish(ctx, report)
+    except Exception:
+        # A killed worker surfaces as an error in whatever the run was doing.
+        if not dog.reason:
+            raise
     finally:
         shutil.rmtree(ctx.scratch, ignore_errors=True)
+    if dog.reason:
+        abort(ctx, report, dog.reason)
     v = report["verdicts"]
     print((run_dir / "SUMMARY.md").read_text())
     print(f"report: {run_dir / 'report.json'}")

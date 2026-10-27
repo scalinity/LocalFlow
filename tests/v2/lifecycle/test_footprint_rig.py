@@ -877,6 +877,185 @@ def test_the_cache_reset_fixture_is_the_shortest_of_the_short_band():
           " id, a stop when the band is empty")
 
 
+# ---- the watchdog ----------------------------------------------------------------------------------
+
+GIB = 1024 ** 3
+
+
+class _patched:
+    """Replace module attributes of the rig for the length of a block."""
+
+    def __init__(self, **attrs):
+        self._attrs, self._saved = attrs, {}
+
+    def __enter__(self):
+        for name, value in self._attrs.items():
+            self._saved[name] = getattr(fr, name)
+            setattr(fr, name, value)
+
+    def __exit__(self, *exc):
+        for name, value in self._saved.items():
+            setattr(fr, name, value)
+        return False
+
+
+def test_the_watchdog_limits_are_the_agreed_ones():
+    assert fr.WATCHDOG_FOOTPRINT_LIMIT_BYTES == 16 * GIB
+    assert fr.WATCHDOG_SWAP_GROWTH_LIMIT_BYTES == 2 * GIB
+    assert fr.WATCHDOG_INTERVAL_S == 2.0
+    print("ok  watchdog: 16 GiB per worker, 2 GiB of swap growth, every"
+          " 2 seconds")
+
+
+def test_a_worker_footprint_trips_the_watchdog_just_past_its_limit():
+    limit = 16 * GIB
+    assert fr.watchdog_reason({}, 0, 0) is None
+    assert fr.watchdog_reason({101: 8 * GIB}, 0, 0) is None
+    assert fr.watchdog_reason({101: limit}, 0, 0) is None, "at the limit"
+    why = fr.watchdog_reason({101: limit + 1}, 0, 0)
+    assert why and "101" in why and "footprint" in why, why
+    # one of several workers is enough, and its pid is the one named
+    why = fr.watchdog_reason({101: 7 * GIB, 202: limit + 1}, 0, 0)
+    assert why and "202" in why and "101" not in why, why
+    print("ok  watchdog: a worker footprint of exactly 16 GiB passes, one"
+          " byte more trips and names the pid")
+
+
+def test_swap_growth_trips_the_watchdog_just_past_its_limit():
+    start = 5 * GIB
+    assert fr.watchdog_reason({}, start, start) is None
+    assert fr.watchdog_reason({}, start + 2 * GIB, start) is None, \
+        "growth at the limit"
+    why = fr.watchdog_reason({}, start + 2 * GIB + 1, start)
+    assert why and "swap" in why, why
+    assert fr.watchdog_reason({}, start - GIB, start) is None, \
+        "swap that shrinks is never a trip"
+    # swap that was already large when the run started is no trip by itself
+    assert fr.watchdog_reason({}, 40 * GIB, 40 * GIB) is None
+    print("ok  watchdog: swap growth is measured from the run's start; 2 GiB"
+          " passes, one byte more trips")
+
+
+def test_swap_usage_text_gives_the_used_bytes():
+    got = fr.parse_swap_used(
+        "total = 6144.00M  used = 1024.00M  free = 5120.00M  (encrypted)")
+    assert got == 1024 * 1024 * 1024, got
+    assert fr.parse_swap_used("total = 8.00G  used = 2.50G  free = 5.50G"
+                              "  (encrypted)") == 2684354560
+    assert fr.parse_swap_used("total = 0.00M  used = 0.00M  free = 0.00M"
+                              "  (encrypted)") == 0
+    _stops(lambda: fr.parse_swap_used("vm.swapusage: unknown oid"), "swap")
+    print("ok  swap usage text: M and G units, zero, an unreadable line"
+          " stops the run")
+
+
+class _Worker:
+    """A session as the watchdog sees it."""
+
+    def __init__(self, pid, alive=True):
+        self.pid, self.alive, self.kills = pid, alive, 0
+
+    def live_pid(self):
+        return self.pid if self.alive else None
+
+    def kill(self):
+        self.kills += 1
+        self.alive = False
+
+
+def _watched(td, sizes, workers):
+    """A watchdog over fake workers, never polled by its own thread (the
+    tests set the interval to an hour); a test calls ``poll`` itself.
+    Returns the watchdog, the pids its footprint reader was asked for and
+    that reader."""
+    reads = []
+
+    def footprint(pid, scratch):
+        reads.append(pid)
+        return {"total_bytes": sizes[pid]}
+
+    dog = fr.Watchdog(pathlib.Path(td) / "wd")
+    wrapped = dog.wrap(lambda side, diag: workers[side])
+    for side in workers:
+        wrapped(side, False)
+    return dog, reads, footprint
+
+
+def test_the_watchdog_kills_only_the_workers_the_rig_spawned():
+    sizes = {111: 8 * GIB, 222: 16 * GIB + 1}
+    workers = {"A": _Worker(111), "B": _Worker(222),
+               "C": _Worker(333, alive=False)}
+    with tempfile.TemporaryDirectory() as td:
+        dog, reads, footprint = _watched(td, sizes, workers)
+        with _patched(WATCHDOG_INTERVAL_S=3600.0, read_footprint=footprint,
+                      read_swap_used=lambda: 0):
+            with dog:
+                assert dog.poll() is True
+        assert dog.reason and "222" in dog.reason
+        assert sorted(set(reads)) == [111, 222], \
+            "a closed worker and any other process are never read"
+        assert (workers["A"].kills, workers["B"].kills,
+                workers["C"].kills) == (1, 1, 0), \
+            "every live rig worker is killed, a closed one is left alone"
+        _stops(dog.raise_if_tripped, "222")
+        _stops(lambda: dog.wrap(lambda s, d: workers["A"])("A", False),
+               "222")
+    print("ok  watchdog: kills each live rig worker once on a trip, reads"
+          " and touches no other process, refuses new workers afterwards")
+
+
+def test_the_watchdog_trips_on_swap_growth_from_its_starting_value():
+    swap = [7 * GIB]
+    workers = {"A": _Worker(111)}
+    with tempfile.TemporaryDirectory() as td:
+        dog, reads, footprint = _watched(td, {111: GIB}, workers)
+        with _patched(WATCHDOG_INTERVAL_S=3600.0, read_footprint=footprint,
+                      read_swap_used=lambda: swap[0]):
+            with dog:  # the starting value is read here
+                swap[0] = 9 * GIB
+                assert dog.poll() is False, "growth at the limit"
+                assert workers["A"].kills == 0
+                swap[0] = 9 * GIB + 1
+                assert dog.poll() is True
+        assert "swap" in dog.reason and workers["A"].kills == 1
+    print("ok  watchdog: swap growth over the starting value trips and"
+          " kills the worker")
+
+
+def test_a_failed_reading_is_skipped_never_a_trip():
+    with tempfile.TemporaryDirectory() as td:
+        workers = {"A": _Worker(111), "B": _Worker(222)}
+        dog, reads, _ = _watched(td, {}, workers)
+        sizes = {111: "unreadable", 222: 16 * GIB + 1}
+
+        def footprint(pid, scratch):
+            if sizes[pid] == "unreadable":
+                raise fr.RigStop("footprint output has no GPU line yet")
+            return {"total_bytes": sizes[pid]}
+
+        swap = [3 * GIB]
+
+        def read_swap():
+            if swap[0] is None:
+                raise fr.RigStop("the swap usage could not be read")
+            return swap[0]
+
+        with _patched(WATCHDOG_INTERVAL_S=3600.0, read_footprint=footprint,
+                      read_swap_used=read_swap):
+            with dog:
+                sizes[222] = 8 * GIB
+                swap[0] = None
+                assert dog.poll() is False, "unreadable footprint and swap"
+                assert dog.reason is None
+                assert (workers["A"].kills, workers["B"].kills) == (0, 0)
+                sizes[222] = 16 * GIB + 1
+                assert dog.poll() is True, \
+                    "the other worker is still read and judged"
+        assert "222" in dog.reason and "111" not in dog.reason
+    print("ok  watchdog: a footprint or swap reading that fails is skipped"
+          " for that tick, the other readings still decide")
+
+
 # ---- summaries -----------------------------------------------------------------------------------
 
 def _spawn(side, label, total, gpu, peak, load_ms, resident):

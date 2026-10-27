@@ -9,8 +9,11 @@ no figure here is a footprint or a latency of any model.
 Run: .venv/bin/python tests/v2/lifecycle/test_footprint_rig_session.py
 """
 
+import contextlib
 import hashlib
+import io
 import json
+import os
 import pathlib
 import sys
 import types
@@ -185,6 +188,8 @@ def test_whole_run_against_the_shim_worker_writes_a_content_free_report():
         report = json.loads(raw)
         assert (ctx.run_dir / "bands.json").exists()
         assert report["rig"]["complete"] is True
+        assert report["rig"].get("aborted") is None, \
+            "the watchdog stays quiet on a healthy run"
         assert report["rig"]["phases"] == list(fr.PHASES)
         # footprint: every spawn read the GPU line beside the total
         spawns = report["footprint"]["spawns"]
@@ -320,6 +325,76 @@ def test_asr_bands_interleave_an_unmeasured_cleanup_on_both_sides():
           " cleanup, identical on both sides, outside every record")
 
 
+class _patched:
+    """Replace module attributes of the rig for the length of a block."""
+
+    def __init__(self, **attrs):
+        self._attrs, self._saved = attrs, {}
+
+    def __enter__(self):
+        for name, value in self._attrs.items():
+            self._saved[name] = getattr(fr, name)
+            setattr(fr, name, value)
+
+    def __exit__(self, *exc):
+        for name, value in self._saved.items():
+            setattr(fr, name, value)
+        return False
+
+
+def _aborted_run(td, **patches):
+    """``fr.main`` over the shim worker with the watchdog's limits or
+    readings patched; returns the exit code, the report, both log streams
+    and the lock path."""
+    td = pathlib.Path(td)
+    counts = {"warm": 1, "cold": 1, "burst": 1, "first": 2, "gap": 2}
+    ctx = _shim_context(td, counts)
+    lock = td / "measure.lock"
+    argv = ["--code-root-a", str(ROOT), "--evidence-root", str(td / "ev"),
+            "--lock", str(lock), "--run-id", "watchdog-test",
+            "--phases", "resident"]
+    out, err = io.StringIO(), io.StringIO()
+    with _patched(build_context=lambda *a: ctx, WATCHDOG_INTERVAL_S=0.1,
+                  **patches):
+        with contextlib.redirect_stdout(out), contextlib.redirect_stderr(err):
+            code = fr.main(argv)
+    report = json.loads((ctx.run_dir / "report.json").read_text())
+    return code, report, out.getvalue(), err.getvalue(), lock
+
+
+def _assert_aborted(td, code, report, out, err, lock, needle):
+    reason = report["rig"]["aborted"]["reason"]
+    assert needle in reason, reason
+    assert code != 0, "an aborted run exits non-zero"
+    assert report["rig"]["complete"] is False
+    assert reason in err and "aborted by the watchdog" in err
+    assert reason in out, "the reason is in the log as well"
+    os.close(fr.acquire_lock(lock))  # the lock was released
+    assert "verdicts" not in report, "an aborted run states no verdict"
+
+
+def test_a_worker_over_the_footprint_limit_aborts_the_run():
+    with tmpdir() as td:
+        code, report, out, err, lock = _aborted_run(
+            td, WATCHDOG_FOOTPRINT_LIMIT_BYTES=1)
+        _assert_aborted(td, code, report, out, err, lock, "footprint")
+    print("ok  shim run: a worker over the footprint limit is killed, the"
+          " report and log say why, the exit is non-zero, the lock is free")
+
+
+def test_swap_growth_aborts_the_run():
+    readings = iter([5 << 30])  # the starting value, then 3 GiB more
+
+    def swap():
+        return next(readings, 8 << 30)
+
+    with tmpdir() as td:
+        code, report, out, err, lock = _aborted_run(td, read_swap_used=swap)
+        _assert_aborted(td, code, report, out, err, lock, "swap")
+    print("ok  shim run: swap growth over its starting value aborts the run"
+          " the same way")
+
+
 def main():
     run([test_session_runs_both_requests_and_times_them,
          test_session_captures_the_six_memory_labels,
@@ -327,7 +402,9 @@ def main():
          test_session_stops_on_a_worker_fault,
          test_back_to_back_sends_return_in_order,
          test_whole_run_against_the_shim_worker_writes_a_content_free_report,
-         test_asr_bands_interleave_an_unmeasured_cleanup_on_both_sides],
+         test_asr_bands_interleave_an_unmeasured_cleanup_on_both_sides,
+         test_a_worker_over_the_footprint_limit_aborts_the_run,
+         test_swap_growth_aborts_the_run],
         "footprint rig session tests")
 
 
