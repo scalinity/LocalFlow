@@ -18,10 +18,13 @@ Plan (JSON file named by $LOCALFLOW_PROD_WORKER_PLAN):
   "transcribe": ["ok:<text>" | "raise:<message>"
                  | "delay:<ms>|<one of those>"],     # per call
   "clean": ["ok:<text>" | "raise:<message>"],        # per call
-  "record": "<path>"                # JSONL: what the shims were given
+  "record": "<path>",               # JSONL: what the shims were given
+  "hold_gpu_mib": <int>             # ASR load keeps a plain MLX array of
+                                    # this size alive (footprint rig tests)
 }
 A pass with these shims is protocol/scheduling evidence, never a
-model-backed result (no MLX, no Parakeet, no Qwen).
+model-backed result (no Parakeet, no Qwen; MLX only for the optional
+plain array above and the memory counters).
 """
 
 import json
@@ -36,6 +39,7 @@ sys.path.insert(0, os.environ.get("LOCALFLOW_CODE_ROOT") or os.path.dirname(
 
 PLAN = {}
 _cursor = {}
+_GPU_HOLD = None
 
 
 def _take(op):
@@ -62,6 +66,14 @@ class ShimTranscriber:
         if on_phase is not None:
             on_phase("loading")
             on_phase("warming")
+        if PLAN.get("hold_gpu_mib"):
+            # Optional: keep a real GPU allocation alive so the process
+            # shows a GPU line to the footprint tool (rig tests only).
+            import mlx.core as mx
+            global _GPU_HOLD
+            _GPU_HOLD = mx.random.uniform(
+                shape=(int(PLAN["hold_gpu_mib"]) * 1024 * 1024 // 4,))
+            mx.eval(_GPU_HOLD)
         if PLAN.get("asr_load") == "fail":
             raise RuntimeError("shim asr load failure")
         _record(event="asr_loaded", t=time.monotonic())
