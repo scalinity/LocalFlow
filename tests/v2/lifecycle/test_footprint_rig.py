@@ -153,6 +153,94 @@ def test_latency_rule_on_median_and_p95():
           " paired p95")
 
 
+def _close(a, b):
+    return abs(a - b) < 1e-6
+
+
+def test_latency_limits_are_never_tighter_than_the_measured_noise():
+    base = [1301.0] * 20            # spec p95 limit 130.1, median limit 65.05
+    two_high = [1.0] * 18 + [200.0, 200.0]      # paired p95 200, median 1
+    aa = {"paired_median_ms": 11.4, "paired_p95_ms": 236.5}
+    spec = fr.latency_verdict(two_high, base)
+    assert _close(spec["p95_limit_ms"], 130.1) and spec["p95_pass"] is False
+    assert spec["aa_p95_ms"] is None and spec["aa_median_ms"] is None
+    # asr:30-90s: spec 130.1, A/A 236.5 gives an effective 236.5
+    pinned = fr.latency_verdict(two_high, base, aa)
+    assert _close(pinned["spec_p95_limit_ms"], 130.1)
+    assert _close(pinned["aa_p95_ms"], 236.5)
+    assert _close(pinned["p95_limit_ms"], 236.5)
+    assert pinned["p95_pass"] is True            # candidate p95 200 passes
+    worse = fr.latency_verdict([1.0] * 18 + [260.0, 260.0], base, aa)
+    assert worse["p95_pass"] is False            # candidate p95 260 fails
+    # a band whose A/A value is below its limit stays at the spec limit
+    quiet = fr.latency_verdict(two_high, base,
+                               {"paired_median_ms": 11.4,
+                                "paired_p95_ms": 20.0})
+    assert _close(quiet["p95_limit_ms"], 130.1)
+    assert _close(quiet["median_limit_ms"], 65.05)   # median unchanged
+    assert _close(quiet["spec_median_limit_ms"], 65.05)
+    # a noisy median raises the median limit the same way
+    loud = {"paired_median_ms": 80.0, "paired_p95_ms": 20.0}
+    seventy = [70.0] * 20
+    assert fr.latency_verdict(seventy, base)["median_pass"] is False
+    assert fr.latency_verdict(seventy, base, loud)["median_pass"] is True
+    assert _close(fr.latency_verdict(seventy, base, loud)[
+        "median_limit_ms"], 80.0)
+    print("ok  latency limits: max(spec limit, the A/A value of the same"
+          " statistic); spec limits stay where the A/A is quiet")
+
+
+def test_back_to_back_gap_limit_is_never_tighter_than_the_measured_noise():
+    a, b = [10.0, 10.0, 10.0], [70.0, 70.0, 70.0]        # paired median 60
+    assert fr.gap_verdict(a, b)["pass"] is False
+    v = fr.gap_verdict(a, b, aa_median_ms=80.0)
+    assert v["pass"] is True and v["limit_ms"] == 80.0
+    assert v["spec_limit_ms"] == 50.0 and v["aa_median_ms"] == 80.0
+    assert fr.gap_verdict(a, b, aa_median_ms=3.0)["limit_ms"] == 50.0
+    print("ok  gap limit: max(50 ms, the A/A gap), spec where the A/A is"
+          " quiet")
+
+
+def _aa_report(complete=True, run_id="aa-test"):
+    band = {"paired_median_ms": 11.4, "paired_p95_ms": 236.5}
+    stage = {"paired_median_ms": 11.0, "paired_p95_ms": 234.0}
+    return {"rig": {"run_id": run_id, "complete": complete},
+            "resident": {
+                "latency": {"asr": {
+                    "30-90s": {"verdict_rtt": band, "verdict_stage": stage},
+                    "10-30s": {"verdict_rtt": None, "verdict_stage": None}}},
+                "gap": {"verdict": {"paired_median_ms": 0.1}}},
+            "first_request": {"verdicts": {"rtt_ms": {"asr": band},
+                                           "stage_ms": {"asr": stage}}}}
+
+
+def test_the_aa_report_is_pinned_by_digest_and_must_be_complete():
+    with tempfile.TemporaryDirectory() as td:
+        path = pathlib.Path(td) / "report.json"
+        path.write_text(json.dumps(_aa_report()))
+        got = fr.load_aa_report(path)
+        assert got["sha256"] == hashlib.sha256(path.read_bytes()).hexdigest()
+        assert got["run_id"] == "aa-test"
+        assert got["stats"]["rtt_ms"]["asr:30-90s"] == {
+            "paired_median_ms": 11.4, "paired_p95_ms": 236.5}
+        assert got["stats"]["stage_ms"]["asr:30-90s"]["paired_p95_ms"] == 234.0
+        assert "asr:10-30s" not in got["stats"]["rtt_ms"]
+        assert got["stats"]["rtt_ms"]["first-request:asr"][
+            "paired_p95_ms"] == 236.5
+        assert got["gap_median_ms"] == 0.1
+        path.write_text(json.dumps(_aa_report(complete=False)))
+        _stops(lambda: fr.load_aa_report(path), "complete")
+        path.write_text("not json")
+        _stops(lambda: fr.load_aa_report(path), "A/A report")
+        _stops(lambda: fr.load_aa_report(pathlib.Path(td) / "missing.json"),
+               "A/A report")
+    args = fr.parse_args(["--code-root-a", ".", "--aa-report", "x.json"])
+    assert args.aa_report == "x.json"
+    assert fr.parse_args(["--code-root-a", "."]).aa_report is None
+    print("ok  A/A report: pinned by SHA-256 and run id, refused unless"
+          " rig.complete is true, --aa-report parsed")
+
+
 def test_rig_validity_follows_the_median_of_every_band():
     ok = {"median_pass": True, "p95_pass": False}
     bad = {"median_pass": False, "p95_pass": True}
@@ -400,39 +488,58 @@ def test_vmmap_summary_gives_lifetime_peak():
 MIB = 1024 * 1024
 
 
-def test_levers_are_judged_against_the_idle_and_peak_floor_names():
+def _levers(**over):
+    base = {"idle_cache_bytes": 30 * MIB, "asr_warmed_cached_bytes": 80 * MIB,
+            "launch_peak_bytes": 2900 * MIB, "idle_bytes": 1000 * MIB,
+            "burst_growth_bytes": 15 * MIB, "burst_cache_min_bytes": 173 * MIB,
+            "burst_cache_max_bytes": 266 * MIB}
+    base.update(over)
+    return fr.judge_levers(base)
+
+
+def test_ticket_02_is_judged_against_the_idle_and_peak_floor_names():
     # Idle cache clears the Idle floor.
-    j = fr.judge_levers({"idle_cache_bytes": 150 * MIB,
-                         "asr_warmed_cached_bytes": 10 * MIB,
-                         "launch_peak_bytes": 1000 * MIB,
-                         "idle_bytes": 900 * MIB,
-                         "burst_cache_bytes": 20 * MIB})
+    j = _levers(idle_cache_bytes=150 * MIB, asr_warmed_cached_bytes=10 * MIB,
+                launch_peak_bytes=1000 * MIB, idle_bytes=900 * MIB)
     assert j["ticket_02"]["go"] is True and "Idle floor" in j["ticket_02"]["line"]
     assert "150 MiB and clears the Idle floor" in j["ticket_02"]["line"]
     assert "up to 10 MiB" in j["ticket_02"]["line"]
     assert "is under the Peak floor" in j["ticket_02"]["line"]
-    assert j["ticket_03"]["go"] is False
-    assert "Idle floor" in j["ticket_03"]["line"]
     # Peak above idle by more than the Peak floor AND cache to release.
-    j = fr.judge_levers({"idle_cache_bytes": 30 * MIB,
-                         "asr_warmed_cached_bytes": 700 * MIB,
-                         "launch_peak_bytes": 2900 * MIB,
-                         "idle_bytes": 1000 * MIB,
-                         "burst_cache_bytes": 150 * MIB})
+    j = _levers(asr_warmed_cached_bytes=700 * MIB)
     assert j["ticket_02"]["go"] is True and "Peak floor" in j["ticket_02"]["line"]
     assert "is under the Idle floor" in j["ticket_02"]["line"]
     assert "up to 700 MiB" in j["ticket_02"]["line"]
     assert "clears the Peak floor" in j["ticket_02"]["line"]
-    assert j["ticket_03"]["go"] is True
     # A tall peak with nothing in the allocator cache to release is no-go.
-    j = fr.judge_levers({"idle_cache_bytes": 30 * MIB,
-                         "asr_warmed_cached_bytes": 80 * MIB,
-                         "launch_peak_bytes": 2900 * MIB,
-                         "idle_bytes": 1000 * MIB,
-                         "burst_cache_bytes": 30 * MIB})
-    assert j["ticket_02"]["go"] is False
-    print("ok  go/no-go: Idle floor on cached idle memory, Peak floor on the"
+    assert _levers()["ticket_02"]["go"] is False
+    print("ok  ticket 02: Idle floor on cached idle memory, Peak floor on the"
           " releasable part of the launch peak")
+
+
+def test_ticket_03_is_judged_on_idle_growth_after_a_burst():
+    # The rule: idle 2 s after a job within the Idle floor of idle after
+    # warmup closes the ticket with no code. Cache size is not the criterion.
+    closed = _levers(burst_growth_bytes=15 * MIB)["ticket_03"]
+    assert closed["go"] is False
+    assert closed["line"].startswith("NO-GO ticket 03, close with a note")
+    assert "15 MiB" in closed["line"] and "under the Idle floor" in closed["line"]
+    assert "173" not in closed["line"] and "266" not in closed["line"]
+    j = _levers(burst_growth_bytes=150 * MIB)
+    assert j["ticket_03"]["go"] is True
+    assert j["ticket_03"]["line"].startswith("GO ticket 03")
+    assert "150 MiB" in j["ticket_03"]["line"] \
+        and "clears the Idle floor" in j["ticket_03"]["line"]
+    # at the floor counts as clearing it
+    assert _levers(burst_growth_bytes=fr.IDLE_FLOOR_BYTES)["ticket_03"]["go"]
+    assert not _levers(burst_growth_bytes=fr.IDLE_FLOOR_BYTES - 1)[
+        "ticket_03"]["go"]
+    # the residual cached block is a separate observation
+    note = _levers()["ticket_03_observation"]
+    assert "173 to 266 MiB" in note and "Observation" in note
+    print("ok  ticket 03: GO only when idle growth after a burst reaches the"
+          " Idle floor, otherwise NO-GO close with a note; the residual cache"
+          " is an observation line")
 
 
 # ---- environment, processes, corpus, lock --------------------------------------------------
@@ -633,6 +740,19 @@ def test_corpus_builder_retries_each_clip_into_its_band_window():
           " identity clips on both sides of the chunker threshold")
 
 
+def test_the_lock_lives_in_the_evidence_root_and_names_no_user():
+    import os
+    assert fr.DEFAULT_LOCK == fr.DEFAULT_EVIDENCE_ROOT / "measure.lock"
+    source = (ROOT / "scripts" / "v2" / "footprint_rig.py").read_text()
+    assert "/Users/" not in source, "no personal absolute path in the rig"
+    with tempfile.TemporaryDirectory() as td:
+        path = pathlib.Path(td) / "not-yet" / "deeper" / "measure.lock"
+        os.close(fr.acquire_lock(path))  # creates the missing directories
+        assert path.exists()
+    print("ok  lock default is derived from the evidence root; its folder is"
+          " created when missing")
+
+
 def test_the_measurement_lock_is_exclusive():
     import os
     with tempfile.TemporaryDirectory() as td:
@@ -695,21 +815,29 @@ def test_lever_inputs_come_from_side_a_counters_and_footprints():
               _spawn("A", "cold-ish", 1200, 900, 3400, 1.0, 0.0),
               _spawn("B", "warm", 9999, 900, 9999, 1.0, 1.0)]
 
-    def burst(side, cleanup_warmed, asr_warmed, after):
-        return {"side": side, "memory_diag": True, "memory": {
-            "first": {"cleanup_warmed": {"cached": cleanup_warmed},
-                      "asr_warmed": {"cached": asr_warmed}},
-            "final_cleanup_result": {"cached": after}}}
-    bursts = [burst("A", 10, 50, 7), burst("A", 30, 70, 9),
-              burst("B", 999, 999, 999),
-              {"side": "A", "memory_diag": False, "memory": None}]
+    def burst(side, idle, after, diag=None):
+        b = {"side": side, "memory_diag": diag is not None, "memory": None,
+             "idle": {"total_bytes": idle},
+             "after_burst": {"total_bytes": after}}
+        if diag:
+            cleanup_warmed, asr_warmed, series = diag
+            b["memory"] = {"first": {
+                "cleanup_warmed": {"cached": cleanup_warmed},
+                "asr_warmed": {"cached": asr_warmed}},
+                "cleanup_result_cached": series}
+        return b
+    bursts = [burst("A", 1000, 1013, (10, 50, [7, 9, 8])),
+              burst("A", 1000, 1017, (30, 70, [6, 12])),
+              burst("A", 2000, 2015),
+              burst("B", 5, 19, (999, 999, [1, 99999]))]
     got = fr.lever_inputs(spawns, bursts)
     assert got == {"idle_bytes": 1100.0, "launch_peak_bytes": 3200.0,
                    "idle_cache_bytes": 20.0, "asr_warmed_cached_bytes": 60.0,
-                   "burst_cache_bytes": 8.0}
+                   "burst_growth_bytes": 14.5, "burst_cache_min_bytes": 6,
+                   "burst_cache_max_bytes": 12}
     assert fr.lever_inputs(spawns, []) is None
-    print("ok  lever inputs: side A medians of footprint and the diag-on"
-          " counters")
+    print("ok  lever inputs: side A medians of footprint and counters, idle"
+          " growth over every burst of both sides")
 
 
 def main():

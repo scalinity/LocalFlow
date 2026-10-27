@@ -151,7 +151,7 @@ def _shim_context(td, counts):
     plan = td / "plan.json"
     plan.write_text(json.dumps({"hold_gpu_mib": 64}))
     ctx = types.SimpleNamespace(
-        run_id="shim-test", mode="early", counts=counts,
+        run_id="shim-test", mode="early", counts=counts, aa=None,
         roots={"A": ROOT, "B": ROOT}, identity=IDENTITY, revisions={},
         cases=cases, bands=bands, run_dir=td / "run",
         scratch=td / "run" / "scratch", seen=set(), thermal_events=[],
@@ -225,6 +225,38 @@ def test_whole_run_against_the_shim_worker_writes_a_content_free_report():
             assert text not in raw and json.dumps(text)[1:-1] not in raw
         summary = (ctx.run_dir / "SUMMARY.md").read_text()
         assert "Rig validity" in summary and "Go / no-go" in summary
+        assert "No A/A report pinned" in summary
+        assert report["rig"]["aa_report"] is None
+        first = report["verdicts"]["latency"]["bands"]["asr:10-30s"]
+        assert first["aa_median_ms"] is None
+        assert first["median_limit_ms"] == first["spec_median_limit_ms"]
+        assert "NO-GO ticket 03, close with a note" in summary \
+            or "GO ticket 03" in summary
+        # the second run pins this run's report as its A/A
+        aa_path = ctx.run_dir / "report.json"
+        digest = hashlib.sha256(aa_path.read_bytes()).hexdigest()
+        ctx2 = _shim_context(pathlib.Path(td) / "second", counts)
+        ctx2.aa = fr.load_aa_report(aa_path)
+        fr.measure(ctx2, ["first", "resident"], "2026-10-26T00:00:00-04:00")
+        report2 = json.loads((ctx2.run_dir / "report.json").read_text())
+        assert report2["rig"]["aa_report"] == {"sha256": digest,
+                                               "run_id": "shim-test"}
+        bands2 = report2["verdicts"]["latency"]["bands"]
+        assert set(bands2) == set(report["verdicts"]["latency"]["bands"])
+        for name, v in bands2.items():
+            was = report["verdicts"]["latency"]["bands"][name]
+            assert v["aa_median_ms"] == was["paired_median_ms"], name
+            assert v["aa_p95_ms"] == was["paired_p95_ms"], name
+            assert v["median_limit_ms"] == max(v["spec_median_limit_ms"],
+                                               v["aa_median_ms"]), name
+            assert v["p95_limit_ms"] == max(v["spec_p95_limit_ms"],
+                                            v["aa_p95_ms"]), name
+        gap2 = report2["verdicts"]["back_to_back_gap"]
+        assert gap2["aa_median_ms"] == gap["paired_median_ms"]
+        assert gap2["limit_ms"] == max(gap2["spec_limit_ms"],
+                                       gap2["aa_median_ms"])
+        summary2 = (ctx2.run_dir / "SUMMARY.md").read_text()
+        assert digest in summary2 and "A/A report shim-test" in summary2
     print("ok  whole run against the shim worker: four phases, frozen bands"
           " on disk, verdicts, judgement, summary, no fixture text in the"
           " report")

@@ -50,6 +50,7 @@ PROTOCOL_VERSION = 1
 MEMORY_LABELS = ("asr_loaded", "asr_warmed", "cleanup_loaded",
                  "cleanup_warmed", "asr_result", "cleanup_result")
 
+
 # ---- Gate table thresholds, by name --------------------------------------
 # Latency: the paired median must worsen by less than max(floor, fraction of
 # the band's baseline median); the paired p95 by less than a fraction of the
@@ -66,6 +67,7 @@ BACK_TO_BACK_LIMIT_MS = 50.0
 # Idle floor and Peak floor (the footprint tool's "MB" is MiB).
 IDLE_FLOOR_BYTES = 100 * MIB
 PEAK_FLOOR_BYTES = 500 * MIB
+
 
 # ---- length bands ---------------------------------------------------------
 # (name, from, to): from <= value < to; None is open-ended. Cleanup bands
@@ -188,19 +190,28 @@ def block_baseline(blocks, field):
     return [t for b in blocks for t in by_side(b["order"], b[field])["A"]]
 
 
-def latency_verdict(diffs, baseline_times):
-    """The Latency rule on paired candidate-minus-baseline differences."""
+def latency_verdict(diffs, baseline_times, aa=None):
+    """The Latency rule on paired candidate-minus-baseline differences.
+    With ``aa`` (this band's paired median and p95 from the pinned A/A
+    report) a limit is never tighter than the instrument: the effective
+    limit is max(spec limit, the A/A value of the same statistic)."""
     base_median = median(baseline_times)
     base_p95 = p95(baseline_times)
-    median_limit = max(LATENCY_MEDIAN_FLOOR_MS,
-                       LATENCY_MEDIAN_FRACTION * base_median)
-    p95_limit = LATENCY_P95_FRACTION * base_p95
+    spec_median = max(LATENCY_MEDIAN_FLOOR_MS,
+                      LATENCY_MEDIAN_FRACTION * base_median)
+    spec_p95 = LATENCY_P95_FRACTION * base_p95
+    aa_median = aa["paired_median_ms"] if aa else None
+    aa_p95 = aa["paired_p95_ms"] if aa else None
+    median_limit = spec_median if aa is None else max(spec_median, aa_median)
+    p95_limit = spec_p95 if aa is None else max(spec_p95, aa_p95)
     paired_median, paired_p95 = median(diffs), p95(diffs)
     median_pass = paired_median < median_limit
     p95_pass = paired_p95 < p95_limit
     return {"pairs": len(diffs),
             "baseline_median_ms": base_median, "baseline_p95_ms": base_p95,
             "paired_median_ms": paired_median, "paired_p95_ms": paired_p95,
+            "spec_median_limit_ms": spec_median, "spec_p95_limit_ms": spec_p95,
+            "aa_median_ms": aa_median, "aa_p95_ms": aa_p95,
             "median_limit_ms": median_limit, "p95_limit_ms": p95_limit,
             "median_pass": median_pass, "p95_pass": p95_pass,
             "pass": median_pass and p95_pass}
@@ -224,13 +235,58 @@ def back_to_back_gap_ms(t_first_result, t_second_result, second_stage_ms):
     return (t_second_result - t_first_result) * 1000.0 - second_stage_ms
 
 
-def gap_verdict(gaps_a, gaps_b):
+def gap_verdict(gaps_a, gaps_b, aa_median_ms=None):
+    """The Back-to-back gap rule; with the pinned A/A's paired median the
+    limit is max(spec limit, that value)."""
     diffs = [b - a for a, b in zip(gaps_a, gaps_b)]
     paired_median = median(diffs)
+    limit = BACK_TO_BACK_LIMIT_MS if aa_median_ms is None \
+        else max(BACK_TO_BACK_LIMIT_MS, aa_median_ms)
     return {"pairs": len(diffs), "paired_median_ms": paired_median,
             "paired_max_ms": float(max(diffs)),
-            "limit_ms": BACK_TO_BACK_LIMIT_MS,
-            "pass": paired_median < BACK_TO_BACK_LIMIT_MS}
+            "spec_limit_ms": BACK_TO_BACK_LIMIT_MS,
+            "aa_median_ms": aa_median_ms, "limit_ms": limit,
+            "pass": paired_median < limit}
+
+
+def load_aa_report(path):
+    """A finished A/A report, pinned by its SHA-256 and run id, whose
+    paired statistics set the noise floor for later limits."""
+    try:
+        raw = pathlib.Path(path).read_bytes()
+        report = json.loads(raw)
+    except (OSError, ValueError):
+        raise RigStop("the A/A report cannot be read as a JSON report")
+    rig = report.get("rig") if isinstance(report, dict) else None
+    if not isinstance(rig, dict) or rig.get("complete") is not True:
+        raise RigStop("the A/A report is not complete (rig.complete is not"
+                      " true)")
+
+    def pick(v):
+        return {"paired_median_ms": v["paired_median_ms"],
+                "paired_p95_ms": v["paired_p95_ms"]}
+    stats = {"rtt_ms": {}, "stage_ms": {}}
+    res = report.get("resident") or {}
+    for kind, by_band in (res.get("latency") or {}).items():
+        for band, d in by_band.items():
+            for field, key in (("rtt_ms", "verdict_rtt"),
+                               ("stage_ms", "verdict_stage")):
+                if d.get(key):
+                    stats[field][f"{kind}:{band}"] = pick(d[key])
+    for field, by_metric in ((report.get("first_request") or {}).get(
+            "verdicts") or {}).items():
+        if field in stats:
+            for metric, v in by_metric.items():
+                stats[field][f"first-request:{metric}"] = pick(v)
+    gap = (res.get("gap") or {}).get("verdict")
+    return {"sha256": hashlib.sha256(raw).hexdigest(),
+            "run_id": rig.get("run_id"), "stats": stats,
+            "gap_median_ms": gap["paired_median_ms"] if gap else None}
+
+
+def aa_stats(ctx, key, field):
+    """The pinned A/A's paired median and p95 for one band, or None."""
+    return ctx.aa["stats"][field].get(key) if ctx.aa else None
 
 
 # ---- planning --------------------------------------------------------------------
@@ -460,8 +516,9 @@ def judge_levers(m):
     Ticket 02's cheap form releases allocator cache after each engine's
     load: it can lower idle by at most the cache held at idle, and the
     launch peak by at most the cache held after the ASR warmup (within the
-    peak's headroom above idle). Ticket 03 trims the cache a dictation
-    burst leaves behind."""
+    peak's headroom above idle). Ticket 03 closes with no code when idle 2 s
+    after a dictation burst is within the Idle floor of idle after
+    warmup."""
     def mib(b):
         return f"{b / MIB:,.0f} MiB"
 
@@ -480,13 +537,22 @@ def judge_levers(m):
            f" up to {mib(peak_gain)} (allocator cache held after the ASR"
            " warmup, within the peak's headroom above idle) and"
            f" {verdict(peak_ok, 'Peak floor')}.")
-    burst = m["burst_cache_bytes"]
-    burst_ok = burst >= IDLE_FLOOR_BYTES
-    t03 = (f"{'GO' if burst_ok else 'NO-GO'} ticket 03: cached allocator"
-           f" memory after a dictation burst is {mib(burst)} and"
-           f" {verdict(burst_ok, 'Idle floor')}.")
+    growth = m["burst_growth_bytes"]
+    growth_ok = growth >= IDLE_FLOOR_BYTES
+    when = (f"idle 2 s after a dictation burst is {mib(growth)} above idle"
+            " after warmup (median over bursts)")
+    t03 = (f"GO ticket 03: {when} and {verdict(True, 'Idle floor')}."
+           if growth_ok else
+           f"NO-GO ticket 03, close with a note: {when} and"
+           f" {verdict(False, 'Idle floor')}.")
+    cached = (f"{m['burst_cache_min_bytes'] / MIB:,.0f} to"
+              f" {m['burst_cache_max_bytes'] / MIB:,.0f} MiB")
     return {"ticket_02": {"go": go02, "line": t02},
-            "ticket_03": {"go": burst_ok, "line": t03}}
+            "ticket_03": {"go": growth_ok, "line": t03},
+            "ticket_03_observation":
+                "Observation (not the criterion): the allocator cache left"
+                f" after each cleanup result is {cached}."}
+
 
 # ---- the worker session ------------------------------------------------------------------
 
@@ -749,6 +815,7 @@ def revision_record(manifest, snapshots):
 
 
 def acquire_lock(path):
+    pathlib.Path(path).parent.mkdir(parents=True, exist_ok=True)
     fd = os.open(path, os.O_CREAT | os.O_RDWR, 0o644)
     try:
         fcntl.flock(fd, fcntl.LOCK_EX | fcntl.LOCK_NB)
@@ -1025,14 +1092,15 @@ def summarize_memory(samples):
 
 
 def lever_inputs(spawns, bursts):
-    """The numbers ``judge_levers`` needs, from side A: footprint medians
-    over every fresh spawn and the diag-on counters of the bursts. None
-    when the run did not produce them."""
+    """The numbers ``judge_levers`` needs: footprint medians and the diag-on
+    counters from side A, idle growth over every burst (an A/A runs the
+    same code on both sides). None when the run did not produce them."""
     a_spawns = [s for s in spawns if s["side"] == "A"]
     diag = [b for b in bursts if b["side"] == "A" and b["memory_diag"]
             and b["memory"]]
     if not a_spawns or not diag:
         return None
+    left = [c for b in diag for c in b["memory"]["cleanup_result_cached"]]
     return {
         "idle_bytes": median([s["idle_total_bytes"] for s in a_spawns]),
         "launch_peak_bytes": median([s["launch_peak_bytes"]
@@ -1041,8 +1109,11 @@ def lever_inputs(spawns, bursts):
             [b["memory"]["first"]["cleanup_warmed"]["cached"] for b in diag]),
         "asr_warmed_cached_bytes": median(
             [b["memory"]["first"]["asr_warmed"]["cached"] for b in diag]),
-        "burst_cache_bytes": median(
-            [b["memory"]["final_cleanup_result"]["cached"] for b in diag])}
+        "burst_growth_bytes": median(
+            [b["after_burst"]["total_bytes"] - b["idle"]["total_bytes"]
+             for b in bursts]),
+        "burst_cache_min_bytes": min(left),
+        "burst_cache_max_bytes": max(left)}
 
 
 # ---- page cache: warm and cold-ish spawns ----------------------------------------------------------
@@ -1385,7 +1456,7 @@ def phase_first(ctx):
                      for r in rows]
             base = [r[metric]["A"][field] for r in rows]
             verdicts.setdefault(field, {})[metric] = latency_verdict(
-                diffs, base)
+                diffs, base, aa_stats(ctx, f"first-request:{metric}", field))
     return {"clip": clip, "case": case_id, "pairs": rows,
             "verdicts": verdicts}
 
@@ -1441,15 +1512,17 @@ def run_blocks(ctx, sessions, case_ids, used, make_request, kind):
     return blocks
 
 
-def _block_verdict(blocks, field):
+def _block_verdict(blocks, field, aa=None):
     return latency_verdict(block_differences(blocks, field),
-                           block_baseline(blocks, field))
+                           block_baseline(blocks, field), aa)
 
 
-def band_result(plan, blocks, warmup_blocks):
+def band_result(plan, blocks, warmup_blocks, aa=None):
     """Verdicts come from the measured blocks only. The warmup blocks are
-    kept, with their own informational verdict, as the record of the
-    first-request-for-a-new-input regime."""
+    kept, with their own informational verdict (spec limits), as the record
+    of the first-request-for-a-new-input regime. ``aa`` maps a time field
+    to the pinned A/A statistics for this band."""
+    aa = aa or {}
     meta = {k: plan[k] for k in ("cases_used", "cases_available",
                                  "short_of_claim")}
     meta["blocks"] = len(blocks)
@@ -1458,8 +1531,9 @@ def band_result(plan, blocks, warmup_blocks):
                 "verdict_rtt": None, "verdict_stage": None,
                 "warmup_verdict_rtt": None, "identity_consistent": True}
     out = {"plan": meta, "warmup_blocks": warmup_blocks, "blocks": blocks,
-           "verdict_rtt": _block_verdict(blocks, "rtt_ms"),
-           "verdict_stage": _block_verdict(blocks, "stage_ms"),
+           "verdict_rtt": _block_verdict(blocks, "rtt_ms", aa.get("rtt_ms")),
+           "verdict_stage": _block_verdict(blocks, "stage_ms",
+                                           aa.get("stage_ms")),
            "warmup_verdict_rtt": _block_verdict(warmup_blocks, "rtt_ms")
            if warmup_blocks else None}
     digests = {}
@@ -1492,7 +1566,8 @@ def run_gap(ctx, sessions):
                        "gap_ms": gaps})
     sides = [by_side(b["order"], b["gap_ms"]) for b in blocks]
     verdict = gap_verdict([sum(x["A"]) / 2 for x in sides],
-                          [sum(x["B"]) / 2 for x in sides])
+                          [sum(x["B"]) / 2 for x in sides],
+                          ctx.aa["gap_median_ms"] if ctx.aa else None)
     return {"blocks": blocks, "verdict": verdict}
 
 
@@ -1527,7 +1602,9 @@ def phase_resident(ctx):
                                   step)
                 out["latency"][kind][band] = band_result(
                     plan, run_blocks(ctx, sessions, plan["blocks"], used,
-                                     make, step), warm)
+                                     make, step), warm,
+                    {f: aa_stats(ctx, f"{kind}:{band}", f)
+                     for f in ("rtt_ms", "stage_ms")})
         print(f"  back-to-back gap: {ctx.counts['gap']} paired blocks",
               flush=True)
         out["gap"] = run_gap(ctx, sessions)
@@ -1710,15 +1787,25 @@ def render_summary(report):
                 out.append(f"| {label} | " + " | ".join(cells) + " |")
     v = r.get("verdicts") or {}
     if v.get("latency"):
+        aa_pin = r["rig"].get("aa_report")
         out += ["", "## Latency (paired, round-trip time)", "",
+                (f"Limits are max(spec limit, A/A value) against A/A report"
+                 f" {aa_pin['run_id']} (SHA-256 `{aa_pin['sha256']}`)."
+                 if aa_pin else
+                 "No A/A report pinned: the spec limits apply."), "",
                 "| band | pairs | baseline median/p95 ms | paired median/p95 ms"
-                " | limits ms | verdict |", "|---|---|---|---|---|---|"]
+                " | spec limits ms | A/A paired ms | effective limits ms |"
+                " verdict |", "|---|---|---|---|---|---|---|---|"]
         for name, x in v["latency"]["bands"].items():
+            aa = "n/a" if x["aa_median_ms"] is None else (
+                f"{x['aa_median_ms']:.1f} / {x['aa_p95_ms']:.1f}")
             out.append(
                 f"| {name} | {x['pairs']} | {x['baseline_median_ms']:.1f} /"
                 f" {x['baseline_p95_ms']:.1f} | {x['paired_median_ms']:.1f} /"
-                f" {x['paired_p95_ms']:.1f} | {x['median_limit_ms']:.1f} /"
-                f" {x['p95_limit_ms']:.1f} | {_yes(x['pass'])} |")
+                f" {x['paired_p95_ms']:.1f} | {x['spec_median_limit_ms']:.1f} /"
+                f" {x['spec_p95_limit_ms']:.1f} | {aa} |"
+                f" {x['median_limit_ms']:.1f} / {x['p95_limit_ms']:.1f} |"
+                f" {_yes(x['pass'])} |")
         out += ["", f"Latency verdict: {_yes(v['latency']['pass'])} (measured"
                 " blocks only; each case's warmup block is recorded apart)."]
         warm = [(f"{kind}:{band}", d["warmup_verdict_rtt"])
@@ -1741,10 +1828,13 @@ def render_summary(report):
                    f" {rv['p95_failing_bands']}.")
     if v.get("back_to_back_gap"):
         g = v["back_to_back_gap"]
+        aa = "n/a" if g["aa_median_ms"] is None \
+            else f"{g['aa_median_ms']:.1f} ms"
         out.append(f"Back-to-back gap: paired median"
                    f" {g['paired_median_ms']:.1f} ms (max"
-                   f" {g['paired_max_ms']:.1f}) against {g['limit_ms']:.0f} ms:"
-                   f" {_yes(g['pass'])}.")
+                   f" {g['paired_max_ms']:.1f}) against an effective limit of"
+                   f" {g['limit_ms']:.1f} ms (spec {g['spec_limit_ms']:.0f}"
+                   f" ms, A/A {aa}): {_yes(g['pass'])}.")
     if v.get("identity"):
         out.append(f"Identity A against B: {_yes(v['identity']['pass'])};"
                    f" mismatches {v['identity']['mismatches']}; chunker ran:"
@@ -1752,8 +1842,10 @@ def render_summary(report):
     j = r.get("judgement")
     if j:
         out += ["", "## Go / no-go", "", f"- {j['ticket_02']['line']}",
-                f"- {j['ticket_03']['line']}", f"- {j['loader']}",
-                f"- {j['residency']}"]
+                f"- {j['ticket_03']['line']}"]
+        if j.get("ticket_03_observation"):
+            out.append(f"- {j['ticket_03_observation']}")
+        out += [f"- {j['loader']}", f"- {j['residency']}"]
     return "\n".join(out) + "\n"
 
 
@@ -1761,9 +1853,8 @@ def render_summary(report):
 
 DEFAULT_EVIDENCE_ROOT = pathlib.Path.home() / "Library" / \
     "Application Support" / "LocalFlow" / "v2-evidence" / "footprint"
-DEFAULT_LOCK = pathlib.Path(
-    "/Users/danny/Documents/Tools/LocalFlow/.scratch/worker-footprint/"
-    "measure.lock")
+# One lock for every worktree, beside the evidence it protects.
+DEFAULT_LOCK = DEFAULT_EVIDENCE_ROOT / "measure.lock"
 PHASES = ("footprint", "bursts", "first", "resident")
 
 
@@ -1837,6 +1928,8 @@ def parse_args(argv):
     ap.add_argument("--evidence-root", default=str(DEFAULT_EVIDENCE_ROOT))
     ap.add_argument("--corpus-dir")
     ap.add_argument("--lock", default=str(DEFAULT_LOCK))
+    ap.add_argument("--aa-report", help="a finished A/A report whose paired"
+                    " statistics set each limit's noise floor")
     ap.add_argument("--python", default=sys.executable)
     ap.add_argument("--evict-pool", default=str(
         pathlib.Path.home() / "Documents" / "LocalAI" / "models"))
@@ -1850,6 +1943,7 @@ def parse_args(argv):
 
 
 def build_context(args, run_dir, corpus_dir, run_id):
+    aa = load_aa_report(args.aa_report) if args.aa_report else None
     roots = {"A": pathlib.Path(args.code_root_a).resolve()}
     roots["B"] = pathlib.Path(args.code_root_b).resolve() \
         if args.code_root_b else roots["A"]
@@ -1890,7 +1984,7 @@ def build_context(args, run_dir, corpus_dir, run_id):
             mode_counts[key] = value
     tokens = [i.rsplit("/", 1)[-1] for i in identity.values()]
     ctx = types.SimpleNamespace(
-        run_id=run_id, mode=args.mode, counts=mode_counts, roots=roots, identity=identity,
+        run_id=run_id, mode=args.mode, counts=mode_counts, aa=aa, roots=roots, identity=identity,
         revisions=revisions, cases=cases, bands=bands, run_dir=run_dir,
         scratch=run_dir / "scratch", seen=set(), thermal_events=[],
         fixture_texts={c["text"] for c in cases.values()},
@@ -1930,7 +2024,10 @@ def measure(ctx, phases, started):
     report = {"rig": {"run_id": ctx.run_id, "mode": ctx.mode,
                       "started_at": started, "finished_at": None,
                       "complete": False, "phases": [],
-                      "counts": ctx.counts},
+                      "counts": ctx.counts,
+                      "aa_report": {"sha256": ctx.aa["sha256"],
+                                    "run_id": ctx.aa["run_id"]}
+                      if ctx.aa else None},
               "environment": environment(ctx), "bands": bands,
               "corpus": {"manifest_sha256": digest_json(ctx.manifest),
                          "clips": [{k: c[k] for k in (
