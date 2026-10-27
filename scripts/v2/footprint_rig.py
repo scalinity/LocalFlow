@@ -413,41 +413,37 @@ def parse_vmmap_summary(text):
 
 def judge_levers(m):
     """Go or no-go for the levers the baseline can judge, against the Idle
-    floor and Peak floor names. Ticket 02's cheap form releases allocator
-    cache after each engine's load: it can lower idle by at most the cache
-    held at idle, and the launch peak by at most the cache held after the
-    ASR warmup (within the peak's headroom above idle). Ticket 03 trims the
-    cache a dictation burst leaves behind."""
+    floor and Peak floor names, each line stating both measured numbers.
+    Ticket 02's cheap form releases allocator cache after each engine's
+    load: it can lower idle by at most the cache held at idle, and the
+    launch peak by at most the cache held after the ASR warmup (within the
+    peak's headroom above idle). Ticket 03 trims the cache a dictation
+    burst leaves behind."""
     def mib(b):
-        return f"{b / MIB:.0f} MiB"
+        return f"{b / MIB:,.0f} MiB"
+
+    def verdict(ok, floor):
+        return f"{'clears' if ok else 'is under'} the {floor}"
 
     idle_cache = m["idle_cache_bytes"]
     peak_gain = min(m["asr_warmed_cached_bytes"],
                     m["launch_peak_bytes"] - m["idle_bytes"])
-    if idle_cache >= IDLE_FLOOR_BYTES:
-        t02 = (True, f"GO ticket 02 cheap form: {mib(idle_cache)} of cached"
-                     " allocator memory at idle clears the Idle floor.")
-    elif peak_gain >= PEAK_FLOOR_BYTES:
-        t02 = (True, f"GO ticket 02 cheap form: up to {mib(peak_gain)} of"
-                     " the launch peak (allocator cache held after the ASR"
-                     " warmup, within the peak's headroom above idle)"
-                     " clears the Peak floor.")
-    else:
-        t02 = (False, f"NO-GO ticket 02 cheap form: cached memory at idle"
-                      f" ({mib(idle_cache)}) is under the Idle floor and the"
-                      f" releasable launch peak ({mib(peak_gain)}) is under"
-                      " the Peak floor.")
+    idle_ok = idle_cache >= IDLE_FLOOR_BYTES
+    peak_ok = peak_gain >= PEAK_FLOOR_BYTES
+    go02 = idle_ok or peak_ok
+    t02 = (f"{'GO' if go02 else 'NO-GO'} ticket 02 cheap form: cached"
+           f" allocator memory at idle is {mib(idle_cache)} and"
+           f" {verdict(idle_ok, 'Idle floor')}; the launch peak can fall by"
+           f" up to {mib(peak_gain)} (allocator cache held after the ASR"
+           " warmup, within the peak's headroom above idle) and"
+           f" {verdict(peak_ok, 'Peak floor')}.")
     burst = m["burst_cache_bytes"]
-    if burst >= IDLE_FLOOR_BYTES:
-        t03 = (True, f"GO ticket 03: {mib(burst)} of cached allocator memory"
-                     " after a dictation burst exceeds the Idle floor.")
-    else:
-        t03 = (False, f"NO-GO ticket 03: {mib(burst)} of cached allocator"
-                      " memory after a dictation burst is under the Idle"
-                      " floor.")
-    return {"ticket_02": {"go": t02[0], "line": t02[1]},
-            "ticket_03": {"go": t03[0], "line": t03[1]}}
-
+    burst_ok = burst >= IDLE_FLOOR_BYTES
+    t03 = (f"{'GO' if burst_ok else 'NO-GO'} ticket 03: cached allocator"
+           f" memory after a dictation burst is {mib(burst)} and"
+           f" {verdict(burst_ok, 'Idle floor')}.")
+    return {"ticket_02": {"go": go02, "line": t02},
+            "ticket_03": {"go": burst_ok, "line": t03}}
 
 # ---- the worker session ------------------------------------------------------------------
 

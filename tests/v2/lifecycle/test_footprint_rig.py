@@ -371,7 +371,9 @@ def test_levers_are_judged_against_the_idle_and_peak_floor_names():
                          "idle_bytes": 900 * MIB,
                          "burst_cache_bytes": 20 * MIB})
     assert j["ticket_02"]["go"] is True and "Idle floor" in j["ticket_02"]["line"]
-    assert "150" in j["ticket_02"]["line"]
+    assert "150 MiB and clears the Idle floor" in j["ticket_02"]["line"]
+    assert "up to 10 MiB" in j["ticket_02"]["line"]
+    assert "is under the Peak floor" in j["ticket_02"]["line"]
     assert j["ticket_03"]["go"] is False
     assert "Idle floor" in j["ticket_03"]["line"]
     # Peak above idle by more than the Peak floor AND cache to release.
@@ -381,6 +383,9 @@ def test_levers_are_judged_against_the_idle_and_peak_floor_names():
                          "idle_bytes": 1000 * MIB,
                          "burst_cache_bytes": 150 * MIB})
     assert j["ticket_02"]["go"] is True and "Peak floor" in j["ticket_02"]["line"]
+    assert "is under the Idle floor" in j["ticket_02"]["line"]
+    assert "up to 700 MiB" in j["ticket_02"]["line"]
+    assert "clears the Peak floor" in j["ticket_02"]["line"]
     assert j["ticket_03"]["go"] is True
     # A tall peak with nothing in the allocator cache to release is no-go.
     j = fr.judge_levers({"idle_cache_bytes": 30 * MIB,
