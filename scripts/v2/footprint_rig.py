@@ -653,6 +653,21 @@ def parse_ps(text):
     return rows
 
 
+def _runs_a_model_module(cmd):
+    """True when the command is a Python interpreter running the worker or
+    an mlx_lm module (``python -m ...``); a process that only mentions the
+    names, such as a shell or an editor, is not one."""
+    tokens = cmd.split()
+    if not tokens or not os.path.basename(tokens[0]).lower().startswith(
+            "python"):
+        return False
+    for i, token in enumerate(tokens[:-1]):
+        if token == "-m" and (tokens[i + 1] == "localflow.v2.worker"
+                              or tokens[i + 1].startswith("mlx_lm")):
+            return True
+    return False
+
+
 def classify_workers(rows):
     """The installed app's idle worker (a worker whose parent is the
     installed app) and every other worker or mlx process, which would make
@@ -660,7 +675,7 @@ def classify_workers(rows):
     command = {pid: cmd for pid, _, cmd in rows}
     installed, strays = None, []
     for pid, ppid, cmd in rows:
-        if "localflow.v2.worker" not in cmd and "mlx_lm" not in cmd:
+        if not _runs_a_model_module(cmd):
             continue
         if installed is None \
                 and "/Applications/LocalFlow.app" in command.get(ppid, ""):

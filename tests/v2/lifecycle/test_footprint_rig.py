@@ -435,6 +435,13 @@ def test_process_table_separates_the_installed_worker_from_strays():
     assert installed == 75089 and strays == [4242, 5151]
     assert fr.classify_workers(fr.parse_ps(" 20116 1 /bin/node\n")) == (
         None, [])
+    # A process that only mentions the names (a shell running a grep, an
+    # editor) is not a worker: the interpreter must be running the module.
+    mention = PS_TEXT + (
+        " 7001     1 /bin/zsh -c ps | grep -E \"localflow.v2.worker|mlx\"\n"
+        " 7002     1 tail -f /logs/mlx_lm.log\n"
+        " 7003     1 /usr/bin/vim localflow/v2/worker.py\n")
+    assert fr.classify_workers(fr.parse_ps(mention)) == (75089, [])
     print("ok  process table: installed worker found by its app parent,"
           " any other worker or mlx process is a stray")
 
