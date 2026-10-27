@@ -7,7 +7,8 @@ launch peak and idle footprint (``footprint`` and ``vmmap``), the worker's
 own memory counters at six labels, and per-request stage time, round-trip
 time and output digests. Side A is the baseline code root and side B the
 candidate; pass the same root twice for an A/A run, which proves the rig is
-quiet enough to gate anything (Rig validity).
+quiet enough to gate anything (Rig validity). Latency is measured on two
+resident workers in paired blocks that alternate A,B,B,A and B,A,A,B.
 
 Thresholds and rule names follow the worker-footprint spec's Gate table.
 Reports hold counters, timings, SHA-256 digests, identifiers and
@@ -1516,7 +1517,7 @@ def phase_resident(ctx):
             for band, ids in bands.items():
                 plan = latency_plan(ids, ctx.mode)
                 print(f"  latency {kind} band {band}: {len(plan['warmup'])}"
-                      f" warmup + {len(plan['blocks'])} ABBA blocks"
+                      f" warmup + {len(plan['blocks'])} paired blocks"
                       f" ({plan['cases_available']} cases"
                       f"{', short of the claim' if plan['short_of_claim'] else ''})",
                       flush=True)
@@ -1527,7 +1528,7 @@ def phase_resident(ctx):
                 out["latency"][kind][band] = band_result(
                     plan, run_blocks(ctx, sessions, plan["blocks"], used,
                                      make, step), warm)
-        print(f"  back-to-back gap: {ctx.counts['gap']} ABBA blocks",
+        print(f"  back-to-back gap: {ctx.counts['gap']} paired blocks",
               flush=True)
         out["gap"] = run_gap(ctx, sessions)
         out["thermal_after"] = thermal_state()
