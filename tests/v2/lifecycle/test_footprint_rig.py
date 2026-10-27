@@ -833,11 +833,133 @@ def test_lever_inputs_come_from_side_a_counters_and_footprints():
     got = fr.lever_inputs(spawns, bursts)
     assert got == {"idle_bytes": 1100.0, "launch_peak_bytes": 3200.0,
                    "idle_cache_bytes": 20.0, "asr_warmed_cached_bytes": 60.0,
-                   "burst_growth_bytes": 14.5, "burst_cache_min_bytes": 6,
+                   "burst_growth_bytes": 15.0, "burst_cache_min_bytes": 6,
                    "burst_cache_max_bytes": 12}
     assert fr.lever_inputs(spawns, []) is None
-    print("ok  lever inputs: side A medians of footprint and counters, idle"
-          " growth over every burst of both sides")
+    print("ok  lever inputs: side A medians of footprint, counters and idle"
+          " growth after a burst")
+
+
+def test_ticket_03_growth_is_judged_on_side_a_bursts_only():
+    # An A/B run: the baseline side grows 14 MiB after a burst; the candidate
+    # reads 186 MiB because its idle at ready was already lowered. The line
+    # judges the baseline side and says so.
+    spawns = [_spawn("A", "warm", 1000, 900, 3000, 1.0, 1.0),
+              _spawn("B", "warm", 820, 900, 2400, 1.0, 1.0)]
+
+    def burst(side, idle, after):
+        return {"side": side, "memory_diag": side == "A", "memory": {
+            "first": {"cleanup_warmed": {"cached": 10},
+                      "asr_warmed": {"cached": 50}},
+            "cleanup_result_cached": [8]} if side == "A" else None,
+            "idle": {"total_bytes": idle * MIB},
+            "after_burst": {"total_bytes": after * MIB}}
+    bursts = [burst("A", 4000, 4014), burst("B", 3900, 4086),
+              burst("A", 4000, 4014), burst("B", 3900, 4086)]
+    got = fr.lever_inputs(spawns, bursts)
+    assert got["burst_growth_bytes"] == 14 * MIB, got["burst_growth_bytes"]
+    line = fr.judge_levers(got)["ticket_03"]["line"]
+    assert "14 MiB" in line and "186" not in line and "101" not in line, line
+    assert "side A" in line and "baseline" in line, line
+    print("ok  ticket 03: idle growth is taken from side A bursts only, and"
+          " the line names side A")
+
+
+# ---- code-root provenance ---------------------------------------------------------------------
+
+def _git(cwd, *args):
+    import subprocess
+    return subprocess.run(
+        ["git", "-c", "user.name=t", "-c", "user.email=t@t.invalid", *args],
+        cwd=cwd, capture_output=True, text=True, check=True).stdout.strip()
+
+
+def _checkout(parent):
+    root = pathlib.Path(parent) / "checkout"
+    (root / "localflow").mkdir(parents=True)
+    (root / "localflow" / "a.py").write_text("x")
+    _git(root, "init", "-q")
+    _git(root, "add", "localflow/a.py")
+    _git(root, "commit", "-q", "-m", "one")
+    return root
+
+
+def test_code_root_info_has_head_and_dirty_for_a_checkout_root():
+    with tempfile.TemporaryDirectory() as td:
+        root = _checkout(td)
+        info = fr.code_root_info(root)
+        assert info["head"] == _git(root, "rev-parse", "HEAD"), info
+        assert info["dirty"] is False and info["export"] is False, info
+        (root / "localflow" / "a.py").write_text("changed")
+        assert fr.code_root_info(root)["dirty"] is True
+    print("ok  code root: a checkout root reports its head and dirty state")
+
+
+def test_code_root_info_does_not_borrow_a_parent_checkouts_head():
+    with tempfile.TemporaryDirectory() as td:
+        parent = _checkout(td)
+        export = parent / ".scratch" / "export"
+        (export / "localflow").mkdir(parents=True)
+        (export / "localflow" / "a.py").write_text("x")
+        info = fr.code_root_info(export)
+        assert info["head"] is None and info["dirty"] is None, info
+        assert info["export"] is True, info
+    with tempfile.TemporaryDirectory() as td:
+        (pathlib.Path(td) / "localflow").mkdir()
+        info = fr.code_root_info(td)
+        assert info["head"] is None and info["export"] is True, info
+    print("ok  code root: a directory inside another checkout, or in none,"
+          " is an export with no head")
+
+
+def _tree(parent, files):
+    root = pathlib.Path(parent)
+    for rel, data in files.items():
+        path = root / "localflow" / rel
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_bytes(data)
+    return root
+
+
+def test_tree_digest_covers_sorted_paths_and_file_digests():
+    # Worked with shasum: the SHA-256 of the lines "<path> <file sha256>\n"
+    # in path order, paths relative to localflow/.
+    with tempfile.TemporaryDirectory() as td:
+        root = _tree(td, {"sub/b.py": b"yy", "a.py": b"x"})
+        assert fr.tree_digest(root) == \
+            "bec586189675c8a3156d4c30c82d6de7fbda6713841b93f219a237b23b25cc8e"
+        (root / "localflow" / "a.py").write_bytes(b"x2")
+        assert fr.tree_digest(root) == \
+            "c43d8517184048a0827523f5f497a8ae5edb78f70c6620eb814b6e646269d083"
+    print("ok  tree digest: sorted paths and per-file digests, matches shasum")
+
+
+def test_tree_digest_ignores_bytecode_but_not_other_files():
+    with tempfile.TemporaryDirectory() as td:
+        root = _tree(td, {"a.py": b"x", "sub/b.py": b"yy"})
+        clean = fr.tree_digest(root)
+        _tree(td, {"__pycache__/a.cpython-314.pyc": b"\0",
+                   "sub/__pycache__/b.cpython-314.pyc": b"\1"})
+        assert fr.tree_digest(root) == clean
+        _tree(td, {"extra.py": b""})
+        assert fr.tree_digest(root) != clean
+    print("ok  tree digest: bytecode caches are ignored, any other file counts")
+
+
+def test_code_root_line_prints_head_and_tree_digest():
+    sha = "ab" * 32
+    checkout = fr.code_root_line(
+        "B", {"head": "1234567890abcdef", "dirty": False, "export": False,
+              "tree_sha256": sha})
+    assert checkout == ("- side B: head 1234567890abcdef (dirty: False),"
+                        f" localflow tree SHA-256 `{sha}`"), checkout
+    export = fr.code_root_line(
+        "A", {"head": None, "dirty": None, "export": True,
+              "tree_sha256": sha})
+    assert export == ("- side A: export, not a checkout root (no head),"
+                      f" localflow tree SHA-256 `{sha}`"), export
+    print("ok  summary line: head and dirty for a checkout, export wording"
+          " otherwise, tree digest on both")
 
 
 def main():

@@ -540,7 +540,7 @@ def judge_levers(m):
     growth = m["burst_growth_bytes"]
     growth_ok = growth >= IDLE_FLOOR_BYTES
     when = (f"idle 2 s after a dictation burst is {mib(growth)} above idle"
-            " after warmup (median over bursts)")
+            " after warmup (median over side A bursts, the baseline side)")
     t03 = (f"GO ticket 03: {when} and {verdict(True, 'Idle floor')}."
            if growth_ok else
            f"NO-GO ticket 03, close with a note: {when} and"
@@ -1092,12 +1092,14 @@ def summarize_memory(samples):
 
 
 def lever_inputs(spawns, bursts):
-    """The numbers ``judge_levers`` needs: footprint medians and the diag-on
-    counters from side A, idle growth over every burst (an A/A runs the
-    same code on both sides). None when the run did not produce them."""
+    """The numbers ``judge_levers`` needs: footprint medians, the diag-on
+    counters and the idle growth after a burst, all from side A, the
+    baseline. Side B's growth is not pooled in: a candidate that lowered its
+    idle at ready would otherwise read as growth. None when the run did not
+    produce them."""
     a_spawns = [s for s in spawns if s["side"] == "A"]
-    diag = [b for b in bursts if b["side"] == "A" and b["memory_diag"]
-            and b["memory"]]
+    a_bursts = [b for b in bursts if b["side"] == "A"]
+    diag = [b for b in a_bursts if b["memory_diag"] and b["memory"]]
     if not a_spawns or not diag:
         return None
     left = [c for b in diag for c in b["memory"]["cleanup_result_cached"]]
@@ -1111,7 +1113,7 @@ def lever_inputs(spawns, bursts):
             [b["memory"]["first"]["asr_warmed"]["cached"] for b in diag]),
         "burst_growth_bytes": median(
             [b["after_burst"]["total_bytes"] - b["idle"]["total_bytes"]
-             for b in bursts]),
+             for b in a_bursts]),
         "burst_cache_min_bytes": min(left),
         "burst_cache_max_bytes": max(left)}
 
@@ -1666,12 +1668,44 @@ def judgement(report):
 
 # ---- environment ----------------------------------------------------------------------------------------
 
+def tree_digest(root):
+    """SHA-256 of the code root's ``localflow/`` tree: the lines
+    ``<path> <file SHA-256>`` in path order, paths relative to
+    ``localflow/``, bytecode caches left out. An export proves equal to a
+    commit by exporting the commit and comparing digests."""
+    base = pathlib.Path(root) / "localflow"
+    lines = []
+    for path in sorted(p for p in base.rglob("*") if p.is_file()
+                       and "__pycache__" not in p.relative_to(base).parts):
+        lines.append(f"{path.relative_to(base).as_posix()}"
+                     f" {hashlib.sha256(path.read_bytes()).hexdigest()}\n")
+    return sha256_text("".join(lines))
+
+
 def code_root_info(root):
+    """Where a side's code came from. ``head`` and ``dirty`` are the root's
+    own checkout state, reported only when git's top level IS the root: an
+    export sitting inside another checkout would otherwise borrow that
+    checkout's head and dirtiness. Any other root is an export (head and
+    dirty null); its tree digest is the proof of what it holds."""
     def git(*args):
         return subprocess.run(["git", "-C", str(root), *args],
                               capture_output=True, text=True).stdout.strip()
-    return {"path": str(root), "head": git("rev-parse", "HEAD") or None,
-            "dirty": bool(git("status", "--porcelain"))}
+    top = git("rev-parse", "--show-toplevel")
+    checkout = bool(top) and os.path.realpath(top) == os.path.realpath(root)
+    return {"path": str(root),
+            "head": git("rev-parse", "HEAD") if checkout else None,
+            "dirty": bool(git("status", "--porcelain")) if checkout
+            else None,
+            "export": not checkout, "tree_sha256": tree_digest(root)}
+
+
+def code_root_line(side, info):
+    where = (f"head {info['head']} (dirty: {info['dirty']})"
+             if not info["export"] else "export, not a checkout root"
+             " (no head)")
+    return (f"- side {side}: {where}, localflow tree SHA-256"
+            f" `{info['tree_sha256']}`")
 
 
 def installed_worker_cpu(pid):
@@ -1734,7 +1768,7 @@ def render_summary(report):
             f" after: {(env.get('thermal_after') or {}).get('ok')}",
             f"- installed idle worker {env['installed_worker']}", ""]
     for side, info in env["code_roots"].items():
-        out.append(f"- side {side}: {info['head']} (dirty: {info['dirty']})")
+        out.append(code_root_line(side, info))
     b = r["bands"]
     out += ["", "## Frozen bands", "",
             f"Digest `{b['digest']}`. Short of the shipping-claim case"
