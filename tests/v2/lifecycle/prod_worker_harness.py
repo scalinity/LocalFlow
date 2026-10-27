@@ -19,8 +19,14 @@ Plan (JSON file named by $LOCALFLOW_PROD_WORKER_PLAN):
                  | "delay:<ms>|<one of those>"],     # per call
   "clean": ["ok:<text>" | "raise:<message>"],        # per call
   "record": "<path>",               # JSONL: what the shims were given
-  "hold_gpu_mib": <int>             # ASR load keeps a plain MLX array of
+  "hold_gpu_mib": <int>,            # ASR load keeps a plain MLX array of
                                     # this size alive (footprint rig tests)
+  "trace_clears": true,             # with "record": also log every
+                                    # mx.clear_cache call and every frame
+                                    # the worker writes, in order, each with
+                                    # the calling thread's name
+  "clear_cache_fails": true         # with "trace_clears": the traced
+                                    # mx.clear_cache raises
 }
 A pass with these shims is protocol/scheduling evidence, never a
 model-backed result (no Parakeet, no Qwen; MLX only for the optional
@@ -30,6 +36,7 @@ plain array above and the memory counters).
 import json
 import os
 import sys
+import threading
 import time
 import types
 
@@ -148,6 +155,29 @@ def _shim_v1_load(self):
     self.load_failed = True
 
 
+def _trace_clears():
+    """Log each ``mx.clear_cache`` call and each frame the worker writes into
+    the record file, so a test reads their order and calling threads."""
+    import mlx.core as mx
+    from localflow.v2 import worker
+    real_clear, real_write = mx.clear_cache, worker._write_msg
+
+    def clear_cache():
+        _record(event="clear_cache",
+                thread=threading.current_thread().name)
+        if PLAN.get("clear_cache_fails"):
+            raise RuntimeError("shim clear_cache failure")
+        return real_clear()
+
+    def write_msg(msg):
+        _record(event="frame", op=msg.get("op"), engine=msg.get("engine"),
+                state=msg.get("state"), label=msg.get("label"),
+                thread=threading.current_thread().name)
+        return real_write(msg)
+
+    mx.clear_cache, worker._write_msg = clear_cache, write_msg
+
+
 def main():
     global PLAN
     with open(os.environ["LOCALFLOW_PROD_WORKER_PLAN"]) as f:
@@ -159,6 +189,8 @@ def main():
     v2c.ModelRunner = ShimRunner
     import localflow.cleanup as v1c
     v1c.TranscriptCleaner.load = _shim_v1_load
+    if PLAN.get("trace_clears"):
+        _trace_clears()
     from localflow.v2 import worker
     return worker.main(sys.argv[1:])
 

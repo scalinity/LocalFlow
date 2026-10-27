@@ -223,6 +223,18 @@ class Worker:
         except Exception:
             pass
 
+    def _release_cache(self):
+        """Hand the allocator's unused cached blocks back to the system once
+        an engine's load and warmup are done, so the next engine's load does
+        not start on top of them. GPU thread only, and only at a load: a
+        clear between the chunks of one recording is never wanted. Frees no
+        live array, and never fails the engine it follows."""
+        try:
+            import mlx.core as mx
+            mx.clear_cache()
+        except Exception:
+            pass
+
     # ---- engines -----------------------------------------------------------
 
     def _configure(self, msg):
@@ -272,6 +284,7 @@ class Worker:
                         "reason_code": "asr_engine_load_failed",
                         "error_type": _safe_type(type(e).__name__)})
             return False
+        self._release_cache()
         self._sample_memory("asr_warmed")
         self.transcriber = t
         self.asr_state = "ready"
@@ -297,6 +310,7 @@ class Worker:
                                     self._sample_memory("cleanup_loaded"))
                     else:
                         runner.load()
+                self._release_cache()
                 self._sample_memory("cleanup_warmed")
                 self.cleanup_engine = runner.engine()
             except Exception as e:

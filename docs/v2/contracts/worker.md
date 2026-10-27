@@ -80,6 +80,18 @@ warmup generation), `cleanup_warmed`, `asr_result` and `cleanup_result`
 (after the result frame is written). Sampling runs on the GPU thread and only
 reads the counters. With the variable unset the frame stream is unchanged.
 
+## Allocator release at load
+
+Once an engine's load and warmup finish, and before that engine's `ready`
+frame is written, the worker calls `mx.clear_cache()` on the GPU thread,
+so the cached blocks one load leaves behind are not held while the next
+engine loads. It runs once after the ASR warmup and once after the cleanup
+warmup, never between requests or between the chunks of one recording, and
+it writes no frame and changes no engine state. It frees no live array, and
+a failing call is ignored rather than failing the engine. It does not depend
+on `LOCALFLOW_WORKER_MEMORY_DIAG`; the `asr_warmed` and `cleanup_warmed`
+samples are read after it.
+
 ## M03 remediation (2026-09-25; protocol version unchanged)
 
 - **Generation-owned requests.** A pending request records its immutable
