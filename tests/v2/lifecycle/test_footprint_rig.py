@@ -147,6 +147,12 @@ def test_evenly_spaced_is_deterministic():
     print("ok  evenly spaced selection")
 
 
+def test_middle_is_the_central_sorted_id():
+    assert fr.middle(["c", "a", "b"]) == "b"
+    assert fr.middle(["d", "a", "c", "b"]) == "c"
+    print("ok  middle id of a sorted list")
+
+
 def test_latency_plan_counts_and_shortfall():
     ids = [f"c{n:02d}" for n in range(40)]
     plan = fr.latency_plan(ids, "shipping")
@@ -299,6 +305,8 @@ def test_asr_record_digests_text_and_decode_ranges():
 def test_report_guard_rejects_any_seen_text():
     clean = {"cases": [{"text_sha256": "ab", "stage_ms": 1.0}]}
     fr.assert_content_free(clean, [SECRET, "another seen text"])
+    # a short text is not checked: it could match a report token by chance
+    fr.assert_content_free({"pass": True, "case": "true"}, ["true", "pass"])
     leaky = {"cases": [{"note": "see " + SECRET + " here"}]}
     msg = _stops(lambda: fr.assert_content_free(leaky, [SECRET]),
                  "content")
@@ -427,12 +435,14 @@ def test_cputime_text_in_seconds():
 
 
 def test_revision_record_compares_manifest_and_snapshot():
-    manifest = {"models": {"asr": {"revision": "abc"},
-                           "cleanup": {"revision": "def"}}}
+    manifest = {"models": {
+        "asr": {"revision": "abc", "configured_id": "org/asr"},
+        "cleanup": {"revision": "def", "configured_id": "org/older"}}}
     rec = fr.revision_record(manifest, {"asr": "abc", "cleanup": "zzz"})
-    assert rec["asr"] == {"manifest": "abc", "snapshot": "abc",
-                          "matches": True}
-    assert rec["cleanup"] == {"manifest": "def", "snapshot": "zzz",
+    assert rec["asr"] == {"manifest_model": "org/asr", "manifest": "abc",
+                          "snapshot": "abc", "matches": True}
+    assert rec["cleanup"] == {"manifest_model": "org/older",
+                              "manifest": "def", "snapshot": "zzz",
                               "matches": False}
     assert fr.revision_record({}, {"asr": "abc", "cleanup": "zzz"})[
         "asr"]["manifest"] is None
@@ -535,6 +545,22 @@ def test_the_measurement_lock_is_exclusive():
             os.close(fd)
         os.close(fr.acquire_lock(path))  # free again after release
     print("ok  measurement lock: a second holder fails fast")
+
+
+def test_warm_preparation_leaves_the_files_resident_and_says_so():
+    import os
+    import types
+    with tempfile.TemporaryDirectory() as td:
+        path = pathlib.Path(td) / "weights.safetensors"
+        path.write_bytes(os.urandom(48 * 1024 * 1024))
+        ctx = types.SimpleNamespace(weights=[path])
+        got = fr.prepare_cache(ctx, "warm")
+        assert got["intent"] == "warm" and got["method"] == "read-through"
+        assert got["resident_fraction"] > 0.9, got
+        assert fr.resident_fraction([path]) > 0.9
+        assert fr.resident_fraction([]) == 0.0
+    print("ok  page cache: a read-through file reads back as resident"
+          " (mincore), no files reads as 0")
 
 
 # ---- summaries -----------------------------------------------------------------------------------

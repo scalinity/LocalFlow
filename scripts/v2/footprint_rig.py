@@ -199,6 +199,12 @@ def evenly_spaced(ids, n):
     return [ids[i * len(ids) // n] for i in range(n)]
 
 
+def middle(ids):
+    """The id in the middle of the sorted list."""
+    ids = sorted(ids)
+    return ids[len(ids) // 2]
+
+
 def latency_plan(ids, mode):
     """The A,B,B,A blocks for one band. Early stop is 8 blocks cycling the
     band's cases; the shipping claim is up to 30 cases, each repeated 5
@@ -344,14 +350,18 @@ def asr_record(frame, rtt_ms):
             "sample_count": frame.get("sample_count")}
 
 
+MIN_GUARDED_TEXT = 12
+
+
 def assert_content_free(report, texts):
     """Refuse to write a report that contains any text the run saw (an
-    output or a fixture input), plain or JSON-escaped. Texts shorter than
-    four characters would match by accident and are not checked."""
+    output or a fixture input), plain or JSON-escaped. A text shorter than
+    ``MIN_GUARDED_TEXT`` could match a report token by accident and stop a
+    long run at its final write, so it is not checked."""
     blob = json.dumps(report, ensure_ascii=False)
     for text in texts:
-        if len(text) >= 4 and (text in blob
-                               or json.dumps(text)[1:-1] in blob):
+        if len(text) >= MIN_GUARDED_TEXT and (
+                text in blob or json.dumps(text)[1:-1] in blob):
             raise RigStop("the report would contain observed content;"
                           " refusing to write it")
 
@@ -668,14 +678,15 @@ def parse_cputime(text):
 
 
 def revision_record(manifest, snapshots):
-    """The ASR pin as the repository exposes it (the baseline manifest)
-    against the snapshot directory the model cache holds; a mismatch is
-    recorded, never resolved."""
+    """The pins as the repository exposes them (the baseline manifest, with
+    the model it names) against the snapshot directory the model cache
+    holds; a mismatch is recorded, never resolved."""
     out = {}
     for key in ("asr", "cleanup"):
-        pinned = ((manifest.get("models") or {}).get(key) or {}).get(
-            "revision")
-        out[key] = {"manifest": pinned, "snapshot": snapshots[key],
+        entry = (manifest.get("models") or {}).get(key) or {}
+        pinned = entry.get("revision")
+        out[key] = {"manifest_model": entry.get("configured_id"),
+                    "manifest": pinned, "snapshot": snapshots[key],
                     "matches": pinned is not None
                     and pinned == snapshots[key]}
     return out
@@ -1266,9 +1277,7 @@ def phase_first(ctx):
         c for ids in ctx.bands["asr"]["members"].values() for c in ids]
     clean_ids = ctx.bands["cleanup"]["members"]["21-50"] or [
         c for ids in ctx.bands["cleanup"]["members"].values() for c in ids]
-    clip = evenly_spaced(asr_ids, 3)[len(evenly_spaced(asr_ids, 3)) // 2]
-    case_id = evenly_spaced(clean_ids, 3)[
-        len(evenly_spaced(clean_ids, 3)) // 2]
+    clip, case_id = middle(asr_ids), middle(clean_ids)
     rows = []
     for k in range(ctx.counts["first"]):
         order = ("A", "B") if k % 2 == 0 else ("B", "A")
