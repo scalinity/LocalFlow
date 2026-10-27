@@ -202,6 +202,9 @@ def test_whole_run_against_the_shim_worker_writes_a_content_free_report():
         assert len(report["first_request"]["pairs"]) == counts["first"]
         res = report["resident"]
         assert not res["identity"]["mismatches"]
+        band = res["latency"]["cleanup"]["51-100"]
+        assert len(band["warmup_blocks"]) == len(band["plan"]["cases_used"])
+        assert len(band["blocks"]) == 8, "warmup blocks are not measured"
         names = set(report["verdicts"]["latency"]["bands"])
         assert {"cleanup:1-20", "cleanup:101-200", "asr:under-10s",
                 "asr:over-90s", "first-request:asr",

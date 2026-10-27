@@ -209,8 +209,10 @@ def latency_plan(ids, mode):
     """The A,B,B,A blocks for one band. Early stop is 8 blocks cycling the
     band's cases; the shipping claim is up to 30 cases, each repeated 5
     times, a full pass over the cases before the next repeat so drift is
-    spread over repeats. A band with fewer cases than the shipping claim
-    still runs what it has and says so."""
+    spread over repeats. Each case first runs one warmup block, recorded
+    but not measured: a process's first request for a new input costs far
+    more, and far less steadily, than its repeats. A band with fewer cases
+    than the shipping claim still runs what it has and says so."""
     ids = sorted(ids)
     if mode == "early":
         used = evenly_spaced(ids, min(EARLY_PAIRS, len(ids)))
@@ -219,7 +221,7 @@ def latency_plan(ids, mode):
     else:
         used = evenly_spaced(ids, SHIPPING_CASES)
         blocks = used * SHIPPING_REPEATS
-    return {"blocks": blocks, "cases_used": used,
+    return {"warmup": list(used), "blocks": blocks, "cases_used": used,
             "cases_available": len(ids),
             "short_of_claim": len(ids) < SHIPPING_CASES}
 
@@ -1385,9 +1387,9 @@ def run_identity(ctx, sessions):
             + [n for n, r in asr.items() if not r["match"]]}
 
 
-def run_blocks(ctx, sessions, plan, make_request, kind):
+def run_blocks(ctx, sessions, case_ids, make_request, kind):
     blocks = []
-    for case_id in plan["blocks"]:
+    for case_id in case_ids:
         op, fields = make_request(case_id)
         recs = [timed(ctx, sessions[side], op, fields, kind)
                 for side in ABBA]
@@ -1403,21 +1405,30 @@ def run_blocks(ctx, sessions, plan, make_request, kind):
     return blocks
 
 
-def band_result(plan, blocks):
+def _block_verdict(blocks, field):
+    quads = [tuple(b[field]) for b in blocks]
+    base = [x for a1, _, _, a2 in quads for x in (a1, a2)]
+    return latency_verdict(paired_differences(quads), base)
+
+
+def band_result(plan, blocks, warmup_blocks):
+    """Verdicts come from the measured blocks only. The warmup blocks are
+    kept, with their own informational verdict, as the record of the
+    first-request-for-a-new-input regime."""
     meta = {k: plan[k] for k in ("cases_used", "cases_available",
                                  "short_of_claim")}
     meta["blocks"] = len(blocks)
     if not blocks:
-        return {"plan": meta, "blocks": [], "verdict_rtt": None,
-                "verdict_stage": None, "identity_consistent": True}
-    out = {"plan": meta, "blocks": blocks}
-    for name, field in (("verdict_rtt", "rtt_ms"),
-                        ("verdict_stage", "stage_ms")):
-        quads = [tuple(b[field]) for b in blocks]
-        base = [x for a1, _, _, a2 in quads for x in (a1, a2)]
-        out[name] = latency_verdict(paired_differences(quads), base)
+        return {"plan": meta, "warmup_blocks": [], "blocks": [],
+                "verdict_rtt": None, "verdict_stage": None,
+                "warmup_verdict_rtt": None, "identity_consistent": True}
+    out = {"plan": meta, "warmup_blocks": warmup_blocks, "blocks": blocks,
+           "verdict_rtt": _block_verdict(blocks, "rtt_ms"),
+           "verdict_stage": _block_verdict(blocks, "stage_ms"),
+           "warmup_verdict_rtt": _block_verdict(warmup_blocks, "rtt_ms")
+           if warmup_blocks else None}
     digests = {}
-    for b in blocks:
+    for b in warmup_blocks + blocks:
         digests.setdefault(b["case"], set()).update(b["text_sha256"])
     out["identity_consistent"] = all(len(d) == 1 for d in digests.values())
     return out
@@ -1469,13 +1480,16 @@ def phase_resident(ctx):
                 ("asr", ctx.bands["asr"]["members"], asr_request)):
             for band, ids in bands.items():
                 plan = latency_plan(ids, ctx.mode)
-                print(f"  latency {kind} band {band}: {len(plan['blocks'])}"
-                      f" ABBA blocks ({plan['cases_available']} cases"
+                print(f"  latency {kind} band {band}: {len(plan['warmup'])}"
+                      f" warmup + {len(plan['blocks'])} ABBA blocks"
+                      f" ({plan['cases_available']} cases"
                       f"{', short of the claim' if plan['short_of_claim'] else ''})",
                       flush=True)
+                step = "clean" if kind == "cleanup" else "asr"
+                warm = run_blocks(ctx, sessions, plan["warmup"], make, step)
                 out["latency"][kind][band] = band_result(
-                    plan, run_blocks(ctx, sessions, plan, make,
-                                     "clean" if kind == "cleanup" else "asr"))
+                    plan, run_blocks(ctx, sessions, plan["blocks"], make,
+                                     step), warm)
         print(f"  back-to-back gap: {ctx.counts['gap']} ABBA blocks",
               flush=True)
         out["gap"] = run_gap(ctx, sessions)
@@ -1667,7 +1681,20 @@ def render_summary(report):
                 f" {x['baseline_p95_ms']:.1f} | {x['paired_median_ms']:.1f} /"
                 f" {x['paired_p95_ms']:.1f} | {x['median_limit_ms']:.1f} /"
                 f" {x['p95_limit_ms']:.1f} | {_yes(x['pass'])} |")
-        out += ["", f"Latency verdict: {_yes(v['latency']['pass'])}."]
+        out += ["", f"Latency verdict: {_yes(v['latency']['pass'])} (measured"
+                " blocks only; each case's warmup block is recorded apart)."]
+        warm = [(f"{kind}:{band}", d["warmup_verdict_rtt"])
+                for kind, by_band in (r.get("resident") or {}).get(
+                    "latency", {}).items()
+                for band, d in by_band.items() if d["warmup_verdict_rtt"]]
+        if warm:
+            out += ["", "Warmup blocks (a process's first request for an"
+                    " input; informational, not part of the verdict):", "",
+                    "| band | pairs | paired median ms | paired p95 ms |",
+                    "|---|---|---|---|"]
+            out += [f"| {name} | {w['pairs']} | {w['paired_median_ms']:.1f} |"
+                    f" {w['paired_p95_ms']:.1f} |" for name, w in warm]
+        out.append("")
     if v.get("rig_validity"):
         rv = v["rig_validity"]
         out.append(f"Rig validity (paired median in every band):"

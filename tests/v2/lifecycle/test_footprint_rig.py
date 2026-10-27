@@ -158,6 +158,8 @@ def test_latency_plan_counts_and_shortfall():
     plan = fr.latency_plan(ids, "shipping")
     assert len(plan["blocks"]) == 150 and len(set(plan["blocks"])) == 30
     assert plan["blocks"][:30] == plan["cases_used"]  # a full pass first
+    # every case gets one warmup block before any measured block
+    assert plan["warmup"] == plan["cases_used"]
     assert all(plan["blocks"].count(c) == 5 for c in plan["cases_used"])
     assert plan["short_of_claim"] is False and plan["cases_available"] == 40
     short = fr.latency_plan(ids[:13], "shipping")
@@ -165,8 +167,9 @@ def test_latency_plan_counts_and_shortfall():
     early = fr.latency_plan(ids[:3], "early")
     assert early["blocks"] == ["c00", "c01", "c02", "c00", "c01", "c02",
                                "c00", "c01"]
-    print("ok  latency plan: 30 cases x 5 repeats, shortfall flagged, early"
-          " stop is 8 blocks")
+    assert early["warmup"] == ["c00", "c01", "c02"]
+    print("ok  latency plan: 30 cases x 5 repeats after one warmup block per"
+          " case, shortfall flagged, early stop is 8 blocks")
 
 
 # ---- model identity -------------------------------------------------------------
