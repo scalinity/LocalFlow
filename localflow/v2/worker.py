@@ -201,6 +201,27 @@ class Worker:
         self._defer_cleanup = False
         self._request_seen = False
         self._stopping = False
+        # Read once at start: memory counters go out as ``diag`` frames only
+        # when this is "1"; unset, the worker behaves exactly as before.
+        self._memory_diag = \
+            os.environ.get("LOCALFLOW_WORKER_MEMORY_DIAG") == "1"
+
+    def _sample_memory(self, label):
+        """Report the MLX allocator counters at one lifecycle point. Reads
+        only (no eval, synchronize, trim or peak reset) and runs on the GPU
+        thread, where every caller is a load or a request. A diagnostic
+        never fails the stage it observes."""
+        if not self._memory_diag:
+            return
+        try:
+            import mlx.core as mx
+            _write_msg({"v": PROTOCOL_VERSION, "op": "diag",
+                        "kind": "memory", "label": label,
+                        "active": int(mx.get_active_memory()),
+                        "cached": int(mx.get_cache_memory()),
+                        "peak": int(mx.get_peak_memory())})
+        except Exception:
+            pass
 
     # ---- engines -----------------------------------------------------------
 
@@ -237,6 +258,7 @@ class Worker:
                 _write_msg({"v": PROTOCOL_VERSION, "op": "engine",
                             "engine": "asr", "state": "warming",
                             "model_id": self.asr_model})
+                self._sample_memory("asr_loaded")
 
         try:
             with _capture_stderr():
@@ -250,6 +272,7 @@ class Worker:
                         "reason_code": "asr_engine_load_failed",
                         "error_type": _safe_type(type(e).__name__)})
             return False
+        self._sample_memory("asr_warmed")
         self.transcriber = t
         self.asr_state = "ready"
         _write_msg({"v": PROTOCOL_VERSION, "op": "engine",
@@ -269,7 +292,12 @@ class Worker:
             try:
                 runner = ModelRunner(cleanup_model)
                 with _capture_stderr():
-                    runner.load()
+                    if self._memory_diag:
+                        runner.load(on_phase=lambda _phase:
+                                    self._sample_memory("cleanup_loaded"))
+                    else:
+                        runner.load()
+                self._sample_memory("cleanup_warmed")
                 self.cleanup_engine = runner.engine()
             except Exception as e:
                 # Load failure degrades — the engine is failed, not the
@@ -630,8 +658,10 @@ class Worker:
                     if self.transcriber is None:
                         raise EngineNotReady("asr_engine_not_ready")
                     self._transcribe(msg)
+                    self._sample_memory("asr_result")
                 elif kind == "clean":
                     self._clean(msg)
+                    self._sample_memory("cleanup_result")
             except ProtocolError as e:
                 _fault(msg or {}, type(e).__name__, e.code, e.fault_class)
             except Exception as e:

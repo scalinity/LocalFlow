@@ -59,12 +59,16 @@ class ModelRunner:
         self._mx = None
         self._make_prompt_cache = None
 
-    def load(self):
+    def load(self, on_phase=None):
+        """on_phase("warming") fires once the weights are loaded, before
+        the warmup generation (mirrors ``Transcriber.load``)."""
         import mlx.core as mx
         from mlx_lm import load as llm_load
         from mlx_lm.models.cache import make_prompt_cache
         self._mx, self._make_prompt_cache = mx, make_prompt_cache
         self._model, self._tokenizer = llm_load(self.model_id)
+        if on_phase is not None:
+            on_phase("warming")
         self._prefix_caches.clear()
         self.template_revision = self._probe_revision()
         # Warmup: run the production path once on a real cleanup prompt, so

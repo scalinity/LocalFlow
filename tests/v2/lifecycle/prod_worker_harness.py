@@ -103,12 +103,14 @@ class ShimRunner:
     def __init__(self, model_id):
         self.model_id = model_id
 
-    def load(self):
+    def load(self, on_phase=None):
         latch = PLAN.get("cleanup_load_latch")
         _record(event="cleanup_load_started", t=time.monotonic())
         if latch:
             while not os.path.exists(latch):
                 time.sleep(0.01)
+        if on_phase is not None:
+            on_phase("warming")
         if PLAN.get("cleanup_load") == "fail":
             raise RuntimeError("shim cleanup load failure")
         _record(event="cleanup_loaded", t=time.monotonic())

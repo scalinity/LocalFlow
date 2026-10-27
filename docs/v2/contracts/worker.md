@@ -69,6 +69,17 @@ across processes (S07). Worker stderr is drained into a bounded tail used
 only for fault diagnostics; event `detail` carries a size-capped, sanitized
 excerpt — transcripts never appear there.
 
+## Memory diagnostics (off by default)
+
+With `LOCALFLOW_WORKER_MEMORY_DIAG=1` in the worker's environment (read once
+at start) the worker writes `diag` frames of `kind: "memory"` carrying a
+`label` and the MLX allocator's `active`, `cached` and `peak` byte counts,
+and nothing else. The labels are `asr_loaded` (weights loaded, before the
+silence warmup), `asr_warmed`, `cleanup_loaded` (weights loaded, before the
+warmup generation), `cleanup_warmed`, `asr_result` and `cleanup_result`
+(after the result frame is written). Sampling runs on the GPU thread and only
+reads the counters. With the variable unset the frame stream is unchanged.
+
 ## M03 remediation (2026-09-25; protocol version unchanged)
 
 - **Generation-owned requests.** A pending request records its immutable
