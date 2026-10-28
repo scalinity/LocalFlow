@@ -64,7 +64,14 @@ MB) is kept at
 `~/Library/Application Support/LocalFlow/v2-evidence/footprint/installed-app-before-20261028/LocalFlow.app`.
 It is private and not in the repository, and it is the build without the
 changes that M03-V009 compares against.
-**Live unload:** LIVE-UNLOAD-PENDING: the installed worker's first idle unload (due about 2:17 AM EDT on October 28) is not recorded here yet.
+**Live unload:** the installed worker released its cleanup model on its own at
+2:16:51 AM EDT on October 28, about ten minutes after both engines were ready
+and with nothing dictated in between: its footprint read 3,981 MB at ready and
+1,606 MB after the unload (2,375 MB lower, at the low end of the rig's 2,373
+to 2,655 MiB range), the event stream shows `worker.engine_state` with outcome
+`unloaded`, and no fault, died, retired or protocol_error event followed. The
+reload on the next hotkey press and the wait on a short dictation are checked
+by M03-V010 (not run).
 **This record:** this file, `STATUS.json` (`current_state.worker_footprint`)
 and the pending runbook entries M03-V009 and M03-V010. No commit of the
 record changes code.
