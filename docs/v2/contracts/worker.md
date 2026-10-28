@@ -92,6 +92,11 @@ a failing call is ignored rather than failing the engine. It does not depend
 on `LOCALFLOW_WORKER_MEMORY_DIAG`; the `asr_warmed` and `cleanup_warmed`
 samples are read after it.
 
+The release runs only after a successful load and warmup: after the ASR
+engine's and after the v2 cleanup engine's. It does not run after a failed
+load, and the v1 cleanup path (`cleanup_implementation` other than `v2`) never
+releases, so the launch-peak reduction does not apply there.
+
 ## M03 remediation (2026-09-25; protocol version unchanged)
 
 - **Generation-owned requests.** A pending request records its immutable

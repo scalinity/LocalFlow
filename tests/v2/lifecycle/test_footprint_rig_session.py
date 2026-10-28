@@ -393,6 +393,28 @@ def _assert_aborted(td, code, report, out, err, lock, needle):
     assert reason in out, "the reason is in the log as well"
     os.close(fr.acquire_lock(lock))  # the lock was released
     assert "verdicts" not in report, "an aborted run states no verdict"
+    summary = (pathlib.Path(td) / "run" / "SUMMARY.md").read_text()
+    assert reason in summary and "complete: False" in summary, \
+        "the summary states the abort and the incomplete run"
+    assert "complete: True" not in summary and "Go / no-go" not in summary
+
+
+def _trip_after_finish(reason):
+    """Patches for ``_aborted_run``: the watchdog trips just after ``finish``
+    wrote its complete report, as it can while the final reads run."""
+    dogs = []
+
+    class Captured(fr.Watchdog):
+        def __init__(self, scratch):
+            super().__init__(scratch)
+            dogs.append(self)
+
+    finish = fr.finish
+
+    def finish_then_trip(ctx, report):
+        finish(ctx, report)
+        dogs[0]._trip(reason)
+    return {"Watchdog": Captured, "finish": finish_then_trip}
 
 
 def test_a_worker_over_the_footprint_limit_aborts_the_run():
@@ -417,6 +439,67 @@ def test_swap_growth_aborts_the_run():
           " the same way")
 
 
+def test_a_trip_after_the_report_was_finished_leaves_one_aborted_state():
+    with tmpdir() as td:
+        code, report, out, err, lock = _aborted_run(
+            td, **_trip_after_finish("swap used grew late"))
+        _assert_aborted(td, code, report, out, err, lock, "late")
+        assert "judgement" not in report
+        assert report["rig"]["finished_at"] is None
+        summary = (pathlib.Path(td) / "run" / "SUMMARY.md").read_text()
+        assert "## Latency" not in summary, "no figure of the finished run"
+    print("ok  shim run: a trip after finish rewrites the report and the"
+          " summary to the same aborted, incomplete state")
+
+
+def _stop_in_build_context(*args):
+    raise fr.RigStop("no corpus at the test path")
+
+
+def _main_with(td, build_context, run_id):
+    """``fr.main`` over an evidence root under ``td`` with ``build_context``
+    replaced; returns the exit code and the error log."""
+    td = pathlib.Path(td)
+    argv = ["--code-root-a", str(ROOT), "--evidence-root", str(td / "ev"),
+            "--lock", str(td / "measure.lock"), "--run-id", run_id,
+            "--phases", "resident"]
+    err = io.StringIO()
+    with _patched(build_context=build_context):
+        with contextlib.redirect_stdout(io.StringIO()), \
+                contextlib.redirect_stderr(err):
+            return fr.main(argv), err.getvalue()
+
+
+def test_an_early_stop_leaves_no_run_directory_and_the_id_runs_again():
+    counts = {"warm": 1, "cold": 1, "burst": 1, "first": 2, "gap": 2}
+    with tmpdir() as td:
+        code, err = _main_with(td, _stop_in_build_context, "stop-test")
+        assert code == 2 and "STOP: no corpus" in err
+        assert not (pathlib.Path(td) / "ev" / "stop-test").exists(), \
+            "a stop before any phase leaves nothing behind"
+        ctx = _shim_context(td, counts)
+        _main_with(td, lambda *a: ctx, "stop-test")
+        report = json.loads((ctx.run_dir / "report.json").read_text())
+        assert report["rig"]["complete"] is True, "the same id ran through"
+    print("ok  shim run: a stop before any phase removes the run directory,"
+          " and the same run id then runs")
+
+
+def test_an_existing_run_id_with_content_is_refused_and_kept():
+    with tmpdir() as td:
+        kept = pathlib.Path(td) / "ev" / "kept"
+        kept.mkdir(parents=True)
+        (kept / "report.json").write_text("{}")
+        try:
+            _main_with(td, _stop_in_build_context, "kept")
+            raise AssertionError("an existing run directory was reused")
+        except FileExistsError as e:
+            assert "kept" in str(e)
+        assert (kept / "report.json").read_text() == "{}"
+    print("ok  shim run: a run id that already holds a report is refused and"
+          " its directory is left alone")
+
+
 def main():
     run([test_session_runs_both_requests_and_times_them,
          test_session_captures_the_six_memory_labels,
@@ -427,7 +510,10 @@ def main():
          test_a_first_request_only_run_states_its_unit_in_the_method,
          test_asr_bands_interleave_an_unmeasured_cleanup_on_both_sides,
          test_a_worker_over_the_footprint_limit_aborts_the_run,
-         test_swap_growth_aborts_the_run],
+         test_swap_growth_aborts_the_run,
+         test_a_trip_after_the_report_was_finished_leaves_one_aborted_state,
+         test_an_early_stop_leaves_no_run_directory_and_the_id_runs_again,
+         test_an_existing_run_id_with_content_is_refused_and_kept],
         "footprint rig session tests")
 
 

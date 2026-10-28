@@ -29,6 +29,11 @@ used, and past either limit it kills the rig's own workers (only the pids the
 rig spawned), marks the report aborted with the reason and stops the run with
 a non-zero exit instead of waiting for the host to reap it.
 
+The exit status is non-zero for an incomplete run, a failed Rig validity or a
+failed Identity check, and 0 otherwise: a FAIL on the Latency or Back-to-back
+gap verdict, like the footprint floors, is read from report.json and
+SUMMARY.md and does not change it.
+
 Run: .venv/bin/python scripts/v2/footprint_rig.py --code-root-a <dir>
      [--code-root-b <dir>] [--mode early|shipping]
 """
@@ -1856,9 +1861,15 @@ def render_summary(report):
            f"Mode {r['rig']['mode']}; started"
            f" {et_label(r['rig']['started_at'])}, finished"
            f" {et_label(r['rig'].get('finished_at'))}; complete:"
-           f" {r['rig']['complete']}; phases: {', '.join(r['rig']['phases'])}.",
-           "", "Sizes are MiB (the footprint tool's MB). Times are US Eastern.",
-           ""]
+           f" {r['rig']['complete']}; phases:"
+           f" {', '.join(r['rig']['phases'])}."]
+    ab = r["rig"].get("aborted")
+    if ab:
+        out += ["", f"Aborted by the watchdog at {et_label(ab['at'])}:"
+                f" {ab['reason']}. The run is incomplete and states no"
+                " verdict."]
+    out += ["", "Sizes are MiB (the footprint tool's MB). Times are US"
+            " Eastern.", ""]
     env = r["environment"]
     out += ["## Environment", "",
             f"- {env['machine']['chip']}, {env['machine']['memory_bytes'] // 1024 ** 3} GB,"
@@ -2110,10 +2121,17 @@ class Watchdog:
 
 def abort(ctx, report, reason):
     """Mark the report aborted and stop the run (the caller's finally
-    releases the lock; ``main`` turns the stop into a non-zero exit)."""
+    releases the lock; ``main`` turns the stop into a non-zero exit). A trip
+    can land after ``finish`` wrote its complete report, so the verdicts and
+    the finish time are dropped and the summary is rewritten from the aborted
+    report: the two files then state the same incomplete run."""
     report["rig"]["complete"] = False
+    report["rig"]["finished_at"] = None
     report["rig"]["aborted"] = {"reason": reason, "at": now_et()}
+    report.pop("verdicts", None)
+    report.pop("judgement", None)
     write_report(ctx, report)
+    (ctx.run_dir / "SUMMARY.md").write_text(render_summary(report))
     raise RigStop(f"aborted by the watchdog: {reason}")
 
 
@@ -2340,8 +2358,15 @@ def run(args):
         run_dir = evidence_root / run_id
         run_dir.mkdir(parents=True, exist_ok=False)
         (run_dir / "scratch").mkdir()
-        return measure(build_context(args, run_dir, corpus_dir, run_id),
-                       phases, started)
+        try:
+            ctx = build_context(args, run_dir, corpus_dir, run_id)
+        except BaseException:
+            # Nothing has been written yet, and this call made the directory
+            # (an existing one failed the mkdir above): a stop must not
+            # leave one that blocks a rerun of the same id.
+            shutil.rmtree(run_dir)
+            raise
+        return measure(ctx, phases, started)
     finally:
         os.close(lock_fd)
 
