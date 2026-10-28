@@ -3,12 +3,16 @@
 The companion re-reads the Home engine states every two seconds, but only
 while a model is loading. A resting (``unloaded``) cleanup model is
 deliberate and quiet: it must not start that polling while the window is
-open. The unload, the reload and its ready reach an open Hub through one
-flush each instead (``AppDelegate._setEngineStatus_``, tested in
-``tests/v2/lifecycle/test_idle_unload_app.py``); once the reload shows as
+open. The unload, the reload and its ready reach an open Hub through
+``CompanionController.engine_changed`` instead (called by
+``AppDelegate._setEngineStatus_``, see
+``tests/v2/lifecycle/test_idle_unload_app.py``): the sidebar is rebuilt
+from the live states, and the Models engine card, which caches its block
+when it loads, is reloaded while it is showing. Once the reload shows as
 ``loading`` the existing recheck follows it to ``ready``.
 
-Run: .venv/bin/python tests/v2/ui/test_idle_unload_display.py
+Run: .venv/bin/python tests/v2/context/run_isolated.py \
+    tests/v2/ui/test_idle_unload_display.py
 """
 
 from __future__ import annotations
@@ -17,8 +21,9 @@ import pathlib
 import sys
 import types
 
-ROOT = pathlib.Path(__file__).resolve().parents[3]
-sys.path.insert(0, str(ROOT))
+HERE = pathlib.Path(__file__).resolve()
+for p in (HERE.parents[3], HERE.parent, HERE.parents[1] / "lifecycle"):
+    sys.path.insert(0, str(p))
 
 from localflow.v2.ui.companion import controller as ctl_mod  # noqa: E402
 
@@ -80,10 +85,65 @@ def test_a_reload_is_followed_until_ready():
           " ready, one timer at a time")
 
 
+class _MenuItem:
+    def setTitle_(self, title):
+        pass
+
+
+def test_models_engine_card_follows_the_cleanup_engine():
+    """The real Hub, state and coordinator (the bridge tests' world): the
+    Models page shows Resting, then Loading, then Ready, and so does the
+    sidebar, without the page being reselected."""
+    from test_companion_bridge import CWorld
+    with CWorld() as w:
+        w.d.model_menu_item = _MenuItem()
+        states = w.d.supervisor.engine_state
+
+        def card():
+            return w.host.latest("models")["data"]["engine"]["cleanup_state"]
+
+        def sidebar():
+            snaps = [m for m in w.host.pushed if m.get("type") == "snapshot"]
+            return snaps[-1]["shell"]["engine"]["cleanup"]
+
+        w.select("models")
+        assert card() == "ready" and sidebar() == "ready"
+        for state in ("unloaded", "loading", "ready"):
+            states["cleanup"] = state
+            w.d._setEngineStatus_(("cleanup", state))
+            w.drain()
+            assert card() == state, (state, card())
+            assert sidebar() == state, (state, sidebar())
+        # Opening the page while resting shows Resting, and the reload
+        # that follows is shown without leaving the page.
+        w.select("home")
+        states["cleanup"] = "unloaded"
+        w.d._setEngineStatus_(("cleanup", "unloaded"))
+        w.drain()
+        w.select("models")
+        assert card() == "unloaded"
+        states["cleanup"] = "ready"
+        w.d._setEngineStatus_(("cleanup", "ready"))
+        w.drain()
+        assert card() == "ready"
+        # Another page showing: its own data is not reloaded for this.
+        w.select("history")
+        before = w.ctl.state.query_stats()
+        states["cleanup"] = "unloaded"
+        w.d._setEngineStatus_(("cleanup", "unloaded"))
+        w.drain()
+        assert w.ctl.state.query_stats() == before, \
+            "an unrelated page was reloaded for an engine change"
+        assert sidebar() == "unloaded"
+    print("ok  the Models engine card and the sidebar follow unloaded ->"
+          " loading -> ready on an open Hub; other pages are not reloaded")
+
+
 def main():
     test_a_resting_cleanup_model_is_not_polled()
     test_a_reload_is_followed_until_ready()
-    print("all idle unload display tests passed (2)")
+    test_models_engine_card_follows_the_cleanup_engine()
+    print("all idle unload display tests passed (3)")
 
 
 if __name__ == "__main__":

@@ -246,6 +246,17 @@ class CompanionController:
             self._flush_posted = True
         AppHelper.callAfter(self._flush)
 
+    def engine_changed(self):
+        """A cleanup engine changed state (unloaded, loading, ready...).
+        The sidebar reads the live states on every flush; the Models engine
+        card shows the block cached when it loaded, so reload it while it
+        is the page showing (any other page loads fresh when selected)."""
+        state = self.state
+        if state.selected_view == "models" \
+                and state.views["models"]["subview"] == "engines":
+            state.reload_current()
+        self.request_flush()
+
     def _flush(self):
         with self._flush_lock:
             self._flush_posted = False

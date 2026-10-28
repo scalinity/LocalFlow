@@ -15,6 +15,10 @@ recording stdin and delivered through ``_handle_message``), never a model:
   6  ``prepare_cleanup`` writes one frame per call, only to a live worker
      of a cleanup that can unload
   7  a send to a dead pipe neither raises nor counts toward the breaker
+  10 shutdown's wake-up of engine waiters is never erased by a late frame
+  11 neither ``prepare_cleanup`` nor ``wait_engine`` waits on the pipe write
+  12 the real worker loop (model loaders shimmed) behind the real supervisor:
+     it unloads, ``wait_engine`` brings it back, a clean gets the real answer
   8  a crash while ``unloaded`` and a respawn start from ``not_started``
   9  the protocol fake takes ``ensure_cleanup`` silently, as the worker does
 
@@ -29,7 +33,7 @@ import time
 
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent))
 
-from m03_helpers import Rec, make_sup, run, tmpdir, wav  # noqa: E402
+from m03_helpers import PROD, ROOT, Rec, make_sup, run, tmpdir, wav  # noqa: E402,E501
 from localflow.v2.supervisor import WorkerSupervisor  # noqa: E402
 
 ENSURE = {"v": 1, "op": "ensure_cleanup"}
@@ -81,6 +85,14 @@ def deliver(s, engine, state, generation=None):
     s._handle_message({"v": 1, "op": "engine", "engine": engine,
                        "state": state, "model_id": "m"},
                       generation or s.generation, s._proc)
+
+
+def drain():
+    """Wait for the short-lived writer threads of prepare_cleanup."""
+    for t in threading.enumerate():
+        if t.name == "localflow-ensure-cleanup":
+            t.join(10)
+            assert not t.is_alive(), "an ensure_cleanup write never ended"
 
 
 def reload_after_ensure(s):
@@ -169,6 +181,7 @@ def test_4_wait_on_unloaded_sends_one_ensure_cleanup():
         deliver(s, "cleanup", "ready")
         deliver(s, "cleanup", "unloaded")
         assert s.wait_engine("cleanup", 10) == "ready"
+        drain()
         assert s._proc.stdin.frames == [ENSURE], s._proc.stdin.frames
 
         # The reload fails: the answer is the engine's real state.
@@ -178,6 +191,7 @@ def test_4_wait_on_unloaded_sends_one_ensure_cleanup():
         deliver(s, "cleanup", "ready")
         deliver(s, "cleanup", "unloaded")
         assert s.wait_engine("cleanup", 10) == "failed"
+        drain()
         assert s._proc.stdin.frames == [ENSURE]
 
         # A worker that never answers: bounded, and still resting.
@@ -187,6 +201,7 @@ def test_4_wait_on_unloaded_sends_one_ensure_cleanup():
         t0 = time.monotonic()
         assert s.wait_engine("cleanup", 0.3) == "unloaded"
         assert 0.25 <= time.monotonic() - t0 < 5.0
+        drain()
         assert s._proc.stdin.frames == [ENSURE]
 
         # No worker to ask: nothing is written and nothing waits for it.
@@ -225,8 +240,9 @@ def test_6_prepare_cleanup_writes_one_frame_per_call_to_a_live_worker():
     with tmpdir() as td:
         s = make(td)
         deliver(s, "cleanup", "ready")
-        s.prepare_cleanup()
-        s.prepare_cleanup()
+        assert s.prepare_cleanup() is True
+        assert s.prepare_cleanup() is True
+        drain()
         assert s._proc.stdin.frames == [ENSURE, ENSURE]
         # Whatever the engine state, a press asks.
         for state in ("not_started", "loading", "warming", "unloaded",
@@ -234,6 +250,7 @@ def test_6_prepare_cleanup_writes_one_frame_per_call_to_a_live_worker():
             deliver(s, "cleanup", state)
             before = len(s._proc.stdin.frames)
             s.prepare_cleanup()
+            drain()
             assert len(s._proc.stdin.frames) == before + 1, state
 
         def frames(s):
@@ -258,25 +275,35 @@ def test_6_prepare_cleanup_writes_one_frame_per_call_to_a_live_worker():
         cases["cleanup off"] = make(td, mode="off")
         cases["cleanup v1"] = make(td, impl="v1")
         for name, sup in cases.items():
-            sup.prepare_cleanup()
+            assert sup.prepare_cleanup() is False, name
+            drain()
             assert frames(sup) == [], name
     print("ok  6 prepare_cleanup: one frame per call to a live worker, none"
           " when closed, tripped, absent, exited, not greeted, off or v1")
 
 
 def test_7_a_dead_pipe_is_swallowed_and_not_counted():
-    with tmpdir() as td:
-        s = make(td)
-        s._proc.stdin.broken = True
-        s.prepare_cleanup()  # must not raise
-        assert s._consecutive_deaths == 0
-        assert s.supervisor_state == "idle"
-        assert s.emit.count("worker.died") == 0
-        assert s.emit.count("worker.protocol_error") == 0
-        # A closed stdin object (ValueError) is swallowed the same way.
-        s._proc.stdin = None
-        s.prepare_cleanup()
-        assert s._consecutive_deaths == 0
+    errors = []
+    real_hook = threading.excepthook
+    threading.excepthook = errors.append
+    try:
+        with tmpdir() as td:
+            s = make(td)
+            s._proc.stdin.broken = True
+            s.prepare_cleanup()  # must not raise
+            drain()
+            assert s._consecutive_deaths == 0
+            assert s.supervisor_state == "idle"
+            assert s.emit.count("worker.died") == 0
+            assert s.emit.count("worker.protocol_error") == 0
+            # A closed stdin object is swallowed the same way.
+            s._proc.stdin = None
+            s.prepare_cleanup()
+            drain()
+            assert s._consecutive_deaths == 0
+    finally:
+        threading.excepthook = real_hook
+    assert errors == [], "the writer thread let an exception escape"
     print("ok  7 a send to a dead pipe does not raise and counts no death")
 
 
@@ -336,6 +363,7 @@ def test_9_ensure_cleanup_is_silent_on_the_protocol_fake():
             s.ensure_running()
             assert s.wait_engine("asr", 15) == "ready"
             assert s.prepare_cleanup() is True
+            drain()
             res = s.transcribe(job_id="job-e", attempt=1, audio_name=w.name)
             assert res["text"] == "after" and not res.get("retried")
             assert rec.count("worker.fault") == 0, rec.named("worker.fault")
@@ -347,6 +375,113 @@ def test_9_ensure_cleanup_is_silent_on_the_protocol_fake():
           " the next request is served")
 
 
+def test_10_shutdown_wake_up_survives_a_pending_engine_frame():
+    """shutdown() sets every engine event so waiters wake. A frame the
+    reader had already read must not clear that again: a waiter entering
+    Event.wait() afterwards would sleep its whole timeout."""
+    with tmpdir() as td:
+        s = WorkerSupervisor(
+            audio_root=pathlib.Path(td) / "audio", asr_model="x",
+            cleanup_mode="llm", cleanup_model="m", emit=Rec(),
+            worker_cmd=[sys.executable, "-c", SILENT_WORKER],
+            hello_timeout=15.0)
+        assert s.ensure_running()
+        deliver(s, "asr", "ready")
+        deliver(s, "cleanup", "ready")
+        deliver(s, "cleanup", "unloaded")
+        latch = s._engine_events["cleanup"]
+        assert not latch.is_set(), "the adverse state needs a cleared latch"
+        s.shutdown()
+        assert latch.is_set(), "shutdown must wake the waiters"
+        for state in ("loading", "warming", "unloaded"):
+            deliver(s, "cleanup", state)
+            assert latch.is_set(), f"a late {state} frame erased the wake-up"
+        t0 = time.monotonic()
+        assert latch.wait(5.0) is True
+        assert s._wait_engine("cleanup", 5.0) is False
+        assert time.monotonic() - t0 < 1.0
+    print("ok  10 shutdown's wake-up survives loading/warming/unloaded"
+          " frames that were already pending")
+
+
+def test_11_nothing_waits_on_the_pipe_write():
+    gate, entered = threading.Event(), threading.Event()
+
+    class _BlockedStdin(_Stdin):
+        def write(self, data):
+            entered.set()
+            gate.wait(10)
+            super().write(data)
+
+    with tmpdir() as td:
+        s = make(td)
+        s._proc.stdin = _BlockedStdin()
+        deliver(s, "cleanup", "ready")
+        deliver(s, "cleanup", "unloaded")
+        try:
+            t0 = time.monotonic()
+            assert s.prepare_cleanup() is True
+            assert time.monotonic() - t0 < 1.0, \
+                "prepare_cleanup waited for the blocked write"
+            assert entered.wait(5), "the write never started"
+            # A worker that stopped reading: the wait's own timeout runs.
+            t0 = time.monotonic()
+            assert s.wait_engine("cleanup", 0.5) == "unloaded"
+            took = time.monotonic() - t0
+            assert 0.4 <= took < 3.0, f"wait_engine took {took:.2f}s"
+            assert s._proc.stdin.frames == [], "the write is still blocked"
+        finally:
+            gate.set()
+        drain()
+        assert s._proc.stdin.frames == [ENSURE, ENSURE], \
+            "both asks arrive once the pipe is read again"
+    print("ok  11 a blocked pipe write holds up neither prepare_cleanup nor"
+          " wait_engine's own timeout; the frames arrive when released")
+
+
+def _until_unloaded(s, timeout=20.0):
+    deadline = time.monotonic() + timeout
+    while s.engine_state["cleanup"] != "unloaded":
+        assert time.monotonic() < deadline, "the worker never unloaded"
+        time.sleep(0.02)
+
+
+def test_12_the_real_worker_unloads_reloads_and_answers_a_clean():
+    """Protocol and scheduling evidence only: the production worker loop
+    with shimmed loaders, never a model."""
+    with tmpdir() as td:
+        plan = pathlib.Path(td) / "plan.json"
+        plan.write_text(json.dumps({"asr_load": "ok", "cleanup_load": "ok"}))
+        s = WorkerSupervisor(
+            audio_root=pathlib.Path(td) / "audio", asr_model="x",
+            cleanup_mode="llm", cleanup_model="m", emit=Rec(),
+            worker_cmd=[sys.executable, str(PROD)],
+            spawn_env={"LOCALFLOW_PROD_WORKER_PLAN": str(plan),
+                       "PYTHONPATH": str(ROOT),
+                       "LOCALFLOW_WORKER_IDLE_UNLOAD_S": "0.6"},
+            hello_timeout=15.0, ready_timeout=20.0, request_timeout=20.0)
+        try:
+            assert s.ensure_running()
+            _until_unloaded(s)
+            assert not s._engine_events["cleanup"].is_set()
+            generation = s.generation
+            assert s.wait_engine("cleanup", 20) == "ready"
+            assert s.engine_state == {"asr": "ready", "cleanup": "ready"}
+            _until_unloaded(s)
+            res = s.clean(job_id="job-r", attempt=1, raw_text="um hello")
+            assert res["path"] == "llm" and res["fallback_reason"] is None, res
+            assert s.generation == generation
+            for event in ("worker.died", "worker.fault",
+                          "worker.protocol_error", "worker.retired"):
+                assert s.emit.count(event) == 0, event
+            assert s.emit.count("worker.spawned") == 1
+        finally:
+            s.shutdown()
+    print("ok  12 real worker loop: unloads when idle, wait_engine reloads"
+          " it, a clean on the resting model gets the real answer, no"
+          " restart or fault")
+
+
 def main():
     run([test_1_unloaded_frame_updates_state_and_fires_on_engine,
          test_2_cleanup_latch_follows_unload_and_reload,
@@ -356,7 +491,10 @@ def main():
          test_6_prepare_cleanup_writes_one_frame_per_call_to_a_live_worker,
          test_7_a_dead_pipe_is_swallowed_and_not_counted,
          test_8_crash_while_unloaded_then_respawn_resets_like_ready,
-         test_9_ensure_cleanup_is_silent_on_the_protocol_fake],
+         test_9_ensure_cleanup_is_silent_on_the_protocol_fake,
+         test_10_shutdown_wake_up_survives_a_pending_engine_frame,
+         test_11_nothing_waits_on_the_pipe_write,
+         test_12_the_real_worker_unloads_reloads_and_answers_a_clean],
         "idle unload supervisor tests")
 
 
