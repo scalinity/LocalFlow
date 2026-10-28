@@ -1,9 +1,8 @@
 # ADR-0003: The cleanup model unloads after ten idle minutes
 
 **Status:** accepted · **Trade-off against:** the worker-footprint work's
-Residency gate (a dictation never waits on a reload). This record is the
-explicit documented trade-off that the spec's memory-budget rule
-(`LOCALFLOW_V2_SPEC.md`, initial memory budgets) asks for.
+Residency gate (a dictation never waits on a reload). The owner accepted the
+trade-off recorded here.
 
 ## Context
 
