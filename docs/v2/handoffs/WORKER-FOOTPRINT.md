@@ -83,7 +83,12 @@ Sizes are MiB as the footprint tool reports them.
 
 Identity compares the SHA-256 of every output text, the recorded decode
 ranges and the per-pass output token counts; the 60 second chunker ran on the
-long clip. The prefix-cache parity test with the production cleanup
+long clip. The rig also compares the first-request outputs A against B
+within each pair (ASR text and decode-range digests, cleanup text digest and
+per-pass token counts) as part of Identity. The two final runs
+(`perf02-shipping-3`, 10 pairs, and `perf02-first-1`, 30 pairs) predate that
+comparison, so those outputs were compared from their reports afterwards:
+equal in all 40 pairs. The prefix-cache parity test with the production cleanup
 identifier (`tests/v2/cleanup/test_prompt_cache_parity.py`, prompt tokens
 2,389, 4,575 and 558) and `tests/v2/cleanup/test_prompt_cache.py` (5 tests)
 pass. No fault frame appeared, the worker generation stayed 1, no engine
