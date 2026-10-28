@@ -1,9 +1,13 @@
 # Worker footprint reduction
 
-October 28, 2026. State: `WORKER_FOOTPRINT_COMPLETE_PENDING_LOCAL_VERIFICATION`.
-The work is on the integration branch `perf/05-idle-unload` (it contains
-`perf/worker-footprint`) and is **not merged to `main`**. The installed app
-and its idle worker were not changed.
+October 28, 2026. State: `WORKER_FOOTPRINT_COMPLETE_PENDING_LOCAL_VERIFICATION`
+(M03-V009 and M03-V010 are not run). The work is merged into `main`
+(fast-forward on October 28; `main` and `origin/main` at
+`7304b0edf49a86c29e1067048e3d5aed12cf919a`) and installed: `/Applications/LocalFlow.app`
+was rebuilt from a clean worktree of `main` at that commit at 2:06 AM EDT on
+October 28 (its `BUILD.json` reads `source_revision` `7304b0e…`, `dirty`
+false). The working branches `perf/worker-footprint` and `perf/05-idle-unload`
+are merged and deleted.
 
 **Goal:** lower the dictation worker's memory with the same two models and the
 same output text. Speed is unchanged except for a dictation that starts right
@@ -15,19 +19,21 @@ ten idle minutes (the worker's footprint drops by a median of 2,653 MiB) at
 the price of a wait on short dictations that start right after an unload. The
 steady-state cache and the loader closed without code.
 **Base commit:** `14a009a4f3d7d64a6419c12638af65bc6ed9b2a8` (`main`).
-**Integration head:** `7d523d88bd41ebf39adc58225066012574b82464` on
-`perf/05-idle-unload`; `localflow/` tree SHA-256
-`6f1762f7e6878f84c2e455fd4c459108e6c316f2f119918fa4de2ec44d1af768`.
+**Last code commit:** `7d523d88bd41ebf39adc58225066012574b82464`;
+`localflow/` tree SHA-256
+`6f1762f7e6878f84c2e455fd4c459108e6c316f2f119918fa4de2ec44d1af768`. The
+commits after it on `main`, up to `7304b0e`, change only the records, so
+`localflow/` at `7304b0e` is byte-identical.
 **Measured heads.** The launch-peak and latency numbers were measured on
 `4eff5a3e98e3c396e06212f8aa2429c39ce3da67` (`localflow/` tree
 `400fa463b31eeaca24b5c1ea5322a1ceb8cfae0c2506dc5e0a9e5d8bca6627b4`); the
 idle-unload numbers on `09a86457d2260ff93dc676e16e7bf67679751f5e` (tree
 `901804ef5044c83718160b8827dc928c294457ee1eff1d52720c9c324de73aa0`). The
-integration head differs from `09a8645` only in the supervisor's single-writer
+last code commit differs from `09a8645` only in the supervisor's single-writer
 bound on the press-time ask (`localflow/v2/supervisor.py`); the worker the
 rig drives is byte-identical.
 **Final tree A/B:** run `final-ab-1`, a full shipping A/B of the baseline
-export (`localflow/` tree `e8c71fe8…`) against the integration head `7d523d8`
+export (`localflow/` tree `e8c71fe8…`) against the last code commit `7d523d8`
 (tree `6f1762f7e687…`), pinned to the A/A `baseline-aa-shipping-3`, 12:25 AM
 to 1:59 AM EDT on October 28 (unloading is switched off in every phase of this
 run, as in the rig's other phases). All ten latency bands pass (paired medians
@@ -40,6 +46,25 @@ cold-ish and 4,155 to 3,982 warm; launch peak 6,554 to 5,837 cold-ish and
 7,578, so its warm median moves between runs); idle 2 s after a 20-dictation
 burst 4,168 to 4,170 (median of six bursts per side, unchanged); lifetime peak
 after the burst 7,373 on both sides.
+**Install.** The new launcher is byte-identical to the previous install's, so
+the macOS Accessibility and Input Monitoring grants carry over. The previous
+app was quit with the ordered quit (`worker.shutdown` reaped the worker,
+`app.shutdown` drained the store) and the new app started a fresh worker whose
+two engines reached ready with no fault. Read with the footprint tool right
+after launch, that worker shows a footprint of 3,981 MiB at ready and a
+lifetime peak of 5,865 MiB (the rig measured 3,981 and 5,837 for this code, and
+4,153 and 6,554 cold-ish for the baseline side). Each app's `BUILD.json`
+manifest of 169 bundled `localflow/` files matches its source commit
+byte for byte: the installed app matches `7304b0e` and the rollback copy
+matches `14a009a`. The only shipped-code differences between those two
+commits are the files of this work.
+**Rollback copy.** The previous installed app (built from `main` at `14a009a`;
+its `BUILD.json` reads `dirty` true, from files outside the bundled code; 972
+MB) is kept at
+`~/Library/Application Support/LocalFlow/v2-evidence/footprint/installed-app-before-20261028/LocalFlow.app`.
+It is private and not in the repository, and it is the build without the
+changes that M03-V009 compares against.
+**Live unload:** LIVE-UNLOAD-PENDING: the installed worker's first idle unload (due about 2:17 AM EDT on October 28) is not recorded here yet.
 **This record:** this file, `STATUS.json` (`current_state.worker_footprint`)
 and the pending runbook entries M03-V009 and M03-V010. No commit of the
 record changes code.
@@ -264,7 +289,7 @@ capture length, never below zero.
 - **04, verify and record: this record.** It records the outcome and the
   numbers above; no production code changes in it.
 - **05, idle unload: the Residency gate failed; built on the owner's
-  decision (ADR-0003), shipped on the integration branch.** The gate: the
+  decision (ADR-0003), shipped on `main`.** The gate: the
   worker's own cleanup load path, warmup included, timed in a disposable
   in-process script outside the repository on the `4eff5a3` tree
   (weights 2,258 MiB): page-cache-warm 1.679 to 1.723 s (median 1.699 s,
@@ -353,30 +378,28 @@ capture length, never below zero.
 
 ## Pending owner decisions
 
-1. **Install a new build.** The worker change reaches the installed app only
-   after a reinstall of a build that contains it; the branch is not merged to
-   `main`. The installed app and its idle worker were left untouched. A
-   qualification build goes to a new absolute path with
-   `scripts/build_app.sh --output`, never over `/Applications/LocalFlow.app`.
-   Order matters for the two runbook checks: M03-V009 compares against the
-   installed app, so run it while the installed app is still the build without
-   the changes; M03-V010 needs the installed app to be the new build.
-2. **Run the runbook checks M03-V009 and M03-V010.** V009 is the key release
+1. **Run the runbook checks M03-V009 and M03-V010.** V009 is the key release
    to inserted text check in the real app on the reference condition,
-   repeated on one synthetic job. V010 is the idle unload in the real app
-   after real idle periods: footprint, cleanup states, the menu-bar line, a
-   six-second dictation and a one-second dictation. Both are appended to the
-   runbook as pending local verification and are not run.
-3. **Reopen ticket 03 for a cache limit or a trim after an ASR result?** It
+   repeated on one synthetic job: the rollback copy (the build without the
+   changes) against the installed app (the build with them). V010 is the idle
+   unload in the installed app after real idle periods: footprint, cleanup
+   states, the menu-bar line, a six-second dictation and a one-second
+   dictation. Both are in the runbook as pending local verification and are
+   not run. The two apps share one bundle identifier, so each check quits one
+   before it opens the other.
+2. **Reopen ticket 03 for a cache limit or a trim after an ASR result?** It
    matters only for ASR requests with no cleanup request after them (see
    *Limits*).
-4. **Delete the earlier evidence runs and the baseline export** under
-   `~/Library/Application Support/LocalFlow/v2-evidence/footprint/` and the
-   git-ignored `.scratch/worker-footprint/`. The final runs
+3. **Delete the earlier evidence runs, the baseline export and the rollback
+   copy of the previous install.** The evidence runs and the baseline export
+   are under `~/Library/Application Support/LocalFlow/v2-evidence/footprint/`
+   and the git-ignored `.scratch/worker-footprint/`. The final runs
    (`perf02-shipping-3`, `perf02-first-1` and their A/A runs, `perf05-idle-1`
    and `final-ab-1`) are the record behind this file, with `ticket05-gate`
    for the gate numbers; the baseline export can be recreated from commit
-   `45bf38d` with `git archive` and identified by its tree digest.
+   `45bf38d` with `git archive` and identified by its tree digest. The
+   rollback copy is the build M03-V009 needs, so it stays until that check
+   has run or been dropped.
 
 ## Re-running the measurement
 

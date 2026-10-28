@@ -318,7 +318,7 @@ footer{color:var(--faint);font-size:12px;margin-top:40px;border-top:1px solid va
       <section id="overview" aria-labelledby="ov-h">
         <div class="hero">
           <div>
-            <div class="navlabel" style="padding:0">Last updated 2026-10-28 · M03-V010 added for the idle unload, code <code>7d523d8</code> · before that 2026-10-27 · M03-V009 added for the worker footprint change, code <code>4eff5a3</code> · before that 2026-09-28 · M07 section added by the cross-milestone remediation · code <code>340c566</code> (M14 checks at <code>9d0cfdf</code>, M13 checks at <code>36e03a2</code>, M12 checks at <code>b17aa2b</code>, M10 checks at <code>ed5e206</code>, M09 at <code>a304d48</code>, M08 at <code>ea83bc1</code>, M11 at <code>9a049b3</code>, M06 at <code>4388b52</code>, M05 at <code>01a1f3c</code>, M04 at <code>4ef219c</code>, M03 at <code>3e0d1ab</code>, M02 at <code>bfbc63c</code>, M01 at <code>3db7406</code>)</div>
+            <div class="navlabel" style="padding:0">Last updated 2026-10-28 · M03-V009 rewritten to compare the installed build with the rollback copy, code <code>7304b0e</code> · M03-V010 added for the idle unload, code <code>7d523d8</code> · before that 2026-10-27 · M03-V009 added for the worker footprint change, code <code>4eff5a3</code> · before that 2026-09-28 · M07 section added by the cross-milestone remediation · code <code>340c566</code> (M14 checks at <code>9d0cfdf</code>, M13 checks at <code>36e03a2</code>, M12 checks at <code>b17aa2b</code>, M10 checks at <code>ed5e206</code>, M09 at <code>a304d48</code>, M08 at <code>ea83bc1</code>, M11 at <code>9a049b3</code>, M06 at <code>4388b52</code>, M05 at <code>01a1f3c</code>, M04 at <code>4ef219c</code>, M03 at <code>3e0d1ab</code>, M02 at <code>bfbc63c</code>, M01 at <code>3db7406</code>)</div>
             <h2 id="ov-h">What still has to be proven on the real Mac.</h2>
             <p class="lede">Cloud remediation sessions repair code and prove it with portable tests. Anything that needs this Mac — the installed app, real Application Support data, MLX/Metal inference, microphones, the launch environment or a human watching the screen — is collected here as a check with exact commands, expected results and where to save the evidence.</p>
             <p class="lede">Work top to bottom inside a milestone. Set each check’s status as you go; it is saved in this browser. Nothing here needs to be done between milestones.</p>
@@ -1381,7 +1381,7 @@ ls "$OUT2/V009-copy/backups"</code></pre></div>
       <section class="milestone" id="M03" data-milestone="M03" data-title="Resilient capture & inference">
         <div class="ms-head">
           <span class="mid">M03</span><h2>Resilient capture &amp; inference</h2>
-          <span class="meta">instructions M03-r1 · code 3e0d1ab · remediation of audit at 2b9b7a1 · M03-V009 at 4eff5a3 (worker footprint) · M03-V010 at 7d523d8 (idle unload)</span>
+          <span class="meta">instructions M03-r1/r2 · code 3e0d1ab · remediation of audit at 2b9b7a1 · M03-V009 (r2) at 7304b0e (worker footprint) · M03-V010 at 7d523d8 (idle unload)</span>
         </div>
         <p class="ms-intro">The M03 cloud remediation made the startup recovery scan take only work that is provably abandoned (and never replace better audio), put every M03 audio file under the delete-everywhere barrier, gave each worker generation sole ownership of its requests, serialized spawn/retry/restart/quit under one lifecycle with permanently closed admission, carried the attempt that actually ran through failures, retired damaged worker processes, let “basic now” cleanup answer during a model load, versioned the capture journal (checksums, original sample positions, verified footer), kept original capture time/rate/gaps through a recovery retry, made WAV writes atomic and reads strict, made microphone teardown exception-safe, and cleaned up trigger latches. Portable tests passed in the cloud; these checks cover what only this Mac can show. The September 22 M03 records stay as they are; their four pending human items are carried by M03-V004…V008 below for the current code. Detail: <code>docs/v2/handoffs/M03.md</code> (remediation addendum) and <code>docs/v2/acceptance/M03/results.json</code> → <code>remediation_2026_09_25</code>.</p>
 
@@ -1817,44 +1817,42 @@ EOF</code></pre></div>
           </details>
         </article>
 
-        <h3 class="group">Native macOS · qualification build, real data</h3>
+        <h3 class="group">Native macOS · rollback copy and installed app, real data</h3>
 
-        <article class="check" id="M03-V009" data-milestone="M03" data-rev="M03-r1" data-code="4eff5a3" data-tags="terminal native human hardware model">
+        <article class="check" id="M03-V009" data-milestone="M03" data-rev="M03-r2" data-code="7304b0e" data-tags="terminal native human hardware model">
           <header class="check-head">
             <span class="cid">M03-V009</span>
             <h4>Worker footprint build: the same text arrives with no added wait after releasing fn</h4>
             <ul class="tags"><li>Terminal</li><li>Native macOS</li><li>Human visual</li><li>Microphone</li><li>Model-backed</li><li>~20 min</li></ul>
             <div class="status-slot"></div>
           </header>
-          <p class="proves"><b>What it proves.</b> The worker footprint change makes the worker hand back the allocator’s unused cached memory once after each engine’s load and warmup (<code>contracts/worker.md</code> → Allocator release at load). Measured at the worker protocol it lowers the launch peak and leaves every output and every latency band unchanged, but that seam cannot see the interval from releasing fn to the text appearing in an app. This check says one invented sentence in the real app to the build with the change and to the build without it, and compares the inserted text and the release-to-text time.</p>
-          <p class="plain"><b>In plain terms.</b> You say the same sentence five times to the installed app and five times to the new build, and check that the text which appears is the same and arrives no later.</p>
+          <p class="proves"><b>What it proves.</b> The installed build (<code>main</code> at <code>7304b0e</code>) differs from the previous install only in the worker footprint work: the worker hands back the allocator’s unused cached memory once after each engine’s load and warmup (<code>contracts/worker.md</code> → Allocator release at load), and a hotkey press also asks the worker to keep the cleanup model loaded (the idle unload, ADR-0003). Measured at the worker protocol the change lowers the launch peak and leaves every output and every latency band unchanged, but that seam cannot see the interval from releasing fn to the text appearing in an app. This check says one invented sentence in the real app to the previous build (the private rollback copy) and to the installed build, and compares the inserted text and the release-to-text time.</p>
+          <p class="plain"><b>In plain terms.</b> You say the same sentence five times to the previous build and five times to the installed app, and check that the text which appears is the same and arrives no later.</p>
           <details class="more"><summary>Instructions &amp; expected results</summary>
             <dl class="facts">
               <dt>Environment</dt><dd>Reference Mac on power, no thermal warning, nothing else running a model · Terminal · microphone · TextEdit · your real LocalFlow data</dd>
-              <dt>Preconditions</dt><dd>Terminal set-up done (<code>$LF_MAIN</code>, <code>$PY</code>, <code>$EV</code> and <code>$APP</code> exist). The installed app is the build without the change; command block 1 confirms it. A qualification build of the revision with the change goes to a new path: the installed app is never replaced. Ten test dictations land in your real History; delete them there afterwards if you do not want them.</dd>
+              <dt>Preconditions</dt><dd>Terminal set-up done (<code>$LF_MAIN</code>, <code>$PY</code>, <code>$EV</code> and <code>$APP</code> exist). The installed app (<code>$APP</code>) is the build with the change; the build without it is the private rollback copy of the previous install, kept at <code>$EV/footprint/installed-app-before-20261028/LocalFlow.app</code>. Command block 1 confirms both. Nothing is built and nothing is installed over <code>$APP</code>. The two apps share one bundle identifier, so only one can run: the check quits one before it opens the other. Ten test dictations land in your real History; delete them there afterwards if you do not want them.</dd>
               <dt>Working dir</dt><dd>the Terminal window where you ran the Terminal set-up</dd>
             </dl>
             <h5>Manual actions</h5>
             <ol class="list">
-              <li>Run command block 1. It builds the revision with the change into <code>$QAPP</code> (the script refuses an existing path and never touches <code>$APP</code>) and prints which build each app is. If it says the installed app already has the change, stop: build <code>14a009a</code> (the commit the work was cut from) the same way into a second new path and use that app as the “without the change” build in pass A.</li>
+              <li>Run command block 1. It defines <code>$OLD</code>, the private rollback copy of the previous install (the build without the change), and prints which build each app is. If the rollback copy is missing or reads as having the change, or the installed app reads as not having it, stop.</li>
               <li>Choose one invented sentence of about fifteen words with no numbers, for example “The green ferry crosses the quiet harbor every morning before the bakery opens.” Use it for every take.</li>
-              <li>Pass A, the build without the change: it is the installed app, running. If it was just launched, wait two minutes so both models are loaded and warm. Open a new plain-text TextEdit document and click into it. Hold fn, say the sentence, release, wait for the text, press Return. Do this five times and dictate nothing else.</li>
-              <li>Select all in the document, copy, then run command block 2. Choose <b>Quit LocalFlow</b> from the menu-bar menu.</li>
-              <li>Pass B, the build with the change: run <code>open "$QAPP"</code>. If macOS asks for Accessibility, Input Monitoring or the microphone for it, grant them. Wait two minutes, open a new plain-text TextEdit document and take the same five takes.</li>
-              <li>Select all, copy, then run command block 3. Choose <b>Quit LocalFlow</b> from the menu-bar menu and run <code>open "$APP"</code> to bring the installed app back.</li>
+              <li>Pass A, the build without the change: choose <b>Quit LocalFlow</b> from the installed app’s menu-bar menu, wait until its icon is gone, then run <code>open "$OLD"</code>. If macOS asks for Accessibility, Input Monitoring or the microphone for it, grant them. Wait two minutes so both models are loaded and warm. Open a new plain-text TextEdit document and click into it. Hold fn, say the sentence, release, wait for the text, press Return. Do this five times and dictate nothing else.</li>
+              <li>Select all in the document, copy, then run command block 2. Choose <b>Quit LocalFlow</b> from the menu-bar menu and wait until its icon is gone.</li>
+              <li>Pass B, the build with the change: run <code>open "$APP"</code>. Wait two minutes, open a new plain-text TextEdit document and take the same five takes.</li>
+              <li>Select all, copy, then run command block 3. Leave the installed app running.</li>
             </ol>
             <h5>Commands</h5>
-            <div class="cmdwrap"><pre class="cmd"><code><span class="c"># 1 · Build the revision with the change; show which build each app is</span>
+            <div class="cmdwrap"><pre class="cmd"><code><span class="c"># 1 · Find the build without the change (the private rollback copy); show which build each app is</span>
 export OUTFP="$EV/footprint-verification"; mkdir -p "$OUTFP" &amp;&amp; chmod 700 "$OUTFP"
-export LF_FP="$LF_MAIN/.worktrees/footprint-verify"
-export QAPP="$OUTFP/LocalFlow-footprint.app"
-[ -d "$LF_FP" ] || git -C "$LF_MAIN" worktree add --detach "$LF_FP" 4eff5a3
-git -C "$LF_FP" merge-base --is-ancestor 85a05f1 HEAD &amp;&amp; echo "worker footprint change present"
-( cd "$LF_FP" &amp;&amp; ./scripts/build_app.sh --output "$QAPP" )
+export OLD="$EV/footprint/installed-app-before-20261028/LocalFlow.app"
+[ -d "$OLD" ] || echo "ERROR: the rollback copy is missing: $OLD"
 fp_rev() { "$PY" -c 'import json, sys; d = json.load(open(sys.argv[1])); print(d["source_revision"], "dirty" if d["dirty"] else "clean")' "$1/Contents/Resources/BUILD.json"; }
-echo "installed app: $(fp_rev "$APP")"; echo "new build:     $(fp_rev "$QAPP")"
-INSTALLED_REV="$(fp_rev "$APP" | cut -d' ' -f1)"
-git -C "$LF_MAIN" cat-file -e "$INSTALLED_REV^{commit}" &amp;&amp; { git -C "$LF_MAIN" merge-base --is-ancestor 85a05f1 "$INSTALLED_REV" &amp;&amp; echo "installed app already has the change" || echo "installed app is the build without the change"; }
+fp_has() { git -C "$LF_MAIN" cat-file -e "$1^{commit}" 2&gt;/dev/null &amp;&amp; { git -C "$LF_MAIN" merge-base --is-ancestor 85a05f1 "$1" &amp;&amp; echo yes || echo no; } || echo unknown; }
+echo "without the change (rollback copy): $(fp_rev "$OLD")"; echo "with the change (installed app):    $(fp_rev "$APP")"
+echo "rollback copy has the change: $(fp_has "$(fp_rev "$OLD" | cut -d' ' -f1)")  (expected: no)"
+echo "installed app has the change: $(fp_has "$(fp_rev "$APP" | cut -d' ' -f1)")  (expected: yes)"
 
 <span class="c"># 2 · After pass A: the timings of the last five dictations (no transcript text is read from the store) and the inserted text</span>
 fp_timings() { "$PY" - &lt;&lt;'EOF'
@@ -1878,20 +1876,20 @@ a=$(awk '/^takes/ {print $NF}' "$OUTFP/pass-A-timings.txt"); b=$(awk '/^takes/ {
 "$PY" -c 'import sys; a, b = float(sys.argv[1]), float(sys.argv[2]); print(f"median release-to-text: A {a:.0f} ms, B {b:.0f} ms, B minus A {b-a:+.0f} ms, limit {max(50, 0.05*a):.0f} ms")' "$a" "$b"</code></pre></div>
             <h5>Expected</h5>
             <ul class="list">
-              <li>Block 1 prints “worker footprint change present”, the build ends with “Built … (not installed)”, the new build reads <code>4eff5a3… clean</code> and the installed app is reported as the build without the change.</li>
+              <li>Block 1 prints the rollback copy as <code>14a009a… dirty</code> (the label comes from files outside the bundled code) and the installed app as <code>7304b0e… clean</code>, or a later revision that has the change, then “rollback copy has the change: no” and “installed app has the change: yes”.</li>
               <li>Pass A and pass B each list five rows with outcome <code>confirmed</code>, the same <code>cleanup_path</code> in every row of both passes and <code>-</code> as the fallback reason.</li>
               <li>Each pass shows the sentence on five lines. Pass B’s lines are exactly pass A’s (same words, capitals, punctuation); if one pass’s own five takes already differ, every pass B line is one of the variants pass A produced.</li>
-              <li>“B minus A” is below the printed limit (the spec’s Latency rule: 50 ms or 5% of A’s median, whichever is larger), and on screen the text arrives no later with the new build.</li>
+              <li>“B minus A” is below the printed limit (the spec’s Latency rule: 50 ms or 5% of A’s median, whichever is larger), and on screen the text arrives no later with the installed app.</li>
             </ul>
             <h5>If it fails</h5>
             <ul class="list">
               <li>A word, capital, punctuation mark or numeral in pass B that no pass A line has: <b>Failed</b> — keep both text files; the worker protocol checks did not cover this path.</li>
-              <li>“B minus A” above the limit: repeat both passes once with the new build first. Above the limit again: <b>Failed</b> with the timing files.</li>
+              <li>“B minus A” above the limit: repeat both passes once with the installed app first. Above the limit again: <b>Failed</b> with the timing files.</li>
               <li>A row with a fallback reason, or an outcome other than <code>confirmed</code> in only one pass: <b>Failed</b> — name the reason in the note.</li>
-              <li>The installed app already has the change and no second build exists, or the new build will not start: <b>Blocked</b>.</li>
+              <li>The rollback copy is missing or reads as having the change, the installed app reads as not having it, or either app will not start: <b>Blocked</b>.</li>
             </ul>
             <h5>Evidence</h5>
-            <p>Private: <code>$OUTFP/pass-A-text.txt</code>, <code>pass-B-text.txt</code> and the two timing files (your invented sentence and timings only). Nothing from this check goes into Git. When finished, remove the worktree with <code>git -C "$LF_MAIN" worktree remove "$LF_FP"</code> and the test build with <code>rm -r "$QAPP"</code>.</p>
+            <p>Private: <code>$OUTFP/pass-A-text.txt</code>, <code>pass-B-text.txt</code> and the two timing files (your invented sentence and timings only). Nothing from this check goes into Git. Nothing is built and nothing is installed over <code>$APP</code>; the rollback copy stays where it is until you decide to delete it (<code>handoffs/WORKER-FOOTPRINT.md</code>).</p>
             <h5>Contract relevance</h5>
             <p>Worker footprint spec (manual check: key release to inserted text, reference condition, one synthetic job); S24 (end-to-end means release to verified visible text); <code>contracts/worker.md</code> → Allocator release at load; <code>handoffs/WORKER-FOOTPRINT.md</code>.</p>
           </details>
@@ -1911,12 +1909,12 @@ a=$(awk '/^takes/ {print $NF}' "$OUTFP/pass-A-timings.txt"); b=$(awk '/^takes/ {
           <details class="more"><summary>Instructions &amp; expected results</summary>
             <dl class="facts">
               <dt>Environment</dt><dd>Reference Mac on power, no thermal warning, nothing else running a model · Terminal · microphone · TextEdit · your real LocalFlow data</dd>
-              <dt>Preconditions</dt><dd>Terminal set-up done (<code>$LF_MAIN</code>, <code>$PY</code>, <code>$EV</code> and <code>$APP</code> exist). The installed app is the new build with the idle unload; command block 1 says whether it is. If you also mean to run M03-V009, run it first: it needs the installed app to be the build without the changes. Four test dictations land in your real History; delete them there afterwards if you do not want them.</dd>
+              <dt>Preconditions</dt><dd>Terminal set-up done (<code>$LF_MAIN</code>, <code>$PY</code>, <code>$EV</code> and <code>$APP</code> exist). The installed app is the build with the idle unload (rebuilt from <code>main</code> at <code>7304b0e</code> on October 28); command block 1 says whether it is. Four test dictations land in your real History; delete them there afterwards if you do not want them.</dd>
               <dt>Working dir</dt><dd>the Terminal window where you ran the Terminal set-up</dd>
             </dl>
             <h5>Manual actions</h5>
             <ol class="list">
-              <li>Run command block 1. If it says the installed app does not have the idle unload, stop: install the new build first. If the app was just launched, wait until the menu-bar menu’s model line reads “ASR: ready · Cleanup: ready” before running it, and do not press fn from now on.</li>
+              <li>Run command block 1. If it says the installed app does not have the idle unload, stop. If the app was just launched, wait until the menu-bar menu’s model line reads “ASR: ready · Cleanup: ready” before running it, and do not press fn from now on.</li>
               <li>Leave the Mac alone for at least 11 minutes: no fn, no dictation, do not quit the app (block 1 keeps the Mac awake; a sleeping Mac does not count as idle time). Then open the LocalFlow menu-bar menu: its model line reads “ASR: ready · Cleanup: resting”. Run command block 2.</li>
               <li>Use one invented sentence of about fifteen words with no numbers that takes about six seconds to say, for example “The green ferry crosses the quiet harbor every morning before the bakery opens.” Open a new plain-text TextEdit document and click into it. Hold fn, say the sentence, release, wait for the text, press Return. Without pausing, do it once more. Select all, copy, run command block 3. The menu line now reads “Cleanup: ready”.</li>
               <li>Leave the Mac alone for another 11 minutes the same way. The menu line reads “Cleanup: resting” again.</li>
