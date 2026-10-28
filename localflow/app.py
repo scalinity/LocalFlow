@@ -4038,11 +4038,33 @@ class AppDelegate(NSObject):
     # ---- engine status ---------------------------------------------------
 
     def _setEngineStatus_(self, engines):
-        _engine, _state = engines
+        engine, _state = engines
         states = dict(self.supervisor.engine_state)
+        cleanup = states.get('cleanup', 'not_started')
         self.model_menu_item.setTitle_(
             f"ASR: {states.get('asr', 'not_started')}"
-            f" · Cleanup: {states.get('cleanup', 'not_started')}")
+            f" · Cleanup: {'resting' if cleanup == 'unloaded' else cleanup}")
+        # An open Hub shows the unload, the reload and its ready as they
+        # happen (the Home recheck only covers a model that is loading).
+        flush = getattr(getattr(self, "_hub", None), "request_flush", None)
+        if engine == "cleanup" and flush is not None:
+            flush()
+
+    @objc.python_method
+    def _prepare_cleanup_async(self):
+        """Ask the worker for a loaded cleanup model while the recording
+        runs (ADR-0003). The press handler runs on the main thread and must
+        never wait on the worker's pipe."""
+        if self.cfg.get("cleanup") != "llm":
+            return
+
+        def ask():
+            try:
+                self.supervisor.prepare_cleanup()
+            except Exception:
+                pass  # the supervisor never raises; test stand-ins may lack it
+        threading.Thread(target=ask, daemon=True,
+                         name="localflow-prepare-cleanup").start()
 
     # ---- dictation state machine (all on main thread) ------------------
 
@@ -4134,6 +4156,7 @@ class AppDelegate(NSObject):
             self._job_state(job_id, "failed_recoverable",
                             reason="mic_open_failed")
             return
+        self._prepare_cleanup_async()
         self._job = {
             "job_id": job_id, "family_id": family_id,
             "captured_at_utc": captured_at,

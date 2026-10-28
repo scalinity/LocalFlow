@@ -46,3 +46,11 @@ test('Models hierarchy and precise optional-feature framing', () => {
   assert.ok(!source.includes('What the speech model can do'));
   assert.ok(!source.includes('Not supported'));
 });
+
+test('A resting cleanup model is named, not shown as warming up', () => {
+  const engines = readFileSync(new URL('../src/routes/models/Engines.svelte', import.meta.url), 'utf8');
+  const sidebar = readFileSync(new URL('../src/app/Sidebar.svelte', import.meta.url), 'utf8');
+  assert.ok(engines.includes("unloaded: 'Resting'"));
+  assert.ok(sidebar.includes("engine.cleanup === 'unloaded'"));
+  assert.ok(sidebar.includes('Cleanup model is resting; it loads when you dictate.'));
+});

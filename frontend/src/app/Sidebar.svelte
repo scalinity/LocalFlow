@@ -32,7 +32,9 @@
           ? 'Speech and cleanup models are ready.'
           : engine.cleanup === 'failed'
             ? 'Speech is ready; cleanup is unavailable.'
-            : 'Speech is ready; cleanup is warming up.'
+            : engine.cleanup === 'unloaded'
+              ? 'Cleanup model is resting; it loads when you dictate.'
+              : 'Speech is ready; cleanup is warming up.'
         : engine.asr === 'failed'
           ? 'The speech model failed to load — see Models.'
           : 'The speech model is loading.',

@@ -106,6 +106,8 @@ def main():
                 sys.stdin.buffer.read()  # alive until the parent lets go
                 return 0
             continue
+        if op == "ensure_cleanup":
+            continue  # never answered, in any state (ADR-0003)
         if op not in ("transcribe", "clean", "transform"):
             _write_msg({"v": PROTOCOL_VERSION, "op": "fault",
                         "req_id": msg.get("req_id"),

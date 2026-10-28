@@ -53,7 +53,8 @@ STDERR_KEEP_GENERATIONS = 2
 
 _CODE = re.compile(r"^[a-z0-9_.:-]{1,80}\Z")
 _TYPE = re.compile(r"^[A-Za-z_][A-Za-z0-9_.]{0,63}\Z")
-_ENGINE_STATES = {"not_started", "loading", "warming", "ready", "failed"}
+_ENGINE_STATES = {"not_started", "loading", "warming", "ready", "failed",
+                  "unloaded"}
 _RESULT_KIND = {"transcribe": "asr", "clean": "clean"}
 # Worker fault classes that do not indicate a damaged process: the request
 # is refused as-is — no kill, no respawn, no retry, no death counted.
@@ -177,7 +178,9 @@ class WorkerSupervisor:
         self.hello_timeout = hello_timeout
         self.generation = 0
         # Engine states per S09: not_started/loading/warming/ready/failed
-        # (degraded is supervisor-level: a fault happened, worker rebuilt).
+        # (degraded is supervisor-level: a fault happened, worker rebuilt),
+        # plus ``unloaded``: the worker released the idle cleanup model and
+        # reloads it on ``ensure_cleanup`` (ADR-0003).
         self.engine_state = {"asr": "not_started", "cleanup": "not_started"}
         self.supervisor_state = "idle"  # idle|running|degraded|failed|closed
         self._proc = None
@@ -438,11 +441,16 @@ class WorkerSupervisor:
                         # checked under the lock _spawn resets it with.
                         return
                     self.engine_state[engine] = state
-                # The event signals "reached a scheduling-terminal state"
-                # (ready or failed) — intermediate loading/warming updates
-                # the visible state without waking waiters.
-                if state in ("ready", "failed"):
-                    self._engine_events[engine].set()
+                    # The event signals "reached a scheduling-terminal
+                    # state" (ready or failed) — intermediate
+                    # loading/warming updates the visible state without
+                    # waking waiters. Any other state clears it again, so
+                    # an unload or a reload after a ready is waited for,
+                    # not mistaken for the earlier ready.
+                    if state in ("ready", "failed"):
+                        self._engine_events[engine].set()
+                    else:
+                        self._engine_events[engine].clear()
                 self.on_engine(engine, state, msg)
                 model = msg.get("model_id")
                 self.emit("worker.engine_state", level="INFO",
@@ -844,16 +852,21 @@ class WorkerSupervisor:
         with self._state_lock:
             return job_id in self._revoked
 
-    def _wait_engine(self, engine, timeout) -> bool:
+    def _wait_engine(self, engine, timeout, asked=False) -> bool:
         """True when the engine reached a terminal-for-scheduling state
         (ready or failed). ASR failure is fatal to transcribe; cleanup
-        failure only means the worker answers in basic mode."""
+        failure only means the worker answers in basic mode. A resting
+        (``unloaded``) model is not loading, so a request's wait returns
+        at once; only a caller that has just asked for the reload
+        (``asked``) waits for it."""
         with self._state_lock:
             state = self.engine_state.get(engine)
             if self._closed:
                 return False
         if state in ("ready", "failed"):
             return state == "ready"
+        if state == "unloaded" and not asked:
+            return False
         self._engine_events[engine].wait(timeout)
         with self._state_lock:
             state = self.engine_state.get(engine)
@@ -862,11 +875,39 @@ class WorkerSupervisor:
         return state == "ready"
 
     def wait_engine(self, engine, timeout) -> str:
-        """Public readiness wait (used by the cleanup hold policy)."""
-        if self._wait_engine(engine, timeout):
+        """Public readiness wait (used by the cleanup hold policy). A
+        resting cleanup model is asked back first, then waited for."""
+        asked = False
+        if engine == "cleanup":
+            with self._state_lock:
+                resting = self.engine_state.get(engine) == "unloaded"
+            asked = resting and self.prepare_cleanup()
+        if self._wait_engine(engine, timeout, asked):
             return "ready"
         with self._state_lock:
             return self.engine_state.get(engine)
+
+    def prepare_cleanup(self) -> bool:
+        """Ask the worker for a loaded cleanup model: one ``ensure_cleanup``
+        frame and no reply. The worker reloads a model it released after
+        an idle period and otherwise only restarts its idle clock, so a
+        hotkey press sends this whatever the engine state. Never raises
+        and sends nothing unless a greeted worker of a cleanup that can
+        unload is running; True when a frame was written."""
+        with self._state_lock:
+            if self._closed or self.supervisor_state == "failed":
+                return False
+            proc = self._proc
+        if self.cleanup_mode != "llm" or self.cleanup_implementation != "v2" \
+                or proc is None or proc.poll() is not None \
+                or not self._hello.is_set():
+            return False
+        try:
+            self._send({"v": PROTOCOL_VERSION, "op": "ensure_cleanup"},
+                       proc=proc)
+        except (OSError, ValueError):
+            return False
+        return True
 
     # ---- faults ---------------------------------------------------------------
 

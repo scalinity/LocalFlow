@@ -5,7 +5,7 @@
   const e = $derived(data?.engine ?? {});
   const caps = $derived(data?.capabilities);
   const capList = $derived(Object.entries(caps?.capabilities ?? {}) as [string, { supported: boolean; reason: string | null }][]);
-  const STATE: Record<string, string> = { ready: 'Ready', loading: 'Loading', warming: 'Warming up', failed: 'Failed', not_started: 'Not started' };
+  const STATE: Record<string, string> = { ready: 'Ready', loading: 'Loading', warming: 'Warming up', failed: 'Failed', not_started: 'Not started', unloaded: 'Resting' };
   const CAP: Record<string, string> = {
     contextual_biasing: 'Biasing toward your words',
     key_terms: 'Key-term hints',
@@ -120,7 +120,8 @@
     color: var(--warning);
     font-weight: 500;
   }
-  .state.ready {
+  .state.ready,
+  .state.unloaded {
     background: var(--success-wash);
     color: var(--success);
   }
