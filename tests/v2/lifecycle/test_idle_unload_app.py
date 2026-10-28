@@ -3,11 +3,11 @@
 The real ``AppDelegate`` (under the declared non-native shims) with a
 supervisor stand-in that records ``prepare_cleanup``:
 
-  1  every hotkey and mouse press asks for the cleanup model, from a
-     daemon thread, so a supervisor that blocks never holds up the press
+  1  every hotkey and mouse press asks for the cleanup model once; the
+     supervisor writes the request off the press thread, the app adds none
   2  no ask when cleanup is not an LLM, or when the app is closing
   3  the menu-bar title says ``resting`` for an unloaded cleanup model
-  4  an open Hub is flushed on each cleanup engine change (the unload, the
+  4  an open Hub is told of each cleanup engine change (the unload, the
      reload and its ready), and never fails when there is no such Hub
   5  the cleanup wait policy reaches the worker through ``wait_engine``,
      which asks for a resting model itself (no wait of its own added)
@@ -18,7 +18,6 @@ Run: .venv/bin/python tests/v2/lifecycle/test_idle_unload_app.py
 import pathlib
 import sys
 import threading
-import time
 
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent))
 
@@ -26,62 +25,40 @@ from m03_helpers import App, GateSup, run, tmpdir  # noqa: E402
 
 
 class PrepareSup(GateSup):
-    """Records the thread each ``prepare_cleanup`` runs on; optionally
-    blocks inside it until ``hold`` is set."""
+    """Records each ``prepare_cleanup`` and the thread it was called on."""
 
-    def __init__(self, hold=None):
+    def __init__(self):
         super().__init__()
-        self.hold = hold
         self.threads = []
-        self.called = threading.Event()
 
     def prepare_cleanup(self):
         self.threads.append(threading.current_thread())
-        self.called.set()
-        if self.hold is not None:
-            self.hold.wait(10)
         return True
 
 
-def _settle(sup, calls, timeout=5.0):
-    deadline = time.monotonic() + timeout
-    while len(sup.threads) < calls and time.monotonic() < deadline:
-        time.sleep(0.01)
-
-
-def test_1_each_press_asks_off_the_main_thread():
+def test_1_each_press_asks_once():
     with tmpdir() as td:
         a = App(td, start_coordinator=False)
-        hold = threading.Event()
         try:
             d = a.d
-            sup = PrepareSup(hold=hold)
+            sup = PrepareSup()
             a.set_sup(sup)
-            t0 = time.monotonic()
-            a.dictate(release=False)  # returns although the ask is blocked
-            assert time.monotonic() - t0 < 5.0
-            assert sup.called.wait(5), "the press never asked"
-            assert len(sup.threads) == 1
-            thread = sup.threads[0]
-            assert thread is not threading.main_thread()
-            assert thread is not threading.current_thread()
-            assert thread.daemon, "the ask must never keep the app alive"
-            hold.set()
+            a.dictate(release=False)
+            assert len(sup.threads) == 1, "the press never asked"
+            assert sup.threads[0] is threading.current_thread(), \
+                "the app must call the supervisor directly, not thread it"
             a.phys = False
             d.finishDictation()
             # A second hotkey press and a mouse press ask again, one each.
             a.dictate()
-            _settle(sup, 2)
             assert len(sup.threads) == 2, sup.threads
             d.startDictation(source="mouse")
-            _settle(sup, 3)
             assert len(sup.threads) == 3, sup.threads
             d.cancelDictation()
         finally:
-            hold.set()
             a.close()
-    print("ok  1 hotkey and mouse presses each ask from a daemon thread;"
-          " a blocked ask does not hold up the press")
+    print("ok  1 hotkey and mouse presses each ask once, on the press"
+          " thread (the supervisor writes off it)")
 
 
 def test_2_no_ask_for_a_non_llm_cleanup_or_a_closing_app():
@@ -91,7 +68,6 @@ def test_2_no_ask_for_a_non_llm_cleanup_or_a_closing_app():
             sup = PrepareSup()
             a.set_sup(sup)
             a.dictate()
-            time.sleep(0.3)
             assert sup.threads == [], "asked although cleanup is off"
         finally:
             a.close()
@@ -102,11 +78,10 @@ def test_2_no_ask_for_a_non_llm_cleanup_or_a_closing_app():
             a.set_sup(sup)
             a.d._closing = True
             a.d.startDictation()
-            time.sleep(0.3)
             assert sup.threads == [], "asked while quitting"
             a.d._closing = False
             a.dictate()  # control: the same app asks once it is open
-            assert sup.called.wait(5), "control press never asked"
+            assert len(sup.threads) == 1, "control press never asked"
         finally:
             a.close()
     print("ok  2 no ask when cleanup is not llm or the app is closing")
@@ -122,10 +97,10 @@ class _MenuItem:
 
 class _Hub:
     def __init__(self):
-        self.flushes = 0
+        self.changes = 0
 
-    def request_flush(self):
-        self.flushes += 1
+    def engine_changed(self):
+        self.changes += 1
 
 
 def test_3_menu_title_says_resting():
@@ -154,7 +129,7 @@ def test_3_menu_title_says_resting():
           " model and nothing else changes")
 
 
-def test_4_open_hub_is_flushed_on_cleanup_changes():
+def test_4_open_hub_is_told_of_cleanup_changes():
     with tmpdir() as td:
         a = App(td, start_coordinator=False)
         try:
@@ -164,21 +139,21 @@ def test_4_open_hub_is_flushed_on_cleanup_changes():
             a.set_sup(sup)
             d._hub = hub = _Hub()
             for state in ("unloaded", "loading", "ready"):
-                before = hub.flushes
+                before = hub.changes
                 sup.engine_state = {"asr": "ready", "cleanup": state}
                 d._setEngineStatus_(("cleanup", state))
-                assert hub.flushes == before + 1, state
-            before = hub.flushes
+                assert hub.changes == before + 1, state
+            before = hub.changes
             d._setEngineStatus_(("asr", "ready"))
-            assert hub.flushes == before, "a speech change needs no flush"
-            # No Hub yet, or the AppKit Hub (no request_flush): no failure.
+            assert hub.changes == before, "a speech change needs no refresh"
+            # No Hub yet, or the AppKit Hub (no engine_changed): no failure.
             d._hub = None
             d._setEngineStatus_(("cleanup", "unloaded"))
             d._hub = object()
             d._setEngineStatus_(("cleanup", "unloaded"))
         finally:
             a.close()
-    print("ok  4 an open Hub is flushed on each cleanup engine change;"
+    print("ok  4 an open Hub is told of each cleanup engine change;"
           " no Hub and the AppKit Hub are left alone")
 
 
@@ -228,10 +203,10 @@ def test_5_wait_policy_goes_through_wait_engine():
 
 
 def main():
-    run([test_1_each_press_asks_off_the_main_thread,
+    run([test_1_each_press_asks_once,
          test_2_no_ask_for_a_non_llm_cleanup_or_a_closing_app,
          test_3_menu_title_says_resting,
-         test_4_open_hub_is_flushed_on_cleanup_changes,
+         test_4_open_hub_is_told_of_cleanup_changes,
          test_5_wait_policy_goes_through_wait_engine],
         "idle unload app tests")
 

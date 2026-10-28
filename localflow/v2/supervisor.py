@@ -446,10 +446,11 @@ class WorkerSupervisor:
                     # loading/warming updates the visible state without
                     # waking waiters. Any other state clears it again, so
                     # an unload or a reload after a ready is waited for,
-                    # not mistaken for the earlier ready.
+                    # not mistaken for the earlier ready. Once closed,
+                    # every event stays set: shutdown woke the waiters.
                     if state in ("ready", "failed"):
                         self._engine_events[engine].set()
-                    else:
+                    elif not self._closed:
                         self._engine_events[engine].clear()
                 self.on_engine(engine, state, msg)
                 model = msg.get("model_id")
@@ -891,9 +892,11 @@ class WorkerSupervisor:
         """Ask the worker for a loaded cleanup model: one ``ensure_cleanup``
         frame and no reply. The worker reloads a model it released after
         an idle period and otherwise only restarts its idle clock, so a
-        hotkey press sends this whatever the engine state. Never raises
-        and sends nothing unless a greeted worker of a cleanup that can
-        unload is running; True when a frame was written."""
+        hotkey press sends this whatever the engine state. Fire and
+        forget: never raises and never waits, because the write runs on
+        its own thread (a worker that stopped reading its pipe holds only
+        that thread). Sends nothing unless a greeted worker of a cleanup
+        that can unload is running; True when a write was started."""
         with self._state_lock:
             if self._closed or self.supervisor_state == "failed":
                 return False
@@ -902,11 +905,15 @@ class WorkerSupervisor:
                 or proc is None or proc.poll() is not None \
                 or not self._hello.is_set():
             return False
-        try:
-            self._send({"v": PROTOCOL_VERSION, "op": "ensure_cleanup"},
-                       proc=proc)
-        except (OSError, ValueError):
-            return False
+
+        def write():
+            try:
+                self._send({"v": PROTOCOL_VERSION, "op": "ensure_cleanup"},
+                           proc=proc)
+            except (OSError, ValueError):
+                pass  # a dead worker is the lifecycle's business, not ours
+        threading.Thread(target=write, daemon=True,
+                         name="localflow-ensure-cleanup").start()
         return True
 
     # ---- faults ---------------------------------------------------------------
