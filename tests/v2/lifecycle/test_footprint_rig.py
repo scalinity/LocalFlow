@@ -229,6 +229,153 @@ def test_an_odd_first_request_pair_count_stops_the_run():
           " shipping 30")
 
 
+# ---- the idle phase ------------------------------------------------------------------------------
+
+def test_a_capture_length_names_its_band_and_a_reload_remainder_is_floored():
+    assert [fr.capture_name(d) for d in (0.5, 1.0, 2.0, 5.0)] == [
+        "D0.5s", "D1s", "D2s", "D5s"]
+    # reload 1.8 s after a 0.5 s capture leaves 1.3 s to wait; a capture
+    # longer than the reload leaves nothing
+    assert fr.reload_remainder_ms(1800.0, 0.5) == 1300.0
+    assert fr.reload_remainder_ms(300.0, 1.0) == 0.0
+    print("ok  idle: capture lengths name their bands D0.5s, D1s, ...; the"
+          " reload remainder is reload minus capture, never below zero")
+
+
+def _idle_row(order, a, b, reload, drop_mib, names=("D0.5s", "D1s"),
+              reloads=1):
+    """One idle pair. ``a``, ``b``, ``reload`` and ``drop_mib`` list one
+    value per capture length in ``names``."""
+    asr = {"text_sha256": "t", "decode_ranges_sha256": "r"}
+
+    def clean():
+        return {"text_sha256": "c", "pass_output_tokens": [5],
+                "path": "llm"}
+
+    def side(ms):
+        return {"release_to_result_ms": ms, "asr": dict(asr),
+                "clean": clean()}
+    captures = {}
+    for i, name in enumerate(names):
+        captures[name] = {
+            "A": side(a[i]),
+            "B": {**side(b[i]), "reload_ms": reload[i]},
+            "footprint": {"ready": {"total_bytes": 4000 * fr.MIB,
+                                    "gpu_bytes": 3900 * fr.MIB},
+                          "unloaded": {"total_bytes": (4000 - drop_mib[i])
+                                       * fr.MIB, "gpu_bytes": 100 * fr.MIB},
+                          "drop_bytes": drop_mib[i] * fr.MIB}}
+
+    def seq(extra=None):
+        return {"asr": [dict(asr), dict(asr)],
+                "clean": [clean(), clean()], **(extra or {})}
+    return {"order": order, "captures": captures,
+            "second": {"A": seq({"last_result_ms": 900.0}),
+                       "B": seq({"last_result_ms": 2100.0,
+                                 "reloads": reloads})}}
+
+
+def _idle_rows():
+    # Worked by hand. D0.5s: B-A is 700-100 = 600 in pair 1 and 690-110 = 580
+    # in pair 2, so the ABBA block reads 590 against a baseline of
+    # (100+110)/2 = 105. D1s: 110-100 = 10 and 100-100 = 0, block 5, baseline
+    # 100.
+    return [_idle_row("AB", [100.0, 100.0], [700.0, 110.0],
+                      [1800.0, 1750.0], [2200, 2100]),
+            _idle_row("BA", [110.0, 100.0], [690.0, 100.0],
+                      [1700.0, 1850.0], [2300, 2000])]
+
+
+def test_the_idle_report_judges_each_capture_length_on_abba_blocks():
+    rep = fr.idle_report(_idle_rows(), (0.5, 1.0), 2500 * fr.MIB)
+    assert rep["unit"] == "abba_block"
+    assert list(rep["bands"]) == ["idle:D0.5s", "idle:D1s"]
+    short = rep["bands"]["idle:D0.5s"]
+    assert short["pairs"] == 1
+    assert short["paired_median_ms"] == 590.0
+    assert short["baseline_median_ms"] == 105.0
+    assert short["median_limit_ms"] == 50.0 and short["p95_limit_ms"] == 10.5
+    assert short["pass"] is False, "a short capture waits for the reload"
+    long = rep["bands"]["idle:D1s"]
+    assert long["paired_median_ms"] == 5.0 and long["pass"] is True
+    # the shortfall: reload minus capture, per dictation, then its median
+    assert short["reload_remainder_median_ms"] == 1250.0  # 1300, 1200
+    assert long["reload_remainder_median_ms"] == 800.0    # 750, 850
+    reload = rep["reload"]
+    assert (reload["min_ms"], reload["median_ms"], reload["max_ms"]) == (
+        1700.0, 1775.0, 1850.0)
+    drop = rep["footprint"]
+    assert drop["cleanup_weight_bytes"] == 2500 * fr.MIB
+    assert drop["drop_bytes"] == {"median": 2150 * fr.MIB,
+                                  "min": 2000 * fr.MIB,
+                                  "max": 2300 * fr.MIB}
+    assert drop["share_of_weights"] == 0.86
+    assert rep["never_degraded"] == {"requests": 8}
+    assert rep["mismatches"] == []
+    assert rep["second_dictation"]["all_single_reload"] is True
+    assert rep["second_dictation"]["last_result_ms"] == {"A": 900.0,
+                                                         "B": 2100.0}
+    rows = _idle_rows()
+    rows[1]["second"]["B"]["reloads"] = 2
+    assert fr.idle_report(rows, (0.5, 1.0), 2500 * fr.MIB)[
+        "second_dictation"]["all_single_reload"] is False
+    # a report that does not know the weights' size says so
+    none = fr.idle_report(_idle_rows(), (0.5, 1.0), 0)
+    assert none["footprint"]["share_of_weights"] is None
+    print("ok  idle report: ABBA-block verdicts per capture length, reload"
+          " remainder, reload and footprint-drop statistics, the second"
+          " dictation's reload count")
+
+
+def test_idle_outputs_are_compared_within_each_pair_and_named():
+    assert fr.idle_report(_idle_rows(), (0.5, 1.0), 0)["mismatches"] == []
+    rows = _idle_rows()
+    rows[1]["captures"]["D1s"]["B"]["clean"]["text_sha256"] = "x"
+    rows[0]["captures"]["D0.5s"]["B"]["asr"]["decode_ranges_sha256"] = "x"
+    rows[1]["captures"]["D0.5s"]["B"]["clean"]["pass_output_tokens"] = [6]
+    rows[0]["second"]["B"]["asr"][1]["text_sha256"] = "x"
+    rows[1]["second"]["B"]["clean"][0]["text_sha256"] = "x"
+    got = fr.idle_report(rows, (0.5, 1.0), 0)["mismatches"]
+    assert got == [
+        "idle:D0.5s:asr:decode_ranges_sha256 (pair 1)",
+        "idle:second:asr:text_sha256 (pair 1, dictation 2)",
+        "idle:D0.5s:clean:pass_output_tokens (pair 2)",
+        "idle:D1s:clean:text_sha256 (pair 2)",
+        "idle:second:clean:text_sha256 (pair 2, dictation 1)"], got
+    print("ok  idle outputs: ASR text and ranges and cleanup text and token"
+          " counts are compared A against B per capture and in the second"
+          " dictation, by name")
+
+
+def test_idle_mismatches_fail_identity_and_idle_bands_stay_out_of_the_exit():
+    named = ["idle:D1s:asr:text_sha256 (pair 2)"]
+    clean = fr.assemble_verdicts({"idle": {"mismatches": []}})
+    assert clean["identity"] == {
+        "pass": True, "mismatches": [], "chunker_ran": None,
+        "inconsistent_across_blocks": [], "first_request_compared": False,
+        "idle_compared": True}
+    bad = fr.assemble_verdicts({"idle": {"mismatches": named}})
+    assert bad["identity"]["pass"] is False
+    assert bad["identity"]["mismatches"] == named
+    both = fr.assemble_verdicts({
+        "first_request": {"mismatches": ["first-request:asr:text_sha256"
+                                         " (pair 1)"]},
+        "idle": {"mismatches": named}})
+    assert both["identity"]["mismatches"] == [
+        "first-request:asr:text_sha256 (pair 1)"] + named
+    assert both["identity"]["first_request_compared"] is True
+    assert "idle_compared" not in fr.assemble_verdicts(
+        {"first_request": {"mismatches": []}})["identity"], \
+        "a run without the idle phase states no idle clause"
+    # a failing idle band is no Latency band: it cannot fail Rig validity
+    rep = fr.idle_report(_idle_rows(), (0.5, 1.0), 0)
+    verdicts = fr.assemble_verdicts({"idle": rep})
+    assert verdicts["latency"]["bands"] == {}
+    assert verdicts["rig_validity"] is None
+    print("ok  identity verdict: idle mismatches fail it by name beside the"
+          " others; idle bands join no Latency band and no Rig validity")
+
+
 def test_median_and_nearest_rank_p95():
     assert fr.median([3, 1, 2]) == 2
     assert fr.median([4, 1, 3, 2]) == 2.5
@@ -390,6 +537,37 @@ def test_first_request_stats_are_pinned_only_from_abba_block_reports():
             "paired_median_ms"] == 11.0
     print("ok  A/A report: first-request stats are pinned only when the"
           " report marks its unit as abba_block")
+
+
+def test_idle_band_stats_are_pinned_only_from_abba_block_reports():
+    pinned = {"paired_median_ms": 3.0, "paired_p95_ms": 9.0}
+    with tempfile.TemporaryDirectory() as td:
+        path = pathlib.Path(td) / "report.json"
+        path.write_text(json.dumps(_aa_report()))
+        assert "idle:D5s" not in _load_aa(path)["stats"]["rtt_ms"]
+        for unit, kept in (("abba_block", True), ("pair", False)):
+            report = _aa_report()
+            report["idle"] = {"unit": unit, "bands": {
+                "idle:D5s": {**pinned, "pass": True}}}
+            path.write_text(json.dumps(report))
+            got = _load_aa(path)["stats"]["rtt_ms"].get("idle:D5s")
+            assert got == (pinned if kept else None), (unit, got)
+    # a pinned band's limit is never tighter than that noise: spec median
+    # limit 50 ms and p95 limit 10 ms, A/A values 80 and 30
+    rows = [_idle_row("AB", [100.0, 100.0], [110.0, 110.0],
+                      [1800.0, 1750.0], [2200, 2100]),
+            _idle_row("BA", [100.0, 100.0], [110.0, 110.0],
+                      [1700.0, 1850.0], [2300, 2000])]
+    aa = {"idle:D1s": {"paired_median_ms": 80.0, "paired_p95_ms": 30.0}}
+    rep = fr.idle_report(rows, (0.5, 1.0), 0, aa=aa)
+    pinned_band = rep["bands"]["idle:D1s"]
+    free_band = rep["bands"]["idle:D0.5s"]
+    assert (pinned_band["median_limit_ms"], pinned_band["p95_limit_ms"]) == (
+        80.0, 30.0)
+    assert free_band["aa_median_ms"] is None
+    assert free_band["median_limit_ms"] == 50.0
+    print("ok  A/A report: idle bands are pinned from abba_block reports and"
+          " set each idle band's limit as max(spec, A/A)")
 
 
 def _refused(td, mutate, needle, **run):
@@ -589,6 +767,76 @@ def test_guard_stops_on_each_forbidden_frame():
                                    "generation": 2}), "generation")
     print("ok  guard: second loading, other model, missing model, fault,"
           " failed engine and wrong generation all stop the run")
+
+
+def test_guard_accepts_a_reload_after_an_unload_and_nothing_else():
+    g = _guard()
+    for f in (_engine("asr", "loading"), _engine("asr", "warming"),
+              _engine("asr", "ready"), _engine("cleanup", "loading"),
+              _engine("cleanup", "ready")):
+        g.check(f)
+    assert g.both_ready()
+    # unload, reload, unload, reload: each loading follows an unloaded frame
+    for f in (_engine("cleanup", "unloaded"),):
+        g.check(f)
+    assert not g.both_ready(), "an unloaded engine is not ready"
+    for f in (_engine("cleanup", "loading"), _engine("cleanup", "ready"),
+              _engine("cleanup", "unloaded"), _engine("cleanup", "loading"),
+              _engine("cleanup", "ready")):
+        g.check(f)
+    assert g.both_ready()
+    print("ok  guard: a cleanup loading is legal after an unloaded frame of"
+          " that engine, any number of times")
+
+
+def test_guard_stops_on_an_unload_that_is_not_legal():
+    # a second loading without an unload in between, before and after a
+    # reload
+    g = _guard()
+    for f in (_engine("cleanup", "loading"), _engine("cleanup", "ready"),
+              _engine("cleanup", "unloaded"), _engine("cleanup", "loading")):
+        g.check(f)
+    _stops(lambda: g.check(_engine("cleanup", "loading")), "second loading")
+    g = _guard()
+    for f in (_engine("cleanup", "loading"), _engine("cleanup", "ready")):
+        g.check(f)
+    _stops(lambda: g.check(_engine("cleanup", "loading")), "second loading")
+    # the speech engine never unloads, ready or not
+    g = _guard()
+    for f in (_engine("asr", "loading"), _engine("asr", "ready")):
+        g.check(f)
+    _stops(lambda: g.check(_engine("asr", "unloaded")), "asr", "unloaded")
+    _stops(lambda: _guard().check(_engine("asr", "unloaded")), "unloaded")
+    # an unloaded frame needs a ready engine
+    _stops(lambda: _guard().check(_engine("cleanup", "unloaded")),
+           "cleanup", "unloaded", "not ready")
+    g = _guard()
+    g.check(_engine("cleanup", "loading"))
+    _stops(lambda: g.check(_engine("cleanup", "unloaded")), "not ready")
+    g = _guard()
+    for f in (_engine("cleanup", "loading"), _engine("cleanup", "ready"),
+              _engine("cleanup", "unloaded")):
+        g.check(f)
+    _stops(lambda: g.check(_engine("cleanup", "unloaded")), "not ready")
+    # the model identity rule applies to an unloaded frame like any other
+    g = _guard()
+    for f in (_engine("cleanup", "loading"), _engine("cleanup", "ready")):
+        g.check(f)
+    _stops(lambda: g.check(_engine("cleanup", "unloaded", "other/id")),
+           "other/id")
+    print("ok  guard: a second loading without an unload, an unloaded speech"
+          " engine, an unload of an engine that is not ready, a repeated"
+          " unload and another model all stop the run")
+
+
+def test_a_worker_that_may_not_unload_stops_the_run_when_it_does():
+    g = fr.FrameGuard("asr/id", "clean/id", idle_unload=False)
+    for f in (_engine("cleanup", "loading"), _engine("cleanup", "ready")):
+        g.check(f)
+    _stops(lambda: g.check(_engine("cleanup", "unloaded")), "unloaded",
+           "off")
+    print("ok  guard: an unloaded frame from a worker spawned with unloading"
+          " off stops the run")
 
 
 # ---- content-free records -----------------------------------------------------------
@@ -1148,6 +1396,72 @@ def test_swap_usage_text_gives_the_used_bytes():
     _stops(lambda: fr.parse_swap_used("vm.swapusage: unknown oid"), "swap")
     print("ok  swap usage text: M and G units, zero, an unreadable line"
           " stops the run")
+
+
+def test_the_watchdog_hands_a_sessions_idle_period_on_to_the_maker():
+    calls = []
+
+    def make(side, diag, *rest):
+        calls.append((side, diag) + rest)
+        return _Worker(1)
+
+    dog = fr.Watchdog(pathlib.Path(tempfile.gettempdir()) / "unused")
+    wrapped = dog.wrap(make)
+    wrapped("A", False)
+    wrapped("B", False, 6.0)
+    assert calls == [("A", False), ("B", False, 6.0)], calls
+    print("ok  watchdog: a session made with an idle period is made with it,"
+          " and one made without is made as before")
+
+
+# ---- the idle phase's options --------------------------------------------------------------------
+
+def test_the_idle_phase_is_valid_but_not_part_of_a_default_run():
+    assert fr.PHASES == ("footprint", "bursts", "first", "resident")
+    assert fr.OPTIONAL_PHASES == ("idle",)
+    args = fr.parse_args(["--code-root-a", "."])
+    assert args.phases == "footprint,bursts,first,resident"
+    assert args.idle_unload_s == 6.0 and args.idle_pairs is None
+    assert max(fr.IDLE_CAPTURE_S) < args.idle_unload_s, \
+        "the default idle period outlasts the longest capture"
+    args = fr.parse_args(["--code-root-a", ".", "--phases", "idle",
+                          "--idle-unload-s", "2.5", "--idle-pairs", "4"])
+    assert args.phases == "idle"
+    assert args.idle_unload_s == 2.5 and args.idle_pairs == 4
+    assert fr.MODE_COUNTS["early"]["idle"] == 4
+    assert fr.MODE_COUNTS["shipping"]["idle"] == 10
+    assert fr.IDLE_CAPTURE_S == (0.5, 1.0, 2.0, 5.0)
+    print("ok  idle options: --idle-unload-s defaults to 6, --idle-pairs to"
+          " 4 early and 10 shipping, idle is valid in --phases and not in"
+          " the default list")
+
+
+def test_an_odd_idle_pair_count_stops_the_run():
+    # a block is two pairs, so an odd count would leave one pair unjudged
+    for odd in (1, 3, 9):
+        msg = _stops(lambda: fr.phase_idle(types.SimpleNamespace(
+            counts={"idle": odd}, idle_unload_s=6.0)), "even")
+        assert str(odd) in msg
+    print("ok  idle pair count: odd counts stop the run")
+
+
+def test_a_non_positive_idle_period_stops_the_run():
+    for bad in (0, 0.0, -1.0):
+        _stops(lambda: fr.phase_idle(types.SimpleNamespace(
+            counts={"idle": 2}, idle_unload_s=bad)), "--idle-unload-s")
+    print("ok  idle period: zero or negative stops the run before any spawn")
+
+
+def test_an_idle_period_that_does_not_outlast_the_captures_stops_the_run():
+    # the worker would unload under a dictation that lasts as long as the
+    # idle period, so the measured dictation would not be the designed one
+    for short in (5.0, 2.0):
+        msg = _stops(lambda: fr.phase_idle(types.SimpleNamespace(
+            counts={"idle": 2}, idle_unload_s=short)), "capture",
+            "idle period")
+        assert "5 s" in msg, msg
+    print("ok  idle period: one at or under the longest capture stops the"
+          " run before any spawn")
 
 
 class _Worker:

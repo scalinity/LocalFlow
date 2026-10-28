@@ -15,6 +15,16 @@ no verdict, digest, pair or request count. The first-request rows are judged
 on ABBA blocks of two spawn pairs, because the process that asks first is
 slower and the two orders cancel that.
 
+The idle phase (named in --phases, never part of a default run) measures a
+dictation that starts after the cleanup model was handed back. Side B's worker
+unloads it after --idle-unload-s idle seconds and side A's never does; every
+other phase starts both workers with unloading off. Per pair, for each capture
+length, the rig waits for side B's unload, reads its footprint, then runs one
+simulated dictation per side (side B gets the ensure_cleanup hint at the
+press) and judges the release-to-result times per capture length on ABBA
+blocks of two pairs. A short capture is expected to wait for the reload; the
+report states each band as measured and none changes the exit status.
+
 Thresholds and rule names follow the worker-footprint spec's Gate table.
 Reports hold counters, timings, SHA-256 digests, identifiers and
 environment facts only: no transcript, audio, observation text or config
@@ -232,19 +242,94 @@ def first_request_blocks(rows, metric, field):
     return diffs, baseline
 
 
+def output_differences(prefix, suffix, a, b):
+    """Names of the outputs that differ between two records, each holding
+    an ``asr`` and a ``clean`` record: the ASR text and decode ranges, the
+    cleanup text and its per-pass token counts. Names only, never
+    content."""
+    return [f"{prefix}:{metric}:{field}{suffix}"
+            for metric, fields in (
+                ("asr", ("text_sha256", "decode_ranges_sha256")),
+                ("clean", ("text_sha256", "pass_output_tokens")))
+            for field in fields if a[metric][field] != b[metric][field]]
+
+
 def first_request_mismatches(rows):
     """Names of the first-request outputs that differ between side A and
-    side B within a pair: the ASR text and decode ranges, the cleanup text
-    and its per-pass token counts. Names only, never content."""
+    side B within a pair."""
     names = []
     for k, row in enumerate(rows, 1):
-        for metric, fields in (
-                ("asr", ("text_sha256", "decode_ranges_sha256")),
-                ("clean", ("text_sha256", "pass_output_tokens"))):
-            names += [f"first-request:{metric}:{field} (pair {k})"
-                      for field in fields
-                      if row[metric]["A"][field] != row[metric]["B"][field]]
+        names += output_differences(
+            "first-request", f" (pair {k})",
+            {m: row[m]["A"] for m in ("asr", "clean")},
+            {m: row[m]["B"] for m in ("asr", "clean")})
     return names
+
+
+def capture_name(seconds):
+    """The band name of one capture length: 0.5 is D0.5s, 1.0 is D1s."""
+    return f"D{seconds:g}s"
+
+
+def reload_remainder_ms(reload_ms, capture_s):
+    """How long the cleanup still waited for the reload once the capture
+    ended: the reload time minus the capture length, never below zero."""
+    return max(0.0, reload_ms - capture_s * 1000.0)
+
+
+def idle_report(rows, captures, weight_bytes, aa=None):
+    """Everything the idle phase states about its pair ``rows``. Each
+    capture length is judged on ABBA blocks of two pairs (rows 2j and 2j+1
+    ran in orders AB and BA), with the Latency rule's limits; ``aa`` maps a
+    band name (``idle:D0.5s``) to a pinned A/A report's statistics for it.
+    A failing short capture is the accepted wait, so no band here is a
+    Latency band of the run: none reaches Rig validity or the exit
+    status."""
+    aa = aa or {}
+    names = [capture_name(d) for d in captures]
+    by_name = [r["captures"] for r in rows]
+    bands = {}
+    for name, d in zip(names, captures):
+        diffs, base = first_request_blocks(by_name, name,
+                                           "release_to_result_ms")
+        reloads = [c[name]["B"]["reload_ms"] for c in by_name]
+        bands[f"idle:{name}"] = {
+            **latency_verdict(diffs, base, aa.get(f"idle:{name}")),
+            "reload_remainder_median_ms": median(
+                [reload_remainder_ms(t, d) for t in reloads])}
+    reloads = [c[n]["B"]["reload_ms"] for c in by_name for n in names]
+    drops = [c[n]["footprint"]["drop_bytes"] for c in by_name for n in names]
+    second = [r["second"] for r in rows]
+    mismatches = []
+    for k, row in enumerate(rows, 1):
+        for name in names:
+            cap = row["captures"][name]
+            mismatches += output_differences(f"idle:{name}", f" (pair {k})",
+                                             cap["A"], cap["B"])
+        a, b = row["second"]["A"], row["second"]["B"]
+        for j in range(len(a["asr"])):
+            mismatches += output_differences(
+                "idle:second", f" (pair {k}, dictation {j + 1})",
+                {"asr": a["asr"][j], "clean": a["clean"][j]},
+                {"asr": b["asr"][j], "clean": b["clean"][j]})
+    return {
+        "unit": "abba_block", "capture_s": list(captures), "bands": bands,
+        "footprint": {
+            "drop_bytes": {"median": median(drops), "min": min(drops),
+                           "max": max(drops)},
+            "cleanup_weight_bytes": weight_bytes,
+            "share_of_weights": median(drops) / weight_bytes
+            if weight_bytes else None},
+        "reload": {"min_ms": min(reloads), "median_ms": median(reloads),
+                   "max_ms": max(reloads)},
+        "never_degraded": {"requests": len(rows) * (
+            len(names) + len(second[0]["B"]["clean"]))},
+        "second_dictation": {
+            "all_single_reload": all(s["B"]["reloads"] == 1 for s in second),
+            "last_result_ms": {side: median([s[side]["last_result_ms"]
+                                             for s in second])
+                               for side in "AB"}},
+        "mismatches": mismatches}
 
 
 def latency_verdict(diffs, baseline_times, aa=None):
@@ -360,6 +445,10 @@ def load_aa_report(path, tree_sha256, bands_sha256):
             if field in stats:
                 for metric, v in by_metric.items():
                     stats[field][f"first-request:{metric}"] = pick(v)
+    idle = report.get("idle") or {}
+    if idle.get("unit") == "abba_block":
+        for band, v in (idle.get("bands") or {}).items():
+            stats["rtt_ms"][band] = pick(v)
     gap = (res.get("gap") or {}).get("verdict")
     return {"sha256": hashlib.sha256(raw).hexdigest(),
             "run_id": rig.get("run_id"), "stats": stats,
@@ -455,11 +544,15 @@ class FrameGuard:
     """Every frame the worker writes passes through here. It stops the run
     on a frame that would make a number untrustworthy: a fault, a failed
     engine, an engine reporting another model than the configured one, an
-    engine loading a second time, a result of another generation."""
+    engine loading a second time, a result of another generation. The
+    cleanup engine may load again only after it reported itself unloaded,
+    and a worker spawned with idle unloading off may not unload at all."""
 
-    def __init__(self, asr_model, cleanup_model, generation=1):
+    def __init__(self, asr_model, cleanup_model, generation=1,
+                 idle_unload=True):
         self._expected = {"asr": asr_model, "cleanup": cleanup_model}
         self._generation = generation
+        self._idle_unload = idle_unload
         self._loading = set()
         self._ready = set()
 
@@ -493,6 +586,19 @@ class FrameGuard:
             self._loading.add(engine)
         elif state == "ready":
             self._ready.add(engine)
+        elif state == "unloaded":
+            if engine == "asr":
+                raise RigStop("asr engine emitted an unloaded frame; the"
+                              " speech engine never unloads")
+            if not self._idle_unload:
+                raise RigStop(f"{engine} engine emitted an unloaded frame"
+                              " although idle unloading is off for this"
+                              " worker")
+            if engine not in self._ready:
+                raise RigStop(f"{engine} engine emitted an unloaded frame"
+                              " while it was not ready")
+            self._ready.discard(engine)
+            self._loading.discard(engine)
 
     def both_ready(self):
         return self._ready == {"asr", "cleanup"}
@@ -644,10 +750,13 @@ class WorkerSession:
     round-trip time is not delayed by whatever the rig is doing; every frame
     passes the guard before anything else sees it. Requests always carry
     generation 1. ``cmd`` and ``env`` exist so the tests can substitute the
-    shimmed production worker."""
+    shimmed production worker. The worker's idle-unload variable is always
+    set explicitly: off unless ``idle_unload_s`` names the idle seconds, so
+    a measurement never sees an unload it did not ask for (a code root
+    without the feature ignores the variable)."""
 
     def __init__(self, code_root, audio_root, identity, *, python=None,
-                 cmd=None, env=None, memory_diag=False):
+                 cmd=None, env=None, memory_diag=False, idle_unload_s=0):
         self._code_root = pathlib.Path(code_root)
         self._identity = identity
         self._cmd = cmd or [python or sys.executable, "-m",
@@ -657,14 +766,18 @@ class WorkerSession:
         self._env.pop("LOCALFLOW_WORKER_MEMORY_DIAG", None)
         if memory_diag:
             self._env["LOCALFLOW_WORKER_MEMORY_DIAG"] = "1"
+        self._env["LOCALFLOW_WORKER_IDLE_UNLOAD_S"] = \
+            str(float(idle_unload_s)) if idle_unload_s else "0"
         self._env.update(env or {})
         self._guard = FrameGuard(identity["asr_model"],
-                                 identity["cleanup_model"])
+                                 identity["cleanup_model"],
+                                 idle_unload=bool(idle_unload_s))
         self._queue = queue.Queue()
         self._seq = 0
         self._proc = None
         self._stderr = None
         self.memory_samples = []
+        self.engine_events = []
 
     # -- lifecycle --
 
@@ -765,6 +878,33 @@ class WorkerSession:
     def request(self, op, fields=None, timeout=300.0):
         return self.collect(*self.send(op, fields), timeout=timeout)
 
+    def ensure_cleanup(self):
+        """The hint the app sends when a dictation starts: no request id,
+        no generation and never a reply."""
+        self._write({"v": PROTOCOL_VERSION, "op": "ensure_cleanup"})
+
+    def cleanup_events(self, state, after):
+        """Arrival times of the cleanup engine's ``state`` frames read so far
+        that came later than ``after`` (a ``time.perf_counter`` value)."""
+        return [at for at, engine, s in self.engine_events
+                if engine == "cleanup" and s == state and at > after]
+
+    def wait_unloaded(self, after, timeout):
+        """Arrival time of the first cleanup ``unloaded`` frame later than
+        ``after``; stops the run when none comes within ``timeout``."""
+        deadline = time.monotonic() + timeout
+        while True:
+            found = self.cleanup_events("unloaded", after)
+            if found:
+                return found[0]
+            try:
+                self._next(deadline)
+            except RigStop as e:
+                if "did not answer in time" not in str(e):
+                    raise
+                raise RigStop("the cleanup engine was not reported unloaded"
+                              f" within {timeout:g} s") from None
+
     def wait_memory(self, count, timeout):
         """The result samples are written after the result frame, so they
         may still be in flight when a request returns."""
@@ -804,6 +944,9 @@ class WorkerSession:
             raise RigStop("the worker closed the protocol stream"
                           f" (exit code {self._proc.poll()})")
         self._guard.check(frame)
+        if frame.get("op") == "engine":
+            self.engine_events.append((at, frame.get("engine"),
+                                       frame.get("state")))
         if frame.get("op") == "diag" and frame.get("kind") == "memory":
             self._note_memory(frame)
         return at, frame
@@ -1402,8 +1545,10 @@ def et_label(iso):
 SETTLE_S = 2.0
 BURST_DICTATIONS = 20
 MODE_COUNTS = {
-    "early": {"warm": 2, "cold": 2, "burst": 1, "first": 8, "gap": 8},
-    "shipping": {"warm": 7, "cold": 5, "burst": 3, "first": 30, "gap": 30}}
+    "early": {"warm": 2, "cold": 2, "burst": 1, "first": 8, "gap": 8,
+              "idle": 4},
+    "shipping": {"warm": 7, "cold": 5, "burst": 3, "first": 30, "gap": 30,
+                 "idle": 10}}
 
 
 ASR_RESET_NOTE = (
@@ -1418,6 +1563,11 @@ FIRST_REQUEST_NOTE = (
     "The first-request rows are judged on ABBA blocks of two spawn pairs"
     " (orders AB, then BA): the process that asks first is slower, and the"
     " two orders cancel that in each block's mean.")
+
+
+IDLE_NOTE = (
+    "In the idle phase side B unloads the cleanup model after {seconds:g}"
+    " idle seconds and side A never unloads.")
 
 
 def asr_request(clip):
@@ -1541,16 +1691,22 @@ def phase_bursts(ctx):
     return runs
 
 
+def latency_inputs(ctx):
+    """The ASR clip and the cleanup fixture the pair phases request: the
+    middle of the 10 to 30 s clip band and of the 21 to 50 word band."""
+    asr_ids = ctx.bands["asr"]["members"]["10-30s"] or [
+        c for ids in ctx.bands["asr"]["members"].values() for c in ids]
+    clean_ids = ctx.bands["cleanup"]["members"]["21-50"] or [
+        c for ids in ctx.bands["cleanup"]["members"].values() for c in ids]
+    return middle(asr_ids), middle(clean_ids)
+
+
 def phase_first(ctx):
     if ctx.counts["first"] % 2:
         raise RigStop(f"the first-request pair count must be even, got"
                       f" {ctx.counts['first']}: the verdicts are ABBA blocks"
                       " of two pairs")
-    asr_ids = ctx.bands["asr"]["members"]["10-30s"] or [
-        c for ids in ctx.bands["asr"]["members"].values() for c in ids]
-    clean_ids = ctx.bands["cleanup"]["members"]["21-50"] or [
-        c for ids in ctx.bands["cleanup"]["members"].values() for c in ids]
-    clip, case_id = middle(asr_ids), middle(clean_ids)
+    clip, case_id = latency_inputs(ctx)
     rows = []
     for k in range(ctx.counts["first"]):
         order = ("A", "B") if k % 2 == 0 else ("B", "A")
@@ -1585,6 +1741,183 @@ def phase_first(ctx):
     return {"clip": clip, "case": case_id, "pairs": rows,
             "unit": "abba_block", "verdicts": verdicts,
             "mismatches": first_request_mismatches(rows)}
+
+
+# ---- idle unload: a dictation after the cleanup model was handed back ----------------------------
+
+# The simulated dictations' capture lengths, in seconds: the time between the
+# press (which sends side B's ensure_cleanup) and the release (the ASR request
+# and then the cleanup request).
+IDLE_CAPTURE_S = (0.5, 1.0, 2.0, 5.0)
+# The second dictation of a pair presses, and starts its requests, this long
+# after the first press, while the reload is still running.
+SECOND_DICTATION_DELAY_S = 0.3
+# Side B must report unloaded within its idle period plus this long.
+UNLOAD_WAIT_MARGIN_S = 30.0
+
+
+def settled_footprint(ctx, session, since):
+    """``(reading, read_at)``: the worker's footprint ``SETTLE_S`` after
+    ``since`` (a ``time.perf_counter`` value), and when the read finished."""
+    rest = since + SETTLE_S - time.perf_counter()
+    if rest > 0:
+        time.sleep(rest)
+    fp = read_footprint(session.pid, ctx.scratch)
+    return ({"total_bytes": fp["total_bytes"], "gpu_bytes": fp["gpu_bytes"]},
+            time.perf_counter())
+
+
+def require_llm(frame):
+    """A cleanup request that meets an unload or a reload waits for it and
+    gets the model's answer; anything else breaks the worker's contract."""
+    if frame.get("path") != "llm":
+        raise RigStop("a cleanup request during an unload or reload came"
+                      f" back degraded (path {_token(frame.get('path'))},"
+                      f" reason {_token(frame.get('fallback_reason'))}); the"
+                      " worker must answer it with the model")
+
+
+def dictation(ctx, session, clip, case, capture_s, hint):
+    """One simulated dictation on one worker: the press (with ``hint``, the
+    session sends ensure_cleanup, as the app does), the capture, then at the
+    release the ASR request and, once it is answered, the cleanup request.
+    Returns ``(record, ready_at, done_at)``: the record the report keeps,
+    the arrival of the cleanup ``ready`` frame the hint's reload ended with
+    (None without a hint) and the arrival of the cleanup result."""
+    pressed = time.perf_counter()
+    if hint:
+        session.ensure_cleanup()
+    rest = pressed + capture_s - time.perf_counter()
+    if rest > 0:
+        time.sleep(rest)
+    released = time.perf_counter()
+    asr = session.request(*asr_request(clip))
+    clean = session.request(*clean_request(case))
+    for r in (asr, clean):
+        ctx.seen.add(r["frame"].get("text") or "")
+    record = {"release_to_result_ms":
+              (clean["received_at"] - released) * 1000.0,
+              "asr": asr_record(asr["frame"], asr["rtt_ms"]),
+              "clean": clean_record(clean["frame"], clean["rtt_ms"])}
+    ready_at = None
+    if hint:
+        require_llm(clean["frame"])
+        ready = session.cleanup_events("ready", pressed)
+        if not ready:
+            raise RigStop("the cleanup engine reported no ready frame"
+                          " between the hint and the cleanup result")
+        ready_at = ready[0]
+        record["reload_ms"] = (ready_at - pressed) * 1000.0
+    return record, ready_at, clean["received_at"]
+
+
+def second_dictation(ctx, sessions, order, clip, case, after, wait_s):
+    """A second dictation that starts while the first one's reload runs:
+    side B gets the hint, SECOND_DICTATION_DELAY_S later the first
+    dictation's two requests, then the hint again and the second dictation's
+    two requests, all queued at once. Side A gets the same sequence without
+    the hints."""
+    unloaded = sessions["B"].wait_unloaded(after, wait_s)
+    out = {}
+    for side in order:
+        s, hint = sessions[side], side == "B"
+        pressed = time.perf_counter()
+        if hint:
+            s.ensure_cleanup()
+        rest = pressed + SECOND_DICTATION_DELAY_S - time.perf_counter()
+        if rest > 0:
+            time.sleep(rest)
+        queued = [s.send(*asr_request(clip)), s.send(*clean_request(case))]
+        if hint:
+            s.ensure_cleanup()
+        queued += [s.send(*asr_request(clip)), s.send(*clean_request(case))]
+        results = [s.collect(*q) for q in queued]
+        for r in results:
+            ctx.seen.add(r["frame"].get("text") or "")
+        out[side] = {
+            "last_result_ms": (results[-1]["received_at"] - pressed) * 1000.0,
+            "asr": [asr_record(r["frame"], r["rtt_ms"])
+                    for r in results[0::2]],
+            "clean": [clean_record(r["frame"], r["rtt_ms"])
+                      for r in results[1::2]]}
+        if hint:
+            for r in results[1::2]:
+                require_llm(r["frame"])
+            out[side]["reloads"] = len(s.cleanup_events("loading", unloaded))
+    return out
+
+
+def idle_pair(ctx, order, clip, case):
+    row = {"order": "".join(order), "captures": {},
+           "thermal_before": thermal_state()["ok"]}
+    wait_s = ctx.idle_unload_s + UNLOAD_WAIT_MARGIN_S
+    with contextlib.ExitStack() as stack:
+        sessions = {}
+        for side in order:
+            s = stack.enter_context(ctx.make_session(
+                side, False, ctx.idle_unload_s if side == "B" else 0))
+            s.start()
+            s.load()
+            sessions[side] = s
+            if side == "B":
+                # Read at once: side A may still have to load, for longer
+                # than the idle period, and side B unloads meanwhile.
+                after = s.cleanup_events("ready", 0.0)[-1]
+                ready_fp, read_at = settled_footprint(ctx, s, after)
+        b = sessions["B"]
+        for d in IDLE_CAPTURE_S:
+            unloaded = b.wait_unloaded(after, wait_s)
+            if unloaded < read_at:
+                raise RigStop("side B unloaded before its footprint at"
+                              " ready was read; the idle period is too short"
+                              " for that reading")
+            unloaded_fp, _ = settled_footprint(ctx, b, unloaded)
+            cap = {"footprint": {
+                "ready": ready_fp, "unloaded": unloaded_fp,
+                "drop_bytes": ready_fp["total_bytes"]
+                - unloaded_fp["total_bytes"]}}
+            for side in order:
+                cap[side], ready_at, done_at = dictation(
+                    ctx, sessions[side], clip, case, d, side == "B")
+                if side == "B":
+                    after = done_at
+                    if d != IDLE_CAPTURE_S[-1]:
+                        ready_fp, read_at = settled_footprint(ctx, b,
+                                                              ready_at)
+            row["captures"][capture_name(d)] = cap
+        row["second"] = second_dictation(ctx, sessions, order, clip, case,
+                                         after, wait_s)
+    row["thermal_after"] = thermal_state()["ok"]
+    return row
+
+
+def phase_idle(ctx):
+    if ctx.counts["idle"] % 2:
+        raise RigStop(f"the idle pair count must be even, got"
+                      f" {ctx.counts['idle']}: the verdicts are ABBA blocks"
+                      " of two pairs")
+    if not ctx.idle_unload_s > 0:
+        raise RigStop("--idle-unload-s must be a positive number of seconds:"
+                      " side B has to unload for this phase to measure"
+                      " anything")
+    if max(IDLE_CAPTURE_S) >= ctx.idle_unload_s:
+        raise RigStop(f"the longest capture ({max(IDLE_CAPTURE_S):g} s) must"
+                      " be shorter than the idle period"
+                      f" ({ctx.idle_unload_s:g} s), or the worker unloads"
+                      " under the dictation")
+    clip, case_id = latency_inputs(ctx)
+    rows = []
+    for k in range(ctx.counts["idle"]):
+        order = ("A", "B") if k % 2 == 0 else ("B", "A")
+        print(f"  idle pair {k + 1}/{ctx.counts['idle']}:"
+              f" order {''.join(order)}", flush=True)
+        prepare_cache(ctx, "warm")
+        rows.append(idle_pair(ctx, order, clip, ctx.cases[case_id]))
+    aa = ctx.aa["stats"]["rtt_ms"] if ctx.aa else {}
+    return {"clip": clip, "case": case_id,
+            "idle_unload_s": ctx.idle_unload_s, "pairs": rows,
+            **idle_report(rows, IDLE_CAPTURE_S, ctx.cleanup_weight_bytes,
+                          aa)}
 
 
 # ---- the resident pair: identity, paired latency, back-to-back gap -----------------------------
@@ -1789,21 +2122,23 @@ def assemble_verdicts(report):
     out["rig_validity"] = rig_validity(bands) if bands else None
     out["back_to_back_gap"] = (res.get("gap") or {}).get("verdict")
     ident = res.get("identity")
+    idle = report.get("idle") or {}
     compared = "mismatches" in first
-    if ident or compared:
+    if ident or compared or "mismatches" in idle:
         inconsistent = sorted(
             f"{kind}:{band}" for kind, by_band in res["latency"].items()
             for band, d in by_band.items() if not d["identity_consistent"]) \
             if ident else []
         mismatches = (ident["mismatches"] if ident else []) \
-            + first.get("mismatches", [])
+            + first.get("mismatches", []) + idle.get("mismatches", [])
         chunker_ran = ident["chunker"]["ran"] if ident else None
         out["identity"] = {
             "pass": not mismatches and not inconsistent
             and chunker_ran is not False,
             "mismatches": mismatches, "chunker_ran": chunker_ran,
             "inconsistent_across_blocks": inconsistent,
-            "first_request_compared": compared}
+            "first_request_compared": compared,
+            **({"idle_compared": True} if "mismatches" in idle else {})}
     return out
 
 
@@ -1903,6 +2238,65 @@ def _yes(flag):
     return "n/a" if flag is None else "pass" if flag else "FAIL"
 
 
+def render_idle(idle):
+    """The summary's idle-unload section, as lines."""
+    pairs = idle["pairs"]
+    fp, reload, second = idle["footprint"], idle["reload"], \
+        idle["second_dictation"]
+    drop = fp["drop_bytes"]
+    share = "n/a" if fp["share_of_weights"] is None \
+        else f"{fp['share_of_weights']:.0%}"
+    out = ["", "## Idle unload", "",
+           f"Side B's footprint {SETTLE_S:g} s after ready against"
+           f" {SETTLE_S:g} s after the unload, over"
+           f" {len(pairs) * len(idle['capture_s'])} unloads: median drop"
+           f" {drop['median']:,.0f} bytes ({_mib(drop['median'])} MiB), range"
+           f" {_mib(drop['min'])} to {_mib(drop['max'])} MiB; {share} of the"
+           f" cleanup weights ({_mib(fp['cleanup_weight_bytes'])} MiB of"
+           " safetensors).", "",
+           "Each capture length is judged on ABBA blocks of two pairs, on the"
+           " release-to-result time (release to the cleanup result), as"
+           " measured; none changes the exit status. The reload remainder is"
+           " the reload time minus the capture length, never below zero.", "",
+           "| capture | blocks | baseline median/p95 ms | paired median/p95 ms"
+           " | spec limits ms | A/A paired ms | effective limits ms | verdict"
+           " | median reload remainder ms |",
+           "|---|---|---|---|---|---|---|---|---|"]
+    for name, x in idle["bands"].items():
+        aa = "n/a" if x["aa_median_ms"] is None else (
+            f"{x['aa_median_ms']:.1f} / {x['aa_p95_ms']:.1f}")
+        out.append(
+            f"| {name.split(':', 1)[1]} | {x['pairs']} |"
+            f" {x['baseline_median_ms']:.1f} / {x['baseline_p95_ms']:.1f} |"
+            f" {x['paired_median_ms']:.1f} / {x['paired_p95_ms']:.1f} |"
+            f" {x['spec_median_limit_ms']:.1f} / {x['spec_p95_limit_ms']:.1f}"
+            f" | {aa} | {x['median_limit_ms']:.1f} / {x['p95_limit_ms']:.1f}"
+            f" | {_yes(x['pass'])} |"
+            f" {x['reload_remainder_median_ms']:.0f} |")
+    second_ok = not [m for m in idle["mismatches"]
+                     if m.startswith("idle:second")]
+    out += ["",
+            f"Reload, press to the cleanup ready frame (side B, over"
+            f" {len(pairs) * len(idle['capture_s'])} dictations): min"
+            f" {reload['min_ms']:.0f} ms, median {reload['median_ms']:.0f} ms,"
+            f" max {reload['max_ms']:.0f} ms.",
+            f"Never degraded: all {idle['never_degraded']['requests']}"
+            " cleanup requests on side B during an unload or reload came back"
+            " path llm (any other path stops the run).",
+            "Identity A against B (idle outputs):"
+            f" {_yes(not idle['mismatches'])};"
+            f" mismatches {idle['mismatches']}.",
+            "Second dictation during the reload (the hint, the first"
+            " dictation's two requests, the hint again, the second"
+            f" dictation's two requests): both cleanups path llm and equal to"
+            f" side A's: {_yes(second_ok)}; last result at"
+            f" {second['last_result_ms']['B']:.0f} ms on side B against"
+            f" {second['last_result_ms']['A']:.0f} ms on side A (median over"
+            f" pairs); exactly one reload after the unload:"
+            f" {_yes(second['all_single_reload'])}."]
+    return out
+
+
 def render_summary(report):
     r = report
     out = [f"# Footprint rig run {r['rig']['run_id']}", "",
@@ -1946,6 +2340,8 @@ def render_summary(report):
             case=r["rig"]["cache_reset_case"]))
     if "first" in r["rig"]["phases"]:
         notes.append(FIRST_REQUEST_NOTE)
+    if r.get("idle"):
+        notes.append(IDLE_NOTE.format(seconds=r["idle"]["idle_unload_s"]))
     if notes:
         out += ["", "## Method", "", " ".join(notes)]
     fp = r.get("footprint")
@@ -2048,6 +2444,8 @@ def render_summary(report):
             if i["first_request_compared"] else ""
         out.append(f"Identity A against B: {_yes(i['pass'])}; mismatches"
                    f" {i['mismatches']}; chunker ran: {chunker}{clause}.")
+    if r.get("idle"):
+        out += render_idle(r["idle"])
     j = r.get("judgement")
     if j:
         out += ["", "## Go / no-go", "", f"- {j['ticket_02']['line']}",
@@ -2105,9 +2503,9 @@ class Watchdog:
     def wrap(self, make_session):
         """``make_session`` with every session it makes watched, and no new
         worker once the watchdog has tripped."""
-        def make(side, diag):
+        def make(side, diag, *idle):
             self.raise_if_tripped()
-            session = make_session(side, diag)
+            session = make_session(side, diag, *idle)
             with self._lock:
                 self._sessions.append(session)
             return session
@@ -2193,6 +2591,8 @@ DEFAULT_EVIDENCE_ROOT = pathlib.Path.home() / "Library" / \
 # One lock for every worktree, beside the evidence it protects.
 DEFAULT_LOCK = DEFAULT_EVIDENCE_ROOT / "measure.lock"
 PHASES = ("footprint", "bursts", "first", "resident")
+# Valid in --phases, never part of a default run.
+OPTIONAL_PHASES = ("idle",)
 
 
 def locate_models(identity):
@@ -2225,8 +2625,9 @@ def execute(ctx, report, phases):
     runners = {"footprint": ("footprint", phase_footprint),
                "bursts": ("bursts", phase_bursts),
                "first": ("first_request", phase_first),
-               "resident": ("resident", phase_resident)}
-    for name in PHASES:
+               "resident": ("resident", phase_resident),
+               "idle": ("idle", phase_idle)}
+    for name in PHASES + OPTIONAL_PHASES:
         if name not in phases:
             continue
         print(f"phase {name}", flush=True)
@@ -2272,7 +2673,10 @@ def parse_args(argv):
         pathlib.Path.home() / "Documents" / "LocalAI" / "models"))
     ap.add_argument("--prepare-corpus", action="store_true",
                     help="synthesize the speech corpus once and exit")
-    for name in ("warm", "cold", "burst", "first", "gap"):
+    ap.add_argument("--idle-unload-s", type=float, default=6.0,
+                    help="idle seconds after which side B unloads the cleanup"
+                    " model in the idle phase (side A never unloads)")
+    for name in ("warm", "cold", "burst", "first", "gap", "idle"):
         ap.add_argument(f"--{name}-spawns" if name in ("warm", "cold",
                                                       "burst")
                         else f"--{name}-pairs", type=int)
@@ -2317,7 +2721,8 @@ def build_context(args, run_dir, corpus_dir, run_id):
     mode_counts = dict(MODE_COUNTS[args.mode])
     for key, value in (("warm", args.warm_spawns), ("cold", args.cold_spawns),
                        ("burst", args.burst_spawns),
-                       ("first", args.first_pairs), ("gap", args.gap_pairs)):
+                       ("first", args.first_pairs), ("gap", args.gap_pairs),
+                       ("idle", args.idle_pairs)):
         if value is not None:
             mode_counts[key] = value
     tokens = [i.rsplit("/", 1)[-1] for i in identity.values()]
@@ -2327,14 +2732,17 @@ def build_context(args, run_dir, corpus_dir, run_id):
         scratch=run_dir / "scratch", seen=set(), thermal_events=[],
         fixture_texts={c["text"] for c in cases.values()},
         weights=[f for m in models.values() for f in m["files"]],
+        cleanup_weight_bytes=sum(f.stat().st_size
+                                 for f in models["cleanup"]["files"]),
+        idle_unload_s=args.idle_unload_s,
         evict_pool=args.evict_pool, protect_tokens=tokens,
         purge_allowed=True, installed_pid=installed,
         installed_pid_now=lambda: classify_workers(parse_ps(_tool_text(
             ["ps", "-axo", "pid=,ppid=,command="])))[0],
         manifest=manifest)
-    ctx.make_session = lambda side, diag: WorkerSession(
+    ctx.make_session = lambda side, diag, idle_unload_s=0: WorkerSession(
         ctx.roots[side], corpus_dir, identity, python=args.python,
-        memory_diag=diag)
+        memory_diag=diag, idle_unload_s=idle_unload_s)
     return ctx
 
 
@@ -2398,7 +2806,7 @@ def run(args):
     evidence_root = pathlib.Path(args.evidence_root)
     corpus_dir = pathlib.Path(args.corpus_dir or evidence_root / "corpus")
     phases = [p for p in args.phases.split(",") if p]
-    unknown = [p for p in phases if p not in PHASES]
+    unknown = [p for p in phases if p not in PHASES + OPTIONAL_PHASES]
     if unknown:
         raise RigStop(f"unknown phase(s) {unknown}")
     lock_fd = acquire_lock(args.lock)
