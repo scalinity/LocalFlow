@@ -26,7 +26,20 @@ idle-unload numbers on `09a86457d2260ff93dc676e16e7bf67679751f5e` (tree
 integration head differs from `09a8645` only in the supervisor's single-writer
 bound on the press-time ask (`localflow/v2/supervisor.py`); the worker the
 rig drives is byte-identical.
-**Final tree A/B:** FINAL-AB-PENDING: run id `final-ab-1` is a full shipping A/B on the integration head; its figures are not recorded here yet.
+**Final tree A/B:** run `final-ab-1`, a full shipping A/B of the baseline
+export (`localflow/` tree `e8c71fe8…`) against the integration head `7d523d8`
+(tree `6f1762f7e687…`), pinned to the A/A `baseline-aa-shipping-3`, 12:25 AM
+to 1:59 AM EDT on October 28 (unloading is switched off in every phase of this
+run, as in the rig's other phases). All ten latency bands pass (paired medians
+-13.3 to +2.9 ms, every paired p95 inside its effective limit), the back-to-back
+gap is -0.0 ms, identity passes for every cleanup case, both speech clips
+and the first-request outputs, no fault frame appeared and the generation
+stayed 1. Footprint (MiB, 12 spawns per side): idle at ready 4,153 to 3,981
+cold-ish and 4,155 to 3,982 warm; launch peak 6,554 to 5,837 cold-ish and
+7,066 to 5,837 warm (the baseline's warm launch peaks range from 6,554 to
+7,578, so its warm median moves between runs); idle 2 s after a 20-dictation
+burst 4,168 to 4,170 (median of six bursts per side, unchanged); lifetime peak
+after the burst 7,373 on both sides.
 **This record:** this file, `STATUS.json` (`current_state.worker_footprint`)
 and the pending runbook entries M03-V009 and M03-V010. No commit of the
 record changes code.
