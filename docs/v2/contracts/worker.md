@@ -115,8 +115,10 @@ one `{"op": "engine", "engine": "cleanup", "state": "unloaded", "model_id":
 <cleanup model id>}` frame, after the model is released and the allocator
 cache cleared. A reload then writes the load's own frames, `loading` and
 `ready` (or `failed`, carrying the same reason code as any cleanup load
-failure). A failed reload leaves the engine `failed`, which answers as
-described under Engine lifecycle; the worker does not try again.
+failure). A failed reload leaves the engine `failed`: a `clean` is then answered
+with the normalized input unchanged (`path: llm_fallback_normalized`,
+`fallback_reason: cleanup_engine_failed`, as for a failed first load of the
+`v2` engine); the worker does not try again.
 
 **Idle period.** `CLEANUP_IDLE_UNLOAD_S`, 600 seconds. The environment
 variable `LOCALFLOW_WORKER_IDLE_UNLOAD_S`, read once at start like the memory

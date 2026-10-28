@@ -38,9 +38,12 @@ duration only, never text or audio) the gate fails on both clauses:
 - On the after-idle dictations alone, 2 of the 32 measurable ones are
   shorter than the reload.
 
-Capture duration is a conservative budget, because transcription time also
-overlaps the reload. The measurements are kept in the private evidence
-folder; this record carries aggregate numbers only.
+Capture duration is the right budget for the reload wait. The reload and the
+transcription share the worker's one GPU thread, so transcription cannot hide
+a reload: a reload still running when the recording ends delays the
+transcription by its remainder, and the added wait is the reload time minus
+the recording length, never below zero. The measurements are kept in the
+private evidence folder; this record carries aggregate numbers only.
 
 ## Decision
 
@@ -67,6 +70,13 @@ never the not-ready answer.
   reload runs also waits for it, because the worker has one GPU thread. The
   first load at worker start is unchanged: a `clean` before the first
   `ready` is answered at once with the unchanged text.
+- **A very long recording.** The press-time request restarts the idle clock
+  once. A recording longer than the idle period can therefore find the model
+  unloaded when it ends, and its cleanup then waits for a full reload after
+  the transcription. Recordings that long are rare (the longest in the
+  recorded history is under four minutes) and the reload is small beside
+  their transcription time, so no timer keeps the model loaded during a
+  recording.
 - **What never changes.** An unload or reload writes no fault, keeps the
   generation, never restarts the worker and does not count toward the
   breaker. A failed reload ends in the existing failed-engine behaviour:
