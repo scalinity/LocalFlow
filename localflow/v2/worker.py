@@ -4,7 +4,7 @@ A fresh process — spawned, never a fork of initialized Metal state — owns
 all MLX/GPU state for ASR and cleanup. It speaks a versioned, length-framed
 JSON protocol over inherited pipes (stdin/stdout):
 
-  parent→worker : load, transcribe, clean, shutdown
+  parent→worker : load, transcribe, clean, ensure_cleanup, shutdown
   worker→parent : hello, engine, result, fault, diag
 
 Boundaries that hold by construction:
@@ -35,6 +35,7 @@ Run: python -m localflow.v2.worker --audio-root <dir>
 
 import argparse
 import errno
+import gc
 import os
 import re
 import stat
@@ -49,6 +50,10 @@ _SAFE_NAME = re.compile(r"^[A-Za-z0-9._-]+\Z")
 _CODE = re.compile(r"^[a-z0-9_.:-]{1,80}\Z")
 _TYPE = re.compile(r"^[A-Za-z_][A-Za-z0-9_.]{0,63}\Z")
 _WRITE_LOCK = threading.Lock()
+# The idle period: how long the worker sits with no request and no task
+# before it hands the cleanup model back (Idle unload of the cleanup model,
+# contracts/worker.md).
+CLEANUP_IDLE_UNLOAD_S = 600.0
 
 
 class ProtocolError(Exception):
@@ -122,6 +127,19 @@ def _read_msg(fd: int) -> dict:
     if msg.get("v") != PROTOCOL_VERSION:
         raise ProtocolError("protocol_version_mismatch", request=msg)
     return msg
+
+
+def _idle_unload_seconds():
+    """LOCALFLOW_WORKER_IDLE_UNLOAD_S: unset is the idle period, a positive
+    number replaces it, anything else turns unloading off (None)."""
+    raw = os.environ.get("LOCALFLOW_WORKER_IDLE_UNLOAD_S")
+    if raw is None:
+        return CLEANUP_IDLE_UNLOAD_S
+    try:
+        seconds = float(raw)
+    except ValueError:
+        return None
+    return seconds if seconds > 0 else None
 
 
 def _validate(msg):
@@ -205,6 +223,12 @@ class Worker:
         # when this is "1"; unset, the worker behaves exactly as before.
         self._memory_diag = \
             os.environ.get("LOCALFLOW_WORKER_MEMORY_DIAG") == "1"
+        # Idle unload of the cleanup model, read once like the switch above.
+        # ``_last_activity`` is the idle clock (monotonic seconds).
+        self._idle_unload_s = _idle_unload_seconds()
+        self._last_activity = time.monotonic()
+        # A reload of the unloaded cleanup model is queued or running.
+        self._reload = False
 
     def _sample_memory(self, label):
         """Report the MLX allocator counters at one lifecycle point. Reads
@@ -506,6 +530,13 @@ class Worker:
         if self._v2_load_failed:
             self._v2_unchanged(msg, raw_text, "load_failed", None)
             return
+        if self.cleanup_mode == "llm" \
+                and self.cleanup_implementation == "v2":
+            # No engine and no v1 cleaner: the model was unloaded. The
+            # scheduler never lets a clean run in that state; if one ever
+            # does, it is answered, never a runtime fault.
+            self._clean_now(msg)
+            return
         observations = []
         # Request-scoped sink: warmup generations attach to nothing and
         # observations from one request can never leak into another job.
@@ -632,12 +663,38 @@ class Worker:
             self._tasks.append((kind, msg))
             self._cond.notify_all()
 
+    def _queue_reload(self):
+        """Under ``_cond``: ask the GPU thread to load the unloaded cleanup
+        model again. One reload at a time: idempotent from the moment it
+        is queued until its load has finished."""
+        if not self._reload:
+            self._reload = True
+            self._loads.append("load_cleanup")
+            self._cond.notify_all()
+
+    def _unload_due(self):
+        """Under ``_cond``: the v2 cleanup engine is loaded, nothing is
+        queued, running or loading, and the worker has been idle for the
+        whole idle period."""
+        return (self._idle_unload_s is not None
+                and self.cleanup_state == "ready"
+                and self.cleanup_mode == "llm"
+                and self.cleanup_implementation == "v2"
+                and self.cleanup_engine is not None
+                and not self._tasks and not self._loads
+                and time.monotonic() - self._last_activity
+                >= self._idle_unload_s)
+
     def _next_task(self):
         """The GPU thread's next unit of work. Order: the ASR load; then
         queued requests (FIFO) — except that a request needing the cleanup
         engine first runs the pending cleanup load; the cleanup load
         itself runs when nothing is queued, unless a spawn made for a
-        waiting request deferred it until that request arrived."""
+        waiting request deferred it until that request arrived. With
+        nothing else to do, an idle worker unloads the cleanup model: the
+        state flips here, under the lock, so a request dispatched after
+        this decision sees ``unloaded`` and one dispatched before it
+        makes the queue non-empty."""
         with self._cond:
             while True:
                 if self._stopping:
@@ -646,12 +703,37 @@ class Worker:
                     self._loads.remove("load_asr")
                     return ("load_asr", None)
                 if self._tasks:
+                    if self._tasks[0][0] == "clean" \
+                            and self.cleanup_state == "unloaded" \
+                            and "load_cleanup" in self._loads:
+                        # The clean at the head needs the model back first
+                        # (a transcribe ahead of it still runs first).
+                        self._loads.remove("load_cleanup")
+                        return ("load_cleanup", None)
                     return self._tasks.pop(0)
                 if "load_cleanup" in self._loads and (
                         not self._defer_cleanup or self._request_seen):
                     self._loads.remove("load_cleanup")
                     return ("load_cleanup", None)
+                if self._unload_due():
+                    engine, self.cleanup_engine = self.cleanup_engine, None
+                    self.cleanup_state = "unloaded"
+                    # The list is the engine's only remaining reference once
+                    # this frame returns; the unload task empties it, so the
+                    # loop's own ``task``/``msg`` never keep the model alive.
+                    return ("unload_cleanup", [engine])
                 self._cond.wait(0.5)
+
+    def _unload_cleanup(self, held):
+        """GPU thread: let the cleanup engine (and through it the model
+        and its prefix cache) go, hand the allocator's cached blocks back,
+        then report the engine unloaded."""
+        held.clear()
+        gc.collect()
+        self._release_cache()
+        _write_msg({"v": PROTOCOL_VERSION, "op": "engine",
+                    "engine": "cleanup", "state": "unloaded",
+                    "model_id": self._cleanup_model})
 
     def _gpu_loop(self):
         while True:
@@ -676,11 +758,18 @@ class Worker:
                 elif kind == "clean":
                     self._clean(msg)
                     self._sample_memory("cleanup_result")
+                elif kind == "unload_cleanup":
+                    self._unload_cleanup(msg)
             except ProtocolError as e:
                 _fault(msg or {}, type(e).__name__, e.code, e.fault_class)
             except Exception as e:
                 _fault(msg or {}, type(e).__name__, "stage_exception",
                        "runtime")
+            finally:
+                with self._cond:
+                    self._last_activity = time.monotonic()
+                    if kind == "load_cleanup":
+                        self._reload = False
 
     def _dispatch(self, msg):
         op = msg.get("op")
@@ -695,11 +784,20 @@ class Worker:
                 self._loads = ["load_asr", "load_cleanup"]
                 self._cond.notify_all()
             return
+        if op == "ensure_cleanup":
+            # Not a request: no fields to validate, no result, no fault in
+            # any state. It only tells the worker a dictation is starting.
+            with self._cond:
+                self._last_activity = time.monotonic()
+                if self.cleanup_state == "unloaded":
+                    self._queue_reload()
+            return
         if op not in ("transcribe", "clean"):
             raise ProtocolError("unknown_op")
         _validate(msg)
         with self._cond:
             self._request_seen = True
+            self._last_activity = time.monotonic()
             self._cond.notify_all()
         if op == "transcribe":
             if self.asr_state == "failed":
@@ -707,16 +805,24 @@ class Worker:
             self._enqueue("transcribe", msg)
             return
         if op == "clean":
-            if self.cleanup_state == "ready" \
-                    or self.cleanup_mode != "llm":
-                self._enqueue("clean", msg)
-            elif self.cleanup_state == "failed":
-                # A failed engine's degraded answer runs on the GPU
-                # thread's order too (it may still need the v1 cleaner
-                # object, which only that thread touches).
-                self._enqueue("clean", msg)
-            else:
-                self._clean_now(msg)
+            # Decided under the lock the unload decision also takes, so a
+            # clean sees either a loaded engine (and makes the queue
+            # non-empty before any unload) or ``unloaded`` (and waits for
+            # the reload it queues).
+            with self._cond:
+                if self.cleanup_state == "unloaded":
+                    self._queue_reload()
+                if self._reload or self.cleanup_state == "ready" \
+                        or self.cleanup_mode != "llm":
+                    self._enqueue("clean", msg)
+                    return
+                if self.cleanup_state == "failed":
+                    # A failed engine's degraded answer runs on the GPU
+                    # thread's order too (it may still need the v1 cleaner
+                    # object, which only that thread touches).
+                    self._enqueue("clean", msg)
+                    return
+            self._clean_now(msg)
 
     # ---- loop ----------------------------------------------------------------
 

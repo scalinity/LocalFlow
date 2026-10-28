@@ -14,10 +14,12 @@ Plan (JSON file named by $LOCALFLOW_PROD_WORKER_PLAN):
 {
   "asr_load": "ok" | "fail",
   "cleanup_load": "ok" | "fail",
+  "cleanup_reload": "fail",         # every cleanup load after the first fails
   "cleanup_load_latch": "<path>",   # cleanup load blocks until it exists
   "transcribe": ["ok:<text>" | "raise:<message>"
                  | "delay:<ms>|<one of those>"],     # per call
-  "clean": ["ok:<text>" | "raise:<message>"],        # per call
+  "clean": ["ok:<text>" | "raise:<message>"
+            | "delay:<ms>|<one of those>"],          # per call
   "record": "<path>",               # JSONL: what the shims were given
   "hold_gpu_mib": <int>,            # ASR load keeps a plain MLX array of
                                     # this size alive (footprint rig tests)
@@ -28,6 +30,8 @@ Plan (JSON file named by $LOCALFLOW_PROD_WORKER_PLAN):
   "clear_cache_fails": true         # with "trace_clears": the traced
                                     # mx.clear_cache raises
 }
+With "record", the shim runner's weights object logs a "weights_freed" event
+when it is released, so a test can read WHEN the worker let the model go.
 A pass with these shims is protocol/scheduling evidence, never a
 model-backed result (no Parakeet, no Qwen; MLX only for the optional
 plain array above and the memory counters).
@@ -47,6 +51,7 @@ sys.path.insert(0, os.environ.get("LOCALFLOW_CODE_ROOT") or os.path.dirname(
 PLAN = {}
 _cursor = {}
 _GPU_HOLD = None
+_cleanup_loads = 0
 
 
 def _take(op):
@@ -98,9 +103,27 @@ class ShimTranscriber:
         return b[len("ok:"):] if b.startswith("ok:") else b
 
 
+class _Weights:
+    """Stands in for the loaded model: reachable only through the runner
+    that loaded it, so its release shows when the worker dropped the engine."""
+
+    def __del__(self):
+        try:
+            _record(event="weights_freed", t=time.monotonic())
+        except Exception:
+            pass
+
+
 class ShimEngine:
+    def __init__(self, runner=None):
+        # Like the real engine, which reaches the model through its runner.
+        self.runner = runner
+
     def clean(self, raw_text, **kw):
         b = _take("clean")
+        if b.startswith("delay:"):
+            head, b = b.split("|", 1)
+            time.sleep(int(head[len("delay:"):]) / 1000.0)
         _record(event="engine_clean", t=time.monotonic())
         if b.startswith("raise:"):
             raise RuntimeError(b[len("raise:"):])
@@ -123,6 +146,8 @@ class ShimRunner:
         self.model_id = model_id
 
     def load(self, on_phase=None):
+        global _cleanup_loads
+        _cleanup_loads += 1
         latch = PLAN.get("cleanup_load_latch")
         _record(event="cleanup_load_started", t=time.monotonic())
         if latch:
@@ -130,12 +155,14 @@ class ShimRunner:
                 time.sleep(0.01)
         if on_phase is not None:
             on_phase("warming")
-        if PLAN.get("cleanup_load") == "fail":
+        if PLAN.get("cleanup_load") == "fail" or (
+                PLAN.get("cleanup_reload") == "fail" and _cleanup_loads > 1):
             raise RuntimeError("shim cleanup load failure")
+        self._weights = _Weights()
         _record(event="cleanup_loaded", t=time.monotonic())
 
     def engine(self, notifier=None):
-        return ShimEngine()
+        return ShimEngine(self)
 
     def generate_fn(self):
         return lambda prompt, max_tokens: {"text": "", "tokens": 0}
