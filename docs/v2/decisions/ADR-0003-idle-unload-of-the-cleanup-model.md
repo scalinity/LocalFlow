@@ -36,23 +36,34 @@ duration only, never text or audio) the gate fails on both clauses:
 - The other 5 fall short; the largest shortfall is 1.585 s against 300 ms
   allowed, and 4 of the 5 exceed 300 ms.
 - On the after-idle dictations alone, 2 of the 32 measurable ones are
-  shorter than the reload.
+  shorter than the reload, the largest shortfall 1.435 s.
 
 Capture duration is the right budget for the reload wait. The reload and the
 transcription share the worker's one GPU thread, so transcription cannot hide
 a reload: a reload still running when the recording ends delays the
-transcription by its remainder, and the added wait is the reload time minus
-the recording length, never below zero. The measurements are kept in the
+transcription by its remainder, and when the reload starts with the
+recording the added wait is about the reload time minus the recording
+length, never below zero. The measurements are kept in the
 private evidence folder; this record carries aggregate numbers only.
 
 ## Decision
 
 Build the unload anyway. A dictation that starts after an idle unload and
-ends before the reload finishes waits for cleanup, up to about 1.4 s, and the
-owner accepts that wait on those short dictations in exchange for the
-memory. Everything else stays as it was: the cleaned text, the speech
-recognizer and its latency, the worker's lifecycle, generation numbers and
-the fault policy.
+ends before the reload finishes waits for cleanup. When the reload starts with
+the recording, the wait is about the reload time minus the recording length:
+at most about the reload time for a very short dictation (about 1.9 s;
+1.935 s measured worst). The press-time request is written from the app's
+press handler and the worker starts the load when its GPU thread is free, so
+a reload can start slightly after the recording does. In the recorded history
+the largest shortfall is 1.585 s over all dictations and 1.435 s over the
+after-idle dictations, the ones that can meet an unload. The owner accepts
+that wait on short dictations in exchange for the memory.
+
+Everything else stays as it was: the cleaned text, the worker's lifecycle,
+generation numbers and the fault policy. The speech recognizer stays resident
+and its own latency is unchanged; a transcription that reaches the worker
+while a reload runs waits for it, because the worker has one GPU thread (see
+Consequences).
 
 The design is in `contracts/worker.md` (Idle unload of the cleanup model).
 In short: after the idle period, with nothing queued or running, the worker

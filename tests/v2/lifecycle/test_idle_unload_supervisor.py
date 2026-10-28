@@ -12,13 +12,16 @@ recording stdin and delivered through ``_handle_message``), never a model:
   3  ``wait_engine("cleanup")`` during a reload waits for ``ready``
   4  ``wait_engine("cleanup")`` on ``unloaded`` sends one ``ensure_cleanup``
   5  a request's internal wait never blocks on ``unloaded``
-  6  ``prepare_cleanup`` writes one frame per call, only to a live worker
-     of a cleanup that can unload
+  6  ``prepare_cleanup`` writes one frame per ask (a write still pending
+     covers a further ask, see 13), only to a live worker of a cleanup
+     that can unload
   7  a send to a dead pipe neither raises nor counts toward the breaker
   10 shutdown's wake-up of engine waiters is never erased by a late frame
   11 neither ``prepare_cleanup`` nor ``wait_engine`` waits on the pipe write
   12 the real worker loop (model loaders shimmed) behind the real supervisor:
      it unloads, ``wait_engine`` brings it back, a clean gets the real answer
+  13 at most one ``ensure_cleanup`` write is in flight, however many asks
+  14 a thread that cannot start is "nothing asked", never an exception
   8  a crash while ``unloaded`` and a respawn start from ``not_started``
   9  the protocol fake takes ``ensure_cleanup`` silently, as the worker does
 
@@ -30,6 +33,7 @@ import pathlib
 import sys
 import threading
 import time
+from unittest import mock
 
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent))
 
@@ -241,6 +245,7 @@ def test_6_prepare_cleanup_writes_one_frame_per_call_to_a_live_worker():
         s = make(td)
         deliver(s, "cleanup", "ready")
         assert s.prepare_cleanup() is True
+        drain()
         assert s.prepare_cleanup() is True
         drain()
         assert s._proc.stdin.frames == [ENSURE, ENSURE]
@@ -433,10 +438,10 @@ def test_11_nothing_waits_on_the_pipe_write():
         finally:
             gate.set()
         drain()
-        assert s._proc.stdin.frames == [ENSURE, ENSURE], \
-            "both asks arrive once the pipe is read again"
+        assert s._proc.stdin.frames == [ENSURE], \
+            "the one pending frame arrives once the pipe is read again"
     print("ok  11 a blocked pipe write holds up neither prepare_cleanup nor"
-          " wait_engine's own timeout; the frames arrive when released")
+          " wait_engine's own timeout; the frame arrives when released")
 
 
 def _until_unloaded(s, timeout=20.0):
@@ -482,6 +487,76 @@ def test_12_the_real_worker_unloads_reloads_and_answers_a_clean():
           " restart or fault")
 
 
+def _writers():
+    return [t for t in threading.enumerate()
+            if t.name == "localflow-ensure-cleanup" and t.is_alive()]
+
+
+def test_13_at_most_one_ensure_cleanup_write_is_in_flight():
+    gate, entered = threading.Event(), threading.Event()
+
+    class _BlockedStdin(_Stdin):
+        def write(self, data):
+            entered.set()
+            gate.wait(10)
+            super().write(data)
+
+    with tmpdir() as td:
+        s = make(td)
+        s._proc.stdin = _BlockedStdin()
+        sends = []
+        real_send = s._send
+
+        def counting_send(msg, **kw):
+            sends.append(msg["op"])
+            return real_send(msg, **kw)
+
+        s._send = counting_send
+        try:
+            assert s.prepare_cleanup() is True
+            assert entered.wait(5), "the write never started"
+            for _ in range(10):
+                assert s.prepare_cleanup() is True, \
+                    "an ask covered by the pending frame still succeeds"
+            assert len(_writers()) == 1, [t.name for t in _writers()]
+            assert sends == ["ensure_cleanup"], sends
+        finally:
+            gate.set()
+        drain()
+        assert s._proc.stdin.frames == [ENSURE]
+        assert _writers() == []
+        # The write completed: the next ask is a new write.
+        assert s.prepare_cleanup() is True
+        drain()
+        assert s._proc.stdin.frames == [ENSURE, ENSURE]
+        assert sends == ["ensure_cleanup", "ensure_cleanup"], sends
+    print("ok  13 ten asks behind one blocked write start no further thread;"
+          " once it completes the next ask writes again")
+
+
+def test_14_a_thread_that_cannot_start_is_nothing_asked():
+    for failure in (RuntimeError("can't start new thread"),
+                    OSError("resource temporarily unavailable")):
+        with tmpdir() as td:
+            s = make(td)
+            deliver(s, "cleanup", "ready")
+            deliver(s, "cleanup", "unloaded")
+            with mock.patch.object(threading.Thread, "start",
+                                   side_effect=failure):
+                assert s.prepare_cleanup() is False
+                t0 = time.monotonic()
+                assert s.wait_engine("cleanup", 5.0) == "unloaded"
+                assert time.monotonic() - t0 < 1.0, \
+                    "waited for an ask that never started"
+            assert s._proc.stdin.frames == []
+            # Nothing is left marked in flight: the next ask writes.
+            assert s.prepare_cleanup() is True
+            drain()
+            assert s._proc.stdin.frames == [ENSURE]
+    print("ok  14 a thread-start failure returns False without raising,"
+          " wait_engine returns at once, and the next ask still writes")
+
+
 def main():
     run([test_1_unloaded_frame_updates_state_and_fires_on_engine,
          test_2_cleanup_latch_follows_unload_and_reload,
@@ -494,7 +569,9 @@ def main():
          test_9_ensure_cleanup_is_silent_on_the_protocol_fake,
          test_10_shutdown_wake_up_survives_a_pending_engine_frame,
          test_11_nothing_waits_on_the_pipe_write,
-         test_12_the_real_worker_unloads_reloads_and_answers_a_clean],
+         test_12_the_real_worker_unloads_reloads_and_answers_a_clean,
+         test_13_at_most_one_ensure_cleanup_write_is_in_flight,
+         test_14_a_thread_that_cannot_start_is_nothing_asked],
         "idle unload supervisor tests")
 
 

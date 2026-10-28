@@ -55,8 +55,10 @@ Per-engine states reported by the worker: `loading`, `warming`, `ready`,
 `failed`, and `unloaded` for the cleanup engine only (plus supervisor-level
 `not_started`/`restarting`/degraded). ASR and cleanup are displayed
 separately. A failed cleanup engine is degraded,
-not dead: the worker answers in basic mode and labels it
-(`path: "basic"`, `fallback_reason: cleanup_engine_failed`); the parent's
+not dead, and the worker labels the answer it gives. V1: the basic pass
+(`path: "basic"`, `fallback_reason: cleanup_engine_failed`). V2: the
+normalized input unchanged (`path: "llm_fallback_normalized"`,
+`fallback_reason: cleanup_engine_failed`). The parent's
 `cleanup_not_ready_policy` (`basic`|`wait`) decides whether a job runs the
 fallback now or holds until the engine resolves. The recorded path is
 always the path that produced the text (M03-AC04).

@@ -189,6 +189,7 @@ class WorkerSupervisor:
                                "cleanup": threading.Event()}
         self._pending = {}
         self._send_lock = threading.Lock()
+        self._ensure_in_flight = False  # one ensure_cleanup write, at most
         self._gpu_lock = threading.Lock()  # one in-flight model request (S06)
         # The ONE lifecycle authority (M03-AUDIT-04): spawn, the retry's
         # kill+respawn, restart, retirement and shutdown. Re-entrant so a
@@ -893,10 +894,15 @@ class WorkerSupervisor:
         frame and no reply. The worker reloads a model it released after
         an idle period and otherwise only restarts its idle clock, so a
         hotkey press sends this whatever the engine state. Fire and
-        forget: never raises and never waits, because the write runs on
-        its own thread (a worker that stopped reading its pipe holds only
-        that thread). Sends nothing unless a greeted worker of a cleanup
-        that can unload is running; True when a write was started."""
+        forget: never raises, and the caller never waits on the worker's
+        pipe, because the write runs on one short-lived daemon thread. At
+        most one write is in flight; an ask made while it is pending
+        returns True, since the one idempotent frame covers it. A worker
+        that stopped reading its pipe is the lifecycle's business (an
+        ordinary request's send can wait behind the write on the send
+        lock), not this method's. Sends nothing unless a greeted worker of
+        a cleanup that can unload is running; True when the ask is
+        written or already pending."""
         with self._state_lock:
             if self._closed or self.supervisor_state == "failed":
                 return False
@@ -905,6 +911,10 @@ class WorkerSupervisor:
                 or proc is None or proc.poll() is not None \
                 or not self._hello.is_set():
             return False
+        with self._state_lock:
+            if self._ensure_in_flight:
+                return True
+            self._ensure_in_flight = True
 
         def write():
             try:
@@ -912,8 +922,16 @@ class WorkerSupervisor:
                            proc=proc)
             except (OSError, ValueError):
                 pass  # a dead worker is the lifecycle's business, not ours
-        threading.Thread(target=write, daemon=True,
-                         name="localflow-ensure-cleanup").start()
+            finally:
+                with self._state_lock:
+                    self._ensure_in_flight = False
+        try:
+            threading.Thread(target=write, daemon=True,
+                             name="localflow-ensure-cleanup").start()
+        except (RuntimeError, OSError):
+            with self._state_lock:
+                self._ensure_in_flight = False
+            return False
         return True
 
     # ---- faults ---------------------------------------------------------------
