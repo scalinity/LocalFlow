@@ -1,35 +1,55 @@
 # Worker footprint reduction
 
-October 27, 2026. State: `WORKER_FOOTPRINT_COMPLETE_PENDING_LOCAL_VERIFICATION`.
-The work is on branch `perf/worker-footprint` and is **not merged to `main`**.
-The installed app and its idle worker were not changed.
+October 28, 2026. State: `WORKER_FOOTPRINT_COMPLETE_PENDING_LOCAL_VERIFICATION`.
+The work is on the integration branch `perf/05-idle-unload` (it contains
+`perf/worker-footprint`) and is **not merged to `main`**. The installed app
+and its idle worker were not changed.
 
-**Goal:** lower the dictation worker's memory with the same two models, the
-same output text and the same speed.
-**Result:** the worker's launch peak is lower by 717 to 819 MiB. Its idle
-footprint after the first dictation is unchanged, so the idle gain at launch
-does not last. The other levers closed without code.
+**Goal:** lower the dictation worker's memory with the same two models and the
+same output text. Speed is unchanged except for a dictation that starts right
+after an idle unload of the cleanup model, the trade accepted in ADR-0003.
+**Result:** two levers ship. The allocator release lowers the launch peak by
+717 to 819 MiB; its idle gain at launch does not last, because the first
+dictation refills it. The idle unload returns the cleanup model's memory after
+ten idle minutes (the worker's footprint drops by a median of 2,653 MiB) at
+the price of a wait on short dictations that start right after an unload. The
+steady-state cache and the loader closed without code.
 **Base commit:** `14a009a4f3d7d64a6419c12638af65bc6ed9b2a8` (`main`).
-**Measured code head:** `4eff5a3e98e3c396e06212f8aa2429c39ce3da67` on
-`perf/worker-footprint`; `localflow/` tree SHA-256
-`400fa463b31eeaca24b5c1ea5322a1ceb8cfae0c2506dc5e0a9e5d8bca6627b4`. The
-branch tip carries later commits that change only the rig's abort, pinned A/A
-and Identity handling, its tests, documentation and the records; `localflow/`
-is byte-identical to the measured head (tree digest unchanged).
+**Integration head:** `7d523d88bd41ebf39adc58225066012574b82464` on
+`perf/05-idle-unload`; `localflow/` tree SHA-256
+`6f1762f7e6878f84c2e455fd4c459108e6c316f2f119918fa4de2ec44d1af768`.
+**Measured heads.** The launch-peak and latency numbers were measured on
+`4eff5a3e98e3c396e06212f8aa2429c39ce3da67` (`localflow/` tree
+`400fa463b31eeaca24b5c1ea5322a1ceb8cfae0c2506dc5e0a9e5d8bca6627b4`); the
+idle-unload numbers on `09a86457d2260ff93dc676e16e7bf67679751f5e` (tree
+`901804ef5044c83718160b8827dc928c294457ee1eff1d52720c9c324de73aa0`). The
+integration head differs from `09a8645` only in the supervisor's single-writer
+bound on the press-time ask (`localflow/v2/supervisor.py`); the worker the
+rig drives is byte-identical.
+**Final tree A/B:** FINAL-AB-PENDING: run id `final-ab-1` is a full shipping A/B on the integration head; its figures are not recorded here yet.
 **This record:** this file, `STATUS.json` (`current_state.worker_footprint`)
-and the pending runbook entry M03-V009 land in one commit on
-`perf/04-verify-and-record`, cut from the integration head. The commit
-changes no code.
+and the pending runbook entries M03-V009 and M03-V010. No commit of the
+record changes code.
 
-**Files.** Production: `localflow/v2/worker.py` (the allocator release and
-the optional memory frames), `localflow/v2/cleanup/model.py`
-(`ModelRunner.load` takes an optional `on_phase` callback, fired once the
-weights are loaded and before the warmup generation). Contract:
-`docs/v2/contracts/worker.md`, sections *Memory diagnostics* and *Allocator
-release at load*. Rig: `scripts/v2/footprint_rig.py`. Tests:
-`tests/v2/lifecycle/{test_footprint_rig,test_footprint_rig_session,test_worker_cache_release,test_worker_memory_diag}.py`
-and the shim options added to `tests/v2/lifecycle/prod_worker_harness.py`.
-Records: this file, `docs/v2/STATUS.json`, `docs/v2/VERIFICATION.html`.
+**Files.** Production: `localflow/v2/worker.py` (the allocator release, the
+optional memory frames, the idle unload and `ensure_cleanup`),
+`localflow/v2/cleanup/model.py` (`ModelRunner.load` takes an optional
+`on_phase` callback, fired once the weights are loaded and before the warmup
+generation), `localflow/v2/supervisor.py` (the `unloaded` state,
+`prepare_cleanup`, the wait for a resting model), `localflow/app.py` (the
+press-time ask and the menu-bar label), `localflow/v2/ui/companion/controller.py`
+(the Hub re-reads the engine on a cleanup state change),
+`frontend/src/app/Sidebar.svelte` and `frontend/src/routes/models/Engines.svelte`
+with the rebuilt tracked bundle under `localflow/v2/ui/companion/web/`
+(`BUILD.json`, `index.html`, `assets/`). Contract: `docs/v2/contracts/worker.md`,
+sections *Memory diagnostics*, *Allocator release at load* and *Idle unload of
+the cleanup model*. Decision: `docs/v2/decisions/ADR-0003-idle-unload-of-the-cleanup-model.md`.
+Rig: `scripts/v2/footprint_rig.py` (with its `idle` phase). Tests:
+`tests/v2/lifecycle/{test_footprint_rig,test_footprint_rig_session,test_worker_cache_release,test_worker_memory_diag,test_worker_idle_unload,test_idle_unload_supervisor,test_idle_unload_app}.py`,
+`tests/v2/ui/test_idle_unload_display.py`, `frontend/tests/owner-polish.test.mjs`
+and the shim options in `tests/v2/lifecycle/prod_worker_harness.py` and
+`tests/v2/lifecycle/fake_worker.py`. Records: this file,
+`docs/v2/STATUS.json`, `docs/v2/VERIFICATION.html`.
 
 ## What the worker does now
 
@@ -42,15 +62,31 @@ deferred load, or one queued behind requests that arrived first) can run,
 release included, between two requests. The release adds no frame and no
 engine state. With `LOCALFLOW_WORKER_MEMORY_DIAG=1` the worker
 also writes content-free memory counters at six labels as `diag` frames;
-with the variable unset the frame stream is unchanged. The contract holds
-the exact rules and is not repeated here.
+with the variable unset the frame stream is unchanged.
+
+After an idle period of 600 seconds with nothing queued or running, the worker
+also drops the cleanup model, runs the allocator release and writes one
+`unloaded` cleanup engine frame (`CLEANUP_IDLE_UNLOAD_S`; the environment
+variable `LOCALFLOW_WORKER_IDLE_UNLOAD_S` is a test and measurement seam, not
+a setting). The speech engine never unloads, and neither does a `v1` cleanup
+or a mode other than `llm`. The model comes back through the load's own
+`loading` and `ready` frames when a hotkey press sends `ensure_cleanup` (the
+app writes it from a short-lived daemon thread right after the recorder
+starts, so the reload overlaps the recording) or when a `clean` finds the
+engine unloaded. A `clean` that arrives during an unload or reload waits and
+gets the real answer (path `llm`), never the not-ready answer; the first load
+at worker start keeps today's behaviour. An unload or reload writes no fault,
+keeps the generation, never restarts the worker and does not count toward the
+breaker. The supervisor, the menu-bar line (`Cleanup: resting`), the Hub's
+sidebar and Models page handle the state. The contract and ADR-0003 hold the
+exact rules and are not repeated here.
 
 ## Before and after
 
 Side A is the baseline: the `localflow/` tree of commit `45bf38d` (the rig
 and the inert diagnostics, no release), SHA-256
 `e8c71fe828a7f2fcd39d8ad3296697d0cad1228d5a1cd78f2fdcf9d8bbae6797`, frozen as
-an export. Side B is the candidate: the measured tree above. Runs are in
+an export. Side B is the candidate: the `4eff5a3` tree above. Runs are in
 the private evidence root `~/Library/Application Support/LocalFlow/v2-evidence/footprint/`
 and are never copied into the repository:
 
@@ -58,7 +94,8 @@ and are never copied into the repository:
 |---|---|
 | `perf02-shipping-3` (A/B, pinned to the A/A `baseline-aa-shipping-3`) | footprint, bursts, resident latency bands, back-to-back gap, identity; 7:58 PM to 9:28 PM EDT, October 27 |
 | `perf02-first-1` (A/B, pinned to the A/A `baseline-aa-first-1`) | the two first-request rows; 9:48 PM to 9:53 PM EDT, October 27 |
-| `ticket05-gate` | the idle-unload gate (ticket 05) |
+| `ticket05-gate` | the Residency gate: reload time and capture durations (ticket 05) |
+| `perf05-idle-1` (idle phase, one tree on both sides) | the idle unload: footprint drop, reload time, release-to-result per capture length, never-degraded and second-dictation checks; 12:11 AM to 12:23 AM EDT, October 28 |
 
 Both models are those the installed configuration names: ASR
 `mlx-community/parakeet-tdt-0.6b-v3` at revision
@@ -95,7 +132,8 @@ pass. No fault frame appeared, the worker generation stayed 1, no engine
 loaded twice and the rig did not stop either run.
 
 The lever lowers the spike paid at launch, not the peak once dictations run:
-the first dictation refills the 173 MiB the release returned.
+the first dictation refills the 173 MiB the release returned. The footprint
+of a worker that has been idle for ten minutes is the unload's, below.
 
 ### Latency by band
 
@@ -126,6 +164,70 @@ band; the three upper cleanup bands are short of the Gate table's 30 cases
 (they ran all five repeats), because the corpus has no more cases in those
 bands.
 
+## Idle unload of the cleanup model
+
+The Residency gate failed on both clauses (numbers under *Ticket records*).
+The owner chose to build the unload anyway and accepted a wait on short
+dictations that start right after an unload; ADR-0003 records the decision.
+
+### Measured: `perf05-idle-1`
+
+The rig's idle phase, one tree (head `09a8645`) on both sides. Side B's worker
+unloads the cleanup model after 6 idle seconds (`LOCALFLOW_WORKER_IDLE_UNLOAD_S`);
+side A's never unloads. For each capture length the rig waits for side B's
+unload, reads its footprint, then runs one simulated dictation per side (side
+B gets the `ensure_cleanup` ask at the press) and judges the release-to-result
+times on ABBA blocks of two pairs: 5 blocks per length, 40 unloads in all. No
+A/A report is pinned, so the spec limits apply; the rig records these bands as
+measured and none changes its exit status. AC power, no thermal warning before
+or after; the installed idle worker's CPU time rose 0.07 s over the run.
+
+| Row | Result |
+|---|---|
+| Footprint 2 s after ready against 2 s after the unload (40 unloads) | drops by a median of 2,653 MiB (range 2,373 to 2,655), 117% of the cleanup weights (2,258 MiB) |
+| Reload, press to the cleanup `ready` frame (40 dictations) | 1,720 ms minimum, 1,760 ms median, 1,900 ms maximum |
+| Cleanup requests during an unload or reload | all 60 on side B came back path `llm`; none was degraded |
+| Idle outputs, A against B | identical |
+| Second dictation started during the reload | both cleanups path `llm` and equal to side A's; exactly one reload; last result at 3,997 ms against 2,565 ms on side A (median over pairs) |
+
+Release-to-result by capture length, paired, interleaved (A,B,B,A); positive
+means side B is slower. The reload remainder is the reload time minus the
+capture length, never below zero.
+
+| Capture | Blocks | Baseline median / p95 ms | Paired median / p95 ms | Spec limits ms | Verdict | Median reload remainder ms |
+|---|---|---|---|---|---|---|
+| 0.5 s | 5 | 1,143.9 / 1,156.1 | +1,227.2 / +1,250.4 | 57.2 / 115.6 | fails, accepted | 1,263 |
+| 1 s | 5 | 1,147.4 / 1,150.8 | +739.1 / +794.9 | 57.4 / 115.1 | fails, accepted | 770 |
+| 2 s | 5 | 1,136.9 / 1,150.8 | -17.5 / -7.6 | 56.8 / 115.1 | pass | 0 |
+| 5 s | 5 | 1,143.1 / 1,153.1 | -2.0 / +3.2 | 57.2 / 115.3 | pass | 0 |
+
+### What waits and what never changes
+
+- **What waits.** Cleanup, for a dictation shorter than the reload that began
+  after an idle unload. In the recorded history that is about 6% of the
+  after-idle dictations (2 of the 32 measurable ones, the largest shortfall
+  1.435 s). A `transcribe` that reaches the worker while a reload runs waits
+  for it too.
+- **Transcription cannot hide a reload.** The Gate table assumed that
+  transcription time also overlaps the reload; it does not, because the
+  reload and the transcription share the worker's one GPU thread. A reload
+  still running when the recording ends delays the transcription by its
+  remainder. When the reload starts with the recording, the added wait is
+  about the reload time minus the recording length, never below zero: up to
+  about 1.9 s for a very short dictation (1.935 s measured worst at the gate).
+  The reload can start slightly after the recording does, when the worker's
+  GPU thread is free.
+- **What never changes.** The cleaned text (idle outputs are identical to the
+  side that never unloads), the speech recognizer (always resident, its
+  latency unchanged outside a reload), the generation numbers, the fault
+  policy, the breaker, and the lifecycle; the first load at worker start.
+- **A very long recording.** The press-time ask restarts the idle clock once.
+  A recording longer than the idle period can meet an unloaded model when it
+  ends, and its cleanup then waits for a full reload after the transcription.
+  Such recordings are rare (the longest in the recorded history is under four
+  minutes) and the reload is small beside their transcription time, so no
+  timer keeps the model loaded during a recording.
+
 ## Ticket records
 
 - **01, rig and baseline: closed, done.** `scripts/v2/footprint_rig.py` spawns
@@ -148,9 +250,10 @@ bands.
   idle by at most that much while the pool refills at the next dictation.
 - **04, verify and record: this record.** It records the outcome and the
   numbers above; no production code changes in it.
-- **05, gated idle unload: closed on a failed Residency gate, no code.** The
+- **05, idle unload: the Residency gate failed; built on the owner's
+  decision (ADR-0003), shipped on the integration branch.** The gate: the
   worker's own cleanup load path, warmup included, timed in a disposable
-  in-process script outside the repository on the integration tree
+  in-process script outside the repository on the `4eff5a3` tree
   (weights 2,258 MiB): page-cache-warm 1.679 to 1.723 s (median 1.699 s,
   10 repetitions), cold-ish 1.830 to 1.935 s (median 1.854 s, 10
   repetitions, weights' page-cache residency under 0.05%). Worst reload
@@ -160,6 +263,9 @@ bands.
   172.6 s. 59 of 64 dictations (92.2%) last at least the worst reload
   against the 99% required; the largest shortfall is 1.585 s and 4 of the 5
   short dictations exceed the 300 ms added-wait limit. Both clauses fail.
+  The owner accepted the wait on short dictations and the unload was built
+  (what it does: *What the worker does now*; results and what waits:
+  *Idle unload of the cleanup model*).
 - **Loader (ticket 02's second form): not built.** The Loader gate trips
   numerically (candidate launch peak 1,857 MiB above its idle, gate 1 GB),
   but the allocator peak (5,250 MiB) is set in the cleanup warmup on both
@@ -170,8 +276,19 @@ bands.
 
 ## Where measurement overrode the spec's defaults
 
-- **Launch peak is the only claim.** The idle gain at launch (174 MiB) is
-  refilled by the first dictation, so idle is not claimed.
+- **The allocator release claims launch peak only.** Its idle gain at launch
+  (174 MiB) is refilled by the first dictation, so idle is not claimed for it;
+  the idle footprint gain belongs to the unload.
+- **The Residency gate failed and the unload was built on the owner's
+  decision.** The Gate table says a lever that misses its gate is closed with
+  a note; the owner accepted the wait on short dictations instead (ADR-0003),
+  so the Latency rule fails for the 0.5 s and 1 s captures of an after-idle
+  dictation by design, and passes at 2 s and 5 s.
+- **Transcription does not overlap the reload.** The Gate table assumed
+  transcription time also overlaps the reload, making capture duration a
+  conservative budget. The reload and the transcription share the worker's one
+  GPU thread, so capture duration alone is the budget: the added wait is about
+  the reload time minus the recording length.
 - **Ticket 03 closed on its comparison rule** (growth over the same spawn's
   idle). The Gate table's Idle floor alone would not have stopped a trim of
   the 173 MiB block, which the observation above explains.
@@ -210,31 +327,51 @@ bands.
   a caller that sends ASR alone); that case was not audited.
 - Latency was measured at the worker protocol on synthetic fixtures and
   speech generated with the system synthesizer, never on the owner's audio.
+- The idle measurement (`perf05-idle-1`) uses those synthetic clips on the same
+  code on both sides, with unloading off on side A. Its idle period is 6 s,
+  set through the test seam; the production period is 600 s. The period sets
+  when the unload fires, not what it does, but a reload after a real ten idle
+  minutes can start from colder page cache and take as long as the gate's
+  cold-ish worst of 1.935 s.
+- The rig drives the worker directly. The supervisor, app, menu-bar, Hub and
+  frontend changes of the unload have no model-backed measurement; tests with
+  fake workers cover them. The owner's real hotkey path after a real idle
+  period is M03-V010 in `VERIFICATION.html`, **Not run**.
 
 ## Pending owner decisions
 
 1. **Install a new build.** The worker change reaches the installed app only
    after a reinstall of a build that contains it; the branch is not merged to
    `main`. The installed app and its idle worker were left untouched. A
-   qualification build of the integration head goes to a new absolute path
-   with `scripts/build_app.sh --output`, never over `/Applications/LocalFlow.app`.
-2. **Run M03-V009**, the key release to inserted text check in the real app on
-   the reference condition, repeated on one synthetic job. It is appended to
-   the runbook as pending local verification and is not run.
+   qualification build goes to a new absolute path with
+   `scripts/build_app.sh --output`, never over `/Applications/LocalFlow.app`.
+   Order matters for the two runbook checks: M03-V009 compares against the
+   installed app, so run it while the installed app is still the build without
+   the changes; M03-V010 needs the installed app to be the new build.
+2. **Run the runbook checks M03-V009 and M03-V010.** V009 is the key release
+   to inserted text check in the real app on the reference condition,
+   repeated on one synthetic job. V010 is the idle unload in the real app
+   after real idle periods: footprint, cleanup states, the menu-bar line, a
+   six-second dictation and a one-second dictation. Both are appended to the
+   runbook as pending local verification and are not run.
 3. **Reopen ticket 03 for a cache limit or a trim after an ASR result?** It
    matters only for ASR requests with no cleanup request after them (see
    *Limits*).
 4. **Delete the earlier evidence runs and the baseline export** under
    `~/Library/Application Support/LocalFlow/v2-evidence/footprint/` and the
    git-ignored `.scratch/worker-footprint/`. The final runs
-   (`perf02-shipping-3`, `perf02-first-1` and their A/A runs) are the record
-   behind this file; the baseline export can be recreated from commit
+   (`perf02-shipping-3`, `perf02-first-1` and their A/A runs, `perf05-idle-1`
+   and `final-ab-1`) are the record behind this file, with `ticket05-gate`
+   for the gate numbers; the baseline export can be recreated from commit
    `45bf38d` with `git archive` and identified by its tree digest.
 
 ## Re-running the measurement
 
 `.venv/bin/python scripts/v2/footprint_rig.py --code-root-a <baseline export> --code-root-b <candidate checkout> --mode shipping`,
-pinning a finished A/A run with `--aa-report`. One run at a time; AC power; no
+pinning a finished A/A run with `--aa-report`. The idle phase is named in
+`--phases` and is never part of a default run (`--phases idle`; side B unloads
+after `--idle-unload-s` seconds, 6 by default, and side A never does). One run
+at a time; AC power; no
 dictation during the run; run suites with `LOCALFLOW_DATA_HOME` set to a
 scratch directory. Pin only an A/A run made by the rig at or after `fdc4e2f`.
 The rig refuses a pinned report unless it is complete and not aborted, was an

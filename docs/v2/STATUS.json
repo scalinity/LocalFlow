@@ -157,24 +157,42 @@
       "recovery_key_guard": "Refused Copy retains/restores its scoped lease. Failed Apply/Save reopens with a guard; claimed applications, disabled results and inactive logical buffers cannot apply again. Down/repeat/up tested for Return and keypad; held-key latches survive disarm."
     },
     "worker_footprint": {
-      "as_of": "2026-10-27",
-      "branch": "perf/worker-footprint",
+      "as_of": "2026-10-28",
+      "branch": "perf/05-idle-unload",
       "state": "WORKER_FOOTPRINT_COMPLETE_PENDING_LOCAL_VERIFICATION",
       "merged_to_main": false,
       "base_main": "14a009a4f3d7d64a6419c12638af65bc6ed9b2a8",
-      "measured_head": "4eff5a3e98e3c396e06212f8aa2429c39ce3da67",
-      "localflow_tree_sha256": "400fa463b31eeaca24b5c1ea5322a1ceb8cfae0c2506dc5e0a9e5d8bca6627b4",
-      "source_state": "The integration branch holds the lever, the opt-in memory diagnostics and the measurement rig; it is not merged to main. The one production change: after each engine's load and warmup the worker hands the allocator's unused cached memory back once (localflow/v2/worker.py; ModelRunner.load takes an optional on_phase callback). Same two models, same output text, same latency.",
-      "branch_tip_note": "The branch tip carries later commits that change only the rig's abort, pinned A/A and Identity handling, its tests, documentation and the records; localflow/ is byte-identical to the measured head (tree digest unchanged).",
+      "head": "7d523d88bd41ebf39adc58225066012574b82464",
+      "localflow_tree_sha256": "6f1762f7e6878f84c2e455fd4c459108e6c316f2f119918fa4de2ec44d1af768",
+      "measured_heads": {
+        "launch_peak_and_latency": {
+          "head": "4eff5a3e98e3c396e06212f8aa2429c39ce3da67",
+          "localflow_tree_sha256": "400fa463b31eeaca24b5c1ea5322a1ceb8cfae0c2506dc5e0a9e5d8bca6627b4",
+          "runs": [
+            "perf02-shipping-3",
+            "perf02-first-1"
+          ]
+        },
+        "idle_unload": {
+          "head": "09a86457d2260ff93dc676e16e7bf67679751f5e",
+          "localflow_tree_sha256": "901804ef5044c83718160b8827dc928c294457ee1eff1d52720c9c324de73aa0",
+          "runs": [
+            "perf05-idle-1"
+          ],
+          "note": "The integration head differs from this head only in the supervisor's single-writer bound on the press-time ask; the worker the rig drives is byte-identical."
+        }
+      },
+      "final_tree_ab": "FINAL-AB-PENDING: run id final-ab-1 is a full shipping A/B on the integration head; its figures are not recorded here yet.",
+      "source_state": "The integration branch holds the allocator release, the opt-in memory diagnostics, the measurement rig and the idle unload of the cleanup model; it is not merged to main. Production changes: after each engine's load and warmup the worker hands the allocator's unused cached memory back once; after ten idle minutes the worker releases the cleanup model and reloads it on ensure_cleanup (sent at every hotkey press) or on a clean that finds it unloaded (localflow/v2/worker.py, supervisor.py, app.py, ui/companion/controller.py, the Sidebar and Engines frontend sources with the rebuilt bundle; ModelRunner.load takes an optional on_phase callback). Same two models and same output text; speed is unchanged except for a dictation shorter than the reload that starts right after an unload (ADR-0003).",
       "installed_state": "Not changed. The installed app and its idle worker were left untouched; the worker change reaches the installed app only after a reinstall of a build that contains it.",
-      "source_contract": "docs/v2/contracts/worker.md (Memory diagnostics, Allocator release at load)",
-      "claim": "Launch peak only. The idle gain at launch is refilled by the first dictation.",
+      "source_contract": "docs/v2/contracts/worker.md (Memory diagnostics, Allocator release at load, Idle unload of the cleanup model); docs/v2/decisions/ADR-0003-idle-unload-of-the-cleanup-model.md",
+      "claim": "Launch peak for the allocator release (its idle gain at launch is refilled by the first dictation). Worker footprint after ten idle minutes for the unload, at the price of a wait on short dictations that start right after an unload.",
       "tickets": {
         "01_rig_and_baseline": "closed, done",
         "02_launch_peak": "closed, done: shipped (85a05f1)",
         "03_steady_state_cache": "closed on its stop rule, no code",
         "04_verify_and_record": "closed, done: docs/v2/handoffs/WORKER-FOOTPRINT.md",
-        "05_idle_unload": "closed on a failed Residency gate, no code",
+        "05_idle_unload": "Residency gate failed; built on the owner's decision (ADR-0003): the cleanup model unloads after 10 idle minutes and reloads on ensure_cleanup or on a clean that finds it unloaded",
         "loader": "not built: the allocator peak is set in the cleanup warmup, which an ASR loader cannot lower"
       },
       "measured_mib": {
@@ -203,12 +221,67 @@
           "candidate": 7373
         }
       },
-      "verified": "Identity passes for every cleanup case and both speech clips; latency passes in all ten bands under max(spec limit, A/A value); back-to-back gap -0.0 ms against 50 ms; prefix-cache parity test and test_prompt_cache.py pass; no fault frame, generation 1, no engine loaded twice. Final runs perf02-shipping-3 (pinned to baseline-aa-shipping-3) and perf02-first-1 (pinned to baseline-aa-first-1); the baseline side is the localflow tree of 45bf38d (e8c71fe828a7f2fcd39d8ad3296697d0cad1228d5a1cd78f2fdcf9d8bbae6797). The Gate table's 30-case shipping claim is not met in the three upper cleanup bands: 21 to 50, 51 to 100 and 101 to 200 words hold 13, 6 and 3 committed cases, every case ran 5 repeats (65, 30 and 15 measured blocks) and the corpus has no more cases there, so those three verdicts rest on all available cases.",
+      "idle_unload": {
+        "run": "perf05-idle-1",
+        "idle_period_s_in_run": 6,
+        "production_idle_period_s": 600,
+        "unloads": 40,
+        "cleanup_weights_mib": 2258,
+        "footprint_drop_mib": {
+          "median": 2653,
+          "min": 2373,
+          "max": 2655,
+          "share_of_cleanup_weights": 1.17
+        },
+        "reload_press_to_ready_ms": {
+          "min": 1720,
+          "median": 1760,
+          "max": 1900
+        },
+        "release_to_result_paired_ms": {
+          "capture_0.5s": {
+            "median": 1227.2,
+            "p95": 1250.4,
+            "verdict": "fails, accepted"
+          },
+          "capture_1s": {
+            "median": 739.1,
+            "p95": 794.9,
+            "verdict": "fails, accepted"
+          },
+          "capture_2s": {
+            "median": -17.5,
+            "p95": -7.6,
+            "verdict": "pass"
+          },
+          "capture_5s": {
+            "median": -2.0,
+            "p95": 3.2,
+            "verdict": "pass"
+          }
+        },
+        "cleanups_during_unload_or_reload": {
+          "requests": 60,
+          "path_llm": 60,
+          "degraded": 0
+        },
+        "idle_outputs_identical_to_never_unloading_side": true,
+        "second_dictation_during_reload": {
+          "both_cleanups_path_llm_and_equal": true,
+          "reloads": 1,
+          "last_result_ms": {
+            "never_unloads": 2565,
+            "unloads": 3997
+          }
+        }
+      },
+      "verified": "On measured head 4eff5a3: identity passes for every cleanup case and both speech clips; latency passes in all ten bands under max(spec limit, A/A value); back-to-back gap -0.0 ms against 50 ms; prefix-cache parity test and test_prompt_cache.py pass; no fault frame, generation 1, no engine loaded twice. Final runs perf02-shipping-3 (pinned to baseline-aa-shipping-3) and perf02-first-1 (pinned to baseline-aa-first-1); the baseline side is the localflow tree of 45bf38d (e8c71fe828a7f2fcd39d8ad3296697d0cad1228d5a1cd78f2fdcf9d8bbae6797). The Gate table's 30-case shipping claim is not met in the three upper cleanup bands: 21 to 50, 51 to 100 and 101 to 200 words hold 13, 6 and 3 committed cases, every case ran 5 repeats (65, 30 and 15 measured blocks) and the corpus has no more cases there, so those three verdicts rest on all available cases. Idle unload (perf05-idle-1, measured head 09a8645, idle period 6 s through the test seam): footprint drops by a median of 2,653 MiB over 40 unloads; reload press to ready 1,720 to 1,900 ms; all 60 cleanups on the unloading side path llm; idle outputs identical to the side that never unloads; one reload for a second dictation started during it; release-to-result fails for 0.5 s and 1 s captures (accepted, ADR-0003) and passes at 2 s and 5 s.",
       "private_evidence": "~/Library/Application Support/LocalFlow/v2-evidence/footprint/ (counters, timings and digests only; never committed)",
       "remaining": [
         "Spec requirement not met: the Gate table's 30-case shipping claim, in the cleanup bands of 21 to 50, 51 to 100 and 101 to 200 words (13, 6 and 3 committed cases, all run with 5 repeats). The corpus has no more cases in those bands, so the count stays short until fixtures are added.",
-        "Install a new build: owner decision. The installed app is the build without the change.",
+        "Install a new build: owner decision. The installed app is the build without the changes; run M03-V009 before installing it, and M03-V010 after.",
         "Manual: M03-V009 in docs/v2/VERIFICATION.html, key release to inserted text in the real app on the reference condition, repeated on one synthetic job. Not run.",
+        "Manual: M03-V010 in docs/v2/VERIFICATION.html, the idle unload in the real app after real idle periods (footprint, cleanup states, the menu-bar line, a six-second and a one-second dictation). Not run.",
         "Reopen ticket 03 for a cache limit or a trim after an ASR result: owner decision. ASR-only request streams grow the allocator cache about 1.1 to 1.5 GB per request; it matters only when ASR runs without a cleanup request after it, which was not audited.",
         "Delete the earlier evidence runs, the baseline export and .scratch/worker-footprint/: owner decision."
       ],

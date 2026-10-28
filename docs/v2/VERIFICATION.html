@@ -318,7 +318,7 @@ footer{color:var(--faint);font-size:12px;margin-top:40px;border-top:1px solid va
       <section id="overview" aria-labelledby="ov-h">
         <div class="hero">
           <div>
-            <div class="navlabel" style="padding:0">Last updated 2026-10-27 · M03-V009 added for the worker footprint change, code <code>4eff5a3</code> · before that 2026-09-28 · M07 section added by the cross-milestone remediation · code <code>340c566</code> (M14 checks at <code>9d0cfdf</code>, M13 checks at <code>36e03a2</code>, M12 checks at <code>b17aa2b</code>, M10 checks at <code>ed5e206</code>, M09 at <code>a304d48</code>, M08 at <code>ea83bc1</code>, M11 at <code>9a049b3</code>, M06 at <code>4388b52</code>, M05 at <code>01a1f3c</code>, M04 at <code>4ef219c</code>, M03 at <code>3e0d1ab</code>, M02 at <code>bfbc63c</code>, M01 at <code>3db7406</code>)</div>
+            <div class="navlabel" style="padding:0">Last updated 2026-10-28 · M03-V010 added for the idle unload, code <code>7d523d8</code> · before that 2026-10-27 · M03-V009 added for the worker footprint change, code <code>4eff5a3</code> · before that 2026-09-28 · M07 section added by the cross-milestone remediation · code <code>340c566</code> (M14 checks at <code>9d0cfdf</code>, M13 checks at <code>36e03a2</code>, M12 checks at <code>b17aa2b</code>, M10 checks at <code>ed5e206</code>, M09 at <code>a304d48</code>, M08 at <code>ea83bc1</code>, M11 at <code>9a049b3</code>, M06 at <code>4388b52</code>, M05 at <code>01a1f3c</code>, M04 at <code>4ef219c</code>, M03 at <code>3e0d1ab</code>, M02 at <code>bfbc63c</code>, M01 at <code>3db7406</code>)</div>
             <h2 id="ov-h">What still has to be proven on the real Mac.</h2>
             <p class="lede">Cloud remediation sessions repair code and prove it with portable tests. Anything that needs this Mac — the installed app, real Application Support data, MLX/Metal inference, microphones, the launch environment or a human watching the screen — is collected here as a check with exact commands, expected results and where to save the evidence.</p>
             <p class="lede">Work top to bottom inside a milestone. Set each check’s status as you go; it is saved in this browser. Nothing here needs to be done between milestones.</p>
@@ -1381,7 +1381,7 @@ ls "$OUT2/V009-copy/backups"</code></pre></div>
       <section class="milestone" id="M03" data-milestone="M03" data-title="Resilient capture & inference">
         <div class="ms-head">
           <span class="mid">M03</span><h2>Resilient capture &amp; inference</h2>
-          <span class="meta">instructions M03-r1 · code 3e0d1ab · remediation of audit at 2b9b7a1 · M03-V009 at 4eff5a3 (worker footprint)</span>
+          <span class="meta">instructions M03-r1 · code 3e0d1ab · remediation of audit at 2b9b7a1 · M03-V009 at 4eff5a3 (worker footprint) · M03-V010 at 7d523d8 (idle unload)</span>
         </div>
         <p class="ms-intro">The M03 cloud remediation made the startup recovery scan take only work that is provably abandoned (and never replace better audio), put every M03 audio file under the delete-everywhere barrier, gave each worker generation sole ownership of its requests, serialized spawn/retry/restart/quit under one lifecycle with permanently closed admission, carried the attempt that actually ran through failures, retired damaged worker processes, let “basic now” cleanup answer during a model load, versioned the capture journal (checksums, original sample positions, verified footer), kept original capture time/rate/gaps through a recovery retry, made WAV writes atomic and reads strict, made microphone teardown exception-safe, and cleaned up trigger latches. Portable tests passed in the cloud; these checks cover what only this Mac can show. The September 22 M03 records stay as they are; their four pending human items are carried by M03-V004…V008 below for the current code. Detail: <code>docs/v2/handoffs/M03.md</code> (remediation addendum) and <code>docs/v2/acceptance/M03/results.json</code> → <code>remediation_2026_09_25</code>.</p>
 
@@ -1894,6 +1894,100 @@ a=$(awk '/^takes/ {print $NF}' "$OUTFP/pass-A-timings.txt"); b=$(awk '/^takes/ {
             <p>Private: <code>$OUTFP/pass-A-text.txt</code>, <code>pass-B-text.txt</code> and the two timing files (your invented sentence and timings only). Nothing from this check goes into Git. When finished, remove the worktree with <code>git -C "$LF_MAIN" worktree remove "$LF_FP"</code> and the test build with <code>rm -r "$QAPP"</code>.</p>
             <h5>Contract relevance</h5>
             <p>Worker footprint spec (manual check: key release to inserted text, reference condition, one synthetic job); S24 (end-to-end means release to verified visible text); <code>contracts/worker.md</code> → Allocator release at load; <code>handoffs/WORKER-FOOTPRINT.md</code>.</p>
+          </details>
+        </article>
+
+        <h3 class="group">Native macOS · installed app, real data</h3>
+
+        <article class="check" id="M03-V010" data-milestone="M03" data-rev="M03-r1" data-code="7d523d8" data-tags="terminal native human hardware model">
+          <header class="check-head">
+            <span class="cid">M03-V010</span>
+            <h4>Idle unload: the cleanup model rests after ten idle minutes and the next dictation brings it back cleaned</h4>
+            <ul class="tags"><li>Terminal</li><li>Native macOS</li><li>Human visual</li><li>Microphone</li><li>Model-backed</li><li>~30 min</li></ul>
+            <div class="status-slot"></div>
+          </header>
+          <p class="proves"><b>What it proves.</b> After ten idle minutes the worker hands the cleanup model back to the system, and a hotkey press brings it back while you speak (<code>contracts/worker.md</code> → Idle unload of the cleanup model; ADR-0003). Measured at the worker protocol with a six-second idle period, the worker’s footprint fell by a median of 2,653 MiB, every cleanup after an unload came back cleaned, and a dictation of two seconds or longer showed no added wait. That seam does not run the app’s hotkey press, the supervisor, the menu bar or the Hub, and it does not wait a real ten minutes. This check does, on the installed app, and records the extra wait that a very short dictation accepts as the price of the memory.</p>
+          <p class="plain"><b>In plain terms.</b> You leave the app alone for eleven minutes and see its memory drop and its menu say the cleanup model is resting. Then you say a six-second sentence twice and check both come out the same and the first is not slower. After another eleven minutes you do the same with a one-second phrase and note how much longer the first one takes.</p>
+          <details class="more"><summary>Instructions &amp; expected results</summary>
+            <dl class="facts">
+              <dt>Environment</dt><dd>Reference Mac on power, no thermal warning, nothing else running a model · Terminal · microphone · TextEdit · your real LocalFlow data</dd>
+              <dt>Preconditions</dt><dd>Terminal set-up done (<code>$LF_MAIN</code>, <code>$PY</code>, <code>$EV</code> and <code>$APP</code> exist). The installed app is the new build with the idle unload; command block 1 says whether it is. If you also mean to run M03-V009, run it first: it needs the installed app to be the build without the changes. Four test dictations land in your real History; delete them there afterwards if you do not want them.</dd>
+              <dt>Working dir</dt><dd>the Terminal window where you ran the Terminal set-up</dd>
+            </dl>
+            <h5>Manual actions</h5>
+            <ol class="list">
+              <li>Run command block 1. If it says the installed app does not have the idle unload, stop: install the new build first. If the app was just launched, wait until the menu-bar menu’s model line reads “ASR: ready · Cleanup: ready” before running it, and do not press fn from now on.</li>
+              <li>Leave the Mac alone for at least 11 minutes: no fn, no dictation, do not quit the app (block 1 keeps the Mac awake; a sleeping Mac does not count as idle time). Then open the LocalFlow menu-bar menu: its model line reads “ASR: ready · Cleanup: resting”. Run command block 2.</li>
+              <li>Use one invented sentence of about fifteen words with no numbers that takes about six seconds to say, for example “The green ferry crosses the quiet harbor every morning before the bakery opens.” Open a new plain-text TextEdit document and click into it. Hold fn, say the sentence, release, wait for the text, press Return. Without pausing, do it once more. Select all, copy, run command block 3. The menu line now reads “Cleanup: ready”.</li>
+              <li>Leave the Mac alone for another 11 minutes the same way. The menu line reads “Cleanup: resting” again.</li>
+              <li>Open a new plain-text TextEdit document. Hold fn, say a phrase you can say in about one second, for example “Call me back later.”, release, wait for the text, press Return. Without pausing, say the same phrase once more. Select all, copy, run command block 4, and note how much longer the first one took to appear.</li>
+            </ol>
+            <h5>Commands</h5>
+            <div class="cmdwrap"><pre class="cmd"><code><span class="c"># 1 · Is the installed app the build with the idle unload? Define the readers; read the worker's footprint while the cleanup model is loaded</span>
+export OUTU="$EV/idle-unload-verification"; mkdir -p "$OUTU" &amp;&amp; chmod 700 "$OUTU"
+INSTALLED_REV="$("$PY" -c 'import json, sys; print(json.load(open(sys.argv[1]))["source_revision"])' "$APP/Contents/Resources/BUILD.json")"
+echo "installed app source revision: $INSTALLED_REV"
+git -C "$LF_MAIN" cat-file -e "$INSTALLED_REV^{commit}" &amp;&amp; { git -C "$LF_MAIN" merge-base --is-ancestor 7d523d8 "$INSTALLED_REV" &amp;&amp; echo "installed app has the idle unload" || echo "installed app does NOT have the idle unload"; }
+up_worker() { UP_MAIN="$(pgrep -f "^$APP/Contents/MacOS/LocalFlow\$")"; UP_WORKER="$(pgrep -P "$UP_MAIN" -f localflow.v2.worker)"; echo "app pid $UP_MAIN, worker pid $UP_WORKER"; }
+up_fp() { /usr/bin/footprint -j "$OUTU/fp-$1.json" "$UP_WORKER" &gt; /dev/null &amp;&amp; "$PY" -c 'import json, sys; p = [q for q in json.load(open(sys.argv[1]))["processes"] if q["pid"] == int(sys.argv[2])][0]; print(sys.argv[3], "worker footprint MiB", round(p["footprint"] / 2**20))' "$OUTU/fp-$1.json" "$UP_WORKER" "$1" | tee -a "$OUTU/readout.txt"; }
+up_events() { "$PY" - "$UP_SINCE" &lt;&lt;'EOF'
+import glob, json, os, sys
+since, rows = sys.argv[1], []
+for path in sorted(glob.glob(os.path.expanduser("~/Library/Logs/LocalFlow/events-*.jsonl*")))[-3:]:
+    for line in open(path, encoding="utf-8", errors="replace"):
+        try: r = json.loads(line)
+        except ValueError: continue
+        if not isinstance(r, dict) or not str(r.get("event", "")).startswith("worker.") or r["event"] == "worker.diag" or str(r.get("timestamp_utc", "")) &lt; since: continue
+        m = r.get("model_id")
+        rows.append((r["timestamp_utc"], r["event"], ("asr" if "parakeet" in m else "cleanup") if m else "-", r.get("outcome") or "-", r.get("reason_code") or "-"))
+for row in sorted(rows): print(*row)
+EOF
+}
+up_takes() { "$PY" - &lt;&lt;'EOF'
+import os, sqlite3
+db = sqlite3.connect("file:" + os.path.expanduser("~/Library/Application Support/LocalFlow/v2.db") + "?mode=ro", uri=True)
+rows = db.execute("select end_to_end_ms, cleanup_ms, insertion_outcome, cleanup_path, coalesce(fallback_reason, '-')"
+                  " from usage_facts where kind = 'dictation' order by activity_at_utc desc limit 2").fetchall()[::-1]
+print("end_to_end_ms cleanup_ms outcome cleanup_path fallback_reason")
+for r in rows: print(*r)
+if len(rows) == 2 and None not in (rows[0][0], rows[1][0]):
+    print(f"first minus second take: {rows[0][0] - rows[1][0]:+.0f} ms (limit for a hidden reload {max(50, 0.05 * rows[1][0]):.0f} ms)")
+EOF
+}
+caffeinate -i -t 840 &amp;
+up_worker; up_fp before-idle; UP_SINCE="$(date -u +%Y-%m-%dT%H:%M:%S)"
+
+<span class="c"># 2 · After 11 idle minutes with nothing dictated: the same worker, a lower footprint, one "unloaded" line</span>
+up_worker; up_fp after-unload; up_events | tee -a "$OUTU/readout.txt"
+
+<span class="c"># 3 · After the two six-second takes: the text, the timings, the cleanup states since block 1, the footprint after the reload</span>
+pbpaste | sort | uniq -c
+up_takes | tee -a "$OUTU/readout.txt"; up_events | tee -a "$OUTU/readout.txt"; up_worker; up_fp after-reload
+UP_SINCE="$(date -u +%Y-%m-%dT%H:%M:%S)"; caffeinate -i -t 840 &amp;
+
+<span class="c"># 4 · After another 11 idle minutes and the two one-second takes</span>
+pbpaste | sort | uniq -c
+up_takes | tee -a "$OUTU/readout.txt"; up_events | tee -a "$OUTU/readout.txt"; up_worker</code></pre></div>
+            <h5>Expected</h5>
+            <ul class="list">
+              <li>Block 1 prints “installed app has the idle unload”, one app pid and one worker pid, and a footprint for the worker with both models loaded (about 4,000 MiB; the rig measured 3,980 MiB at ready).</li>
+              <li>Block 2: the same worker pid; <code>after-unload</code> is lower than <code>before-idle</code> by about 2,400 to 2,700 MiB (the rig measured a median drop of 2,653 MiB, range 2,373 to 2,655); the events show one <code>worker.engine_state cleanup unloaded</code> line and nothing else.</li>
+              <li>Block 3: the events add <code>cleanup loading</code> then <code>cleanup ready</code> (a <code>worker.request_queued_behind_load</code> line is also fine); the text is one distinct line counted 2; both rows have outcome <code>confirmed</code>, the same <code>cleanup_path</code> and <code>-</code> as the fallback reason; “first minus second take” is below the printed limit (the six-second recording hides the reload; the rig measured -2.0 ms at five seconds); the same worker pid; <code>after-reload</code> is within about 300 MiB of <code>before-idle</code>.</li>
+              <li>Block 4: the events show <code>unloaded</code>, <code>loading</code>, <code>ready</code> for the cleanup model again, with the same worker pid; the text is one distinct line counted 2 and both rows are <code>confirmed</code> with the same <code>cleanup_path</code> and no fallback reason; “first minus second take” is the accepted extra wait of a short dictation: up to about 1,800 ms (about 700 ms for a one-second phrase; the rig measured +739 ms) and below 3,000 ms.</li>
+            </ul>
+            <h5>If it fails</h5>
+            <ul class="list">
+              <li>A wait longer than 3 s on the one-second take (“first minus second take” above 3,000 ms), or the six-second take above its printed limit: <b>Failed</b> — keep <code>$OUTU/readout.txt</code>.</li>
+              <li>Uncleaned text: the two takes’ texts differ, or the first row has a different <code>cleanup_path</code> or a fallback reason (for example <code>cleanup_not_ready</code>): <b>Failed</b>.</li>
+              <li>A stuck “resting”: the menu line still reads “Cleanup: resting” after a dictation finished, or block 3 shows no <code>cleanup ready</code> line: <b>Failed</b>.</li>
+              <li>A worker restart: a different worker pid between blocks, or any <code>worker.died</code>, <code>worker.restarting</code>, <code>worker.spawned</code>, <code>worker.fault</code>, <code>worker.retired</code> or <code>worker.breaker_tripped</code> line: <b>Failed</b>.</li>
+              <li>No <code>unloaded</code> line and no footprint drop after 11 idle minutes: confirm nothing pressed fn and the Mac did not sleep, then repeat once; still none: <b>Failed</b>.</li>
+              <li>The installed app does not have the idle unload, or no worker pid is found: <b>Blocked</b>.</li>
+            </ul>
+            <h5>Evidence</h5>
+            <p>Private: <code>$OUTU/readout.txt</code> and <code>$OUTU/fp-*.json</code> (footprints, timings, event names and outcomes only; no transcript text is read from the store). The only text involved is your invented sentence in the clipboard. Nothing from this check goes into Git.</p>
+            <h5>Contract relevance</h5>
+            <p><code>contracts/worker.md</code> → Idle unload of the cleanup model; <code>decisions/ADR-0003-idle-unload-of-the-cleanup-model.md</code> (the wait on short dictations is the accepted trade); worker footprint spec (Residency gate); <code>handoffs/WORKER-FOOTPRINT.md</code>.</p>
           </details>
         </article>
       </section>
