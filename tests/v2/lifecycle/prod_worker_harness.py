@@ -15,10 +15,15 @@ Plan (JSON file named by $LOCALFLOW_PROD_WORKER_PLAN):
   "asr_load": "ok" | "fail",
   "cleanup_load": "ok" | "fail",
   "cleanup_reload": "fail",         # every cleanup load after the first fails
+  "cleanup_reload_delay_ms": <int>, # every cleanup load after the first
+                                    # takes this long (footprint rig tests)
   "cleanup_load_latch": "<path>",   # cleanup load blocks until it exists
+  "asr_load_delay_ms": <int>,       # the ASR load takes this long (footprint
+                                    # rig tests)
   "transcribe": ["ok:<text>" | "raise:<message>"
                  | "delay:<ms>|<one of those>"],     # per call
   "clean": ["ok:<text>" | "raise:<message>"
+            | "degraded:<text>"      # a degraded answer and a reason code
             | "delay:<ms>|<one of those>"],          # per call
   "record": "<path>",               # JSONL: what the shims were given
   "hold_gpu_mib": <int>,            # ASR load keeps a plain MLX array of
@@ -78,6 +83,8 @@ class ShimTranscriber:
         if on_phase is not None:
             on_phase("loading")
             on_phase("warming")
+        if PLAN.get("asr_load_delay_ms"):
+            time.sleep(PLAN["asr_load_delay_ms"] / 1000.0)
         if PLAN.get("hold_gpu_mib"):
             # Optional: keep a real GPU allocation alive so the process
             # shows a GPU line to the footprint tool (rig tests only).
@@ -128,9 +135,15 @@ class ShimEngine:
         if b.startswith("raise:"):
             raise RuntimeError(b[len("raise:"):])
         from localflow.v2.cleanup.engine import CleanupResult
+        degraded = b.startswith("degraded:")
+        if degraded:
+            b = b[len("degraded:"):]
         return CleanupResult(
-            text=b[len("ok:"):] if b.startswith("ok:") else b, path="llm",
-            stage="clean", fallback_reason=None, incomplete=False,
+            text=b[len("ok:"):] if b.startswith("ok:") else b,
+            path="llm_fallback_normalized" if degraded else "llm",
+            stage="clean",
+            fallback_reason="shim_degraded" if degraded else None,
+            incomplete=False,
             termination={"kind": "complete", "windows": 1, "limit_hits": 0},
             validation={"components": [], "windows_validated": 1,
                         "windows_fallback": 0},
@@ -153,6 +166,8 @@ class ShimRunner:
         if latch:
             while not os.path.exists(latch):
                 time.sleep(0.01)
+        if PLAN.get("cleanup_reload_delay_ms") and _cleanup_loads > 1:
+            time.sleep(PLAN["cleanup_reload_delay_ms"] / 1000.0)
         if on_phase is not None:
             on_phase("warming")
         if PLAN.get("cleanup_load") == "fail" or (
