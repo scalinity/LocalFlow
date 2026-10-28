@@ -15,6 +15,7 @@ import json
 import pathlib
 import sys
 import tempfile
+import types
 
 ROOT = pathlib.Path(__file__).resolve().parents[3]
 sys.path.insert(0, str(ROOT))
@@ -121,6 +122,66 @@ def test_block_differences_do_not_depend_on_block_order():
           " the baseline times are the A times")
 
 
+def _first_rows(pairs, first_asker_ms, candidate_ms):
+    """First-request rows: orders alternate AB, BA; the side that asks first
+    pays ``first_asker_ms`` on top of a 100 ms request, side B another
+    ``candidate_ms`` on top of that."""
+    rows = []
+    for k in range(pairs):
+        order = "AB" if k % 2 == 0 else "BA"
+        row = {"order": order, "asr": {}, "clean": {}}
+        for metric in ("asr", "clean"):
+            for field in ("rtt_ms", "stage_ms"):
+                for side in "AB":
+                    t = 100.0 + (candidate_ms if side == "B" else 0.0) \
+                        + (first_asker_ms if side == order[0] else 0.0)
+                    row[metric].setdefault(side, {})[field] = t
+        rows.append(row)
+    return rows
+
+
+def test_first_request_blocks_cancel_the_first_askers_penalty():
+    # No real difference; the side that asks first is 25 ms slower. An AB
+    # pair reads B-A = -25 and a BA pair +25, so each block reads 0 and its
+    # baseline is (125 + 100) / 2.
+    rows = _first_rows(8, 25.0, 0.0)
+    diffs, base = fr.first_request_blocks(rows, "asr", "rtt_ms")
+    assert diffs == [0.0] * 4 and base == [112.5] * 4
+    v = fr.latency_verdict(diffs, base)
+    assert v["pairs"] == 4
+    assert abs(v["paired_median_ms"]) < 1 and abs(v["paired_p95_ms"]) < 1
+    # the single-pair statistic reads the penalty itself
+    alone = [r["asr"]["B"]["rtt_ms"] - r["asr"]["A"]["rtt_ms"] for r in rows]
+    assert abs(fr.p95(alone) - 25.0) < 1
+    print("ok  first-request blocks: a 25 ms first-asker penalty reads 0 in"
+          " an ABBA block; the per-pair p95 read 25")
+
+
+def test_first_request_blocks_show_a_real_candidate_slowdown():
+    # B costs 40 ms more on top of the same 25 ms first-asker penalty: an AB
+    # pair reads 15, a BA pair 65, and each block 40 on both metrics.
+    rows = _first_rows(8, 25.0, 40.0)
+    for metric, field in (("asr", "rtt_ms"), ("clean", "stage_ms")):
+        diffs, base = fr.first_request_blocks(rows, metric, field)
+        v = fr.latency_verdict(diffs, base)
+        assert diffs == [40.0] * 4 and v["pairs"] == 4
+        assert abs(v["paired_median_ms"] - 40.0) < 1
+    print("ok  first-request blocks: a real +40 ms slowdown reads +40 on every"
+          " metric and field")
+
+
+def test_an_odd_first_request_pair_count_stops_the_run():
+    # a block is two pairs, so an odd count would leave one pair unjudged
+    for odd in (1, 3, 9):
+        msg = _stops(lambda: fr.phase_first(
+            types.SimpleNamespace(counts={"first": odd})), "even")
+        assert str(odd) in msg
+    assert fr.MODE_COUNTS["early"]["first"] == 8
+    assert fr.MODE_COUNTS["shipping"]["first"] == 30
+    print("ok  first-request pair count: odd counts stop the run; early 8,"
+          " shipping 30")
+
+
 def test_median_and_nearest_rank_p95():
     assert fr.median([3, 1, 2]) == 2
     assert fr.median([4, 1, 3, 2]) == 2.5
@@ -201,17 +262,20 @@ def test_back_to_back_gap_limit_is_never_tighter_than_the_measured_noise():
           " quiet")
 
 
-def _aa_report(complete=True, run_id="aa-test"):
+def _aa_report(complete=True, run_id="aa-test", unit="abba_block"):
     band = {"paired_median_ms": 11.4, "paired_p95_ms": 236.5}
     stage = {"paired_median_ms": 11.0, "paired_p95_ms": 234.0}
+    first = {"verdicts": {"rtt_ms": {"asr": band},
+                          "stage_ms": {"asr": stage}}}
+    if unit:
+        first["unit"] = unit
     return {"rig": {"run_id": run_id, "complete": complete},
             "resident": {
                 "latency": {"asr": {
                     "30-90s": {"verdict_rtt": band, "verdict_stage": stage},
                     "10-30s": {"verdict_rtt": None, "verdict_stage": None}}},
                 "gap": {"verdict": {"paired_median_ms": 0.1}}},
-            "first_request": {"verdicts": {"rtt_ms": {"asr": band},
-                                           "stage_ms": {"asr": stage}}}}
+            "first_request": first}
 
 
 def test_the_aa_report_is_pinned_by_digest_and_must_be_complete():
@@ -239,6 +303,28 @@ def test_the_aa_report_is_pinned_by_digest_and_must_be_complete():
     assert fr.parse_args(["--code-root-a", "."]).aa_report is None
     print("ok  A/A report: pinned by SHA-256 and run id, refused unless"
           " rig.complete is true, --aa-report parsed")
+
+
+def test_first_request_stats_are_pinned_only_from_abba_block_reports():
+    with tempfile.TemporaryDirectory() as td:
+        path = pathlib.Path(td) / "report.json"
+        path.write_text(json.dumps(_aa_report(unit=None)))
+        stats = fr.load_aa_report(path)["stats"]
+        # no marker: its first-request p95 is the order penalty, not noise,
+        # so those bands fall back to the spec limits; the rest stay pinned
+        assert "first-request:asr" not in stats["rtt_ms"]
+        assert "first-request:asr" not in stats["stage_ms"]
+        assert stats["rtt_ms"]["asr:30-90s"]["paired_p95_ms"] == 236.5
+        path.write_text(json.dumps(_aa_report(unit="pair")))
+        assert "first-request:asr" not in fr.load_aa_report(
+            path)["stats"]["rtt_ms"]
+        path.write_text(json.dumps(_aa_report()))
+        stats = fr.load_aa_report(path)["stats"]
+        assert stats["rtt_ms"]["first-request:asr"]["paired_p95_ms"] == 236.5
+        assert stats["stage_ms"]["first-request:asr"][
+            "paired_median_ms"] == 11.0
+    print("ok  A/A report: first-request stats are pinned only when the"
+          " report marks its unit as abba_block")
 
 
 def test_rig_validity_follows_the_median_of_every_band():

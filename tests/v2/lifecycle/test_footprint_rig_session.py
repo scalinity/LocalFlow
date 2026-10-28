@@ -30,6 +30,7 @@ IDENTITY = {"asr_model": "fake-asr", "cleanup_model": "fake-llm"}
 LABELS = ["asr_loaded", "asr_warmed", "cleanup_loaded", "cleanup_warmed",
           "asr_result", "cleanup_result"]
 ASR_REQUEST = {"audio": {"name": "clip.wav"}, "sample_rate": 16000}
+FIRST_REQUEST_METHOD = "judged on ABBA blocks of two spawn pairs"
 
 
 def _session(td, plan, memory_diag=False):
@@ -211,7 +212,14 @@ def test_whole_run_against_the_shim_worker_writes_a_content_free_report():
             else:
                 assert b["memory"] is None
         # first request and the resident pair
-        assert len(report["first_request"]["pairs"]) == counts["first"]
+        first_request = report["first_request"]
+        assert len(first_request["pairs"]) == counts["first"]
+        assert [p["order"] for p in first_request["pairs"]] == ["AB", "BA"]
+        # the verdicts are judged on ABBA blocks of two pairs, and say so
+        assert first_request["unit"] == "abba_block"
+        for by_metric in first_request["verdicts"].values():
+            for v in by_metric.values():
+                assert v["pairs"] == counts["first"] // 2
         res = report["resident"]
         assert not res["identity"]["mismatches"]
         blocks = res["latency"]["asr"]["10-30s"]["blocks"]
@@ -237,6 +245,7 @@ def test_whole_run_against_the_shim_worker_writes_a_content_free_report():
             assert text not in raw and json.dumps(text)[1:-1] not in raw
         summary = (ctx.run_dir / "SUMMARY.md").read_text()
         assert "Rig validity" in summary and "Go / no-go" in summary
+        assert FIRST_REQUEST_METHOD in summary
         assert "No A/A report pinned" in summary
         assert report["rig"]["aa_report"] is None
         first = report["verdicts"]["latency"]["bands"]["asr:10-30s"]
@@ -272,6 +281,19 @@ def test_whole_run_against_the_shim_worker_writes_a_content_free_report():
     print("ok  whole run against the shim worker: four phases, frozen bands"
           " on disk, verdicts, judgement, summary, no fixture text in the"
           " report")
+
+
+def test_a_first_request_only_run_states_its_unit_in_the_method():
+    counts = {"warm": 1, "cold": 1, "burst": 1, "first": 2, "gap": 2}
+    with tmpdir() as td:
+        ctx = _shim_context(td, counts)
+        fr.measure(ctx, ["first"], "2026-10-26T00:00:00-04:00")
+        summary = (ctx.run_dir / "SUMMARY.md").read_text()
+        assert "## Method" in summary and FIRST_REQUEST_METHOD in summary
+        assert "interleave one unmeasured cleanup" not in summary, \
+            "the ASR note belongs to runs that measured the resident bands"
+    print("ok  shim run: a first-request-only summary states that its rows"
+          " are judged on ABBA blocks")
 
 
 def _requests_seen(path):
@@ -402,6 +424,7 @@ def main():
          test_session_stops_on_a_worker_fault,
          test_back_to_back_sends_return_in_order,
          test_whole_run_against_the_shim_worker_writes_a_content_free_report,
+         test_a_first_request_only_run_states_its_unit_in_the_method,
          test_asr_bands_interleave_an_unmeasured_cleanup_on_both_sides,
          test_a_worker_over_the_footprint_limit_aborts_the_run,
          test_swap_growth_aborts_the_run],

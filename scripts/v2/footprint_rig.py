@@ -11,7 +11,9 @@ quiet enough to gate anything (Rig validity). Latency is measured on two
 resident workers in paired blocks that alternate A,B,B,A and B,A,A,B. In
 the ASR bands each ASR request is followed by one unmeasured short cleanup
 request to the same worker, as a real dictation ends with one; it is part of
-no verdict, digest, pair or request count.
+no verdict, digest, pair or request count. The first-request rows are judged
+on ABBA blocks of two spawn pairs, because the process that asks first is
+slower and the two orders cancel that.
 
 Thresholds and rule names follow the worker-footprint spec's Gate table.
 Reports hold counters, timings, SHA-256 digests, identifiers and
@@ -206,6 +208,20 @@ def block_baseline(blocks, field):
     return [t for b in blocks for t in by_side(b["order"], b[field])["A"]]
 
 
+def first_request_blocks(rows, metric, field):
+    """The first-request phase's samples: ABBA blocks of two spawn pairs,
+    rows 2j and 2j+1, which ran in orders AB and BA. The process that asks
+    first is slower, so the two orders cancel it in a block's mean. A
+    block's difference is the mean of its two pairs' B-minus-A differences
+    and its baseline the mean of their two A times."""
+    diffs, baseline = [], []
+    for pair in zip(rows[0::2], rows[1::2]):
+        diffs.append(sum(r[metric]["B"][field] - r[metric]["A"][field]
+                         for r in pair) / 2)
+        baseline.append(sum(r[metric]["A"][field] for r in pair) / 2)
+    return diffs, baseline
+
+
 def latency_verdict(diffs, baseline_times, aa=None):
     """The Latency rule on paired candidate-minus-baseline differences.
     With ``aa`` (this band's paired median and p95 from the pinned A/A
@@ -289,11 +305,14 @@ def load_aa_report(path):
                                ("stage_ms", "verdict_stage")):
                 if d.get(key):
                     stats[field][f"{kind}:{band}"] = pick(d[key])
-    for field, by_metric in ((report.get("first_request") or {}).get(
-            "verdicts") or {}).items():
-        if field in stats:
-            for metric, v in by_metric.items():
-                stats[field][f"first-request:{metric}"] = pick(v)
+    first = report.get("first_request") or {}
+    # Only block-judged rows measure noise: a per-pair p95 here would be the
+    # first asker's penalty, so those bands keep the spec limits.
+    if first.get("unit") == "abba_block":
+        for field, by_metric in (first.get("verdicts") or {}).items():
+            if field in stats:
+                for metric, v in by_metric.items():
+                    stats[field][f"first-request:{metric}"] = pick(v)
     gap = (res.get("gap") or {}).get("verdict")
     return {"sha256": hashlib.sha256(raw).hexdigest(),
             "run_id": rig.get("run_id"), "stats": stats,
@@ -1337,7 +1356,7 @@ SETTLE_S = 2.0
 BURST_DICTATIONS = 20
 MODE_COUNTS = {
     "early": {"warm": 2, "cold": 2, "burst": 1, "first": 8, "gap": 8},
-    "shipping": {"warm": 7, "cold": 5, "burst": 3, "first": 10, "gap": 30}}
+    "shipping": {"warm": 7, "cold": 5, "burst": 3, "first": 30, "gap": 30}}
 
 
 ASR_RESET_NOTE = (
@@ -1347,6 +1366,11 @@ ASR_RESET_NOTE = (
     " real dictation ends with a cleanup, which hands the allocator's cached"
     " memory back, while ASR-only requests of differing lengths keep growing"
     " that cache.")
+
+FIRST_REQUEST_NOTE = (
+    "The first-request rows are judged on ABBA blocks of two spawn pairs"
+    " (orders AB, then BA): the process that asks first is slower, and the"
+    " two orders cancel that in each block's mean.")
 
 
 def asr_request(clip):
@@ -1471,6 +1495,10 @@ def phase_bursts(ctx):
 
 
 def phase_first(ctx):
+    if ctx.counts["first"] % 2:
+        raise RigStop(f"the first-request pair count must be even, got"
+                      f" {ctx.counts['first']}: the verdicts are ABBA blocks"
+                      " of two pairs")
     asr_ids = ctx.bands["asr"]["members"]["10-30s"] or [
         c for ids in ctx.bands["asr"]["members"].values() for c in ids]
     clean_ids = ctx.bands["cleanup"]["members"]["21-50"] or [
@@ -1504,13 +1532,11 @@ def phase_first(ctx):
     verdicts = {}
     for metric in ("asr", "clean"):
         for field in ("rtt_ms", "stage_ms"):
-            diffs = [r[metric]["B"][field] - r[metric]["A"][field]
-                     for r in rows]
-            base = [r[metric]["A"][field] for r in rows]
+            diffs, base = first_request_blocks(rows, metric, field)
             verdicts.setdefault(field, {})[metric] = latency_verdict(
                 diffs, base, aa_stats(ctx, f"first-request:{metric}", field))
     return {"clip": clip, "case": case_id, "pairs": rows,
-            "verdicts": verdicts}
+            "unit": "abba_block", "verdicts": verdicts}
 
 
 # ---- the resident pair: identity, paired latency, back-to-back gap -----------------------------
@@ -1855,9 +1881,14 @@ def render_summary(report):
     for kind in ("cleanup", "asr"):
         out.append(f"- {kind}: {json.dumps(b['counts'][kind])}; unbanded:"
                    f" {len(b[kind]['unbanded'])}")
+    notes = []
     if "resident" in r["rig"]["phases"]:
-        out += ["", "## Method", "", ASR_RESET_NOTE.format(
-            case=r["rig"]["cache_reset_case"])]
+        notes.append(ASR_RESET_NOTE.format(
+            case=r["rig"]["cache_reset_case"]))
+    if "first" in r["rig"]["phases"]:
+        notes.append(FIRST_REQUEST_NOTE)
+    if notes:
+        out += ["", "## Method", "", " ".join(notes)]
     fp = r.get("footprint")
     if fp:
         out += ["", "## Idle footprint and launch peak (fresh spawns)", "",
