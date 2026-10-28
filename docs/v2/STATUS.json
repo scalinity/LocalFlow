@@ -155,6 +155,62 @@
       "native_preview_context_commit": "422fa9bb340199bb829aeb7ea9a81c5e7719945b",
       "current_codex_editor_qualification": "0.164.0 actual external-editor accept/reopen/cancel PASS; no model call, raw Return or unframed newline; owned PTY closed.",
       "recovery_key_guard": "Refused Copy retains/restores its scoped lease. Failed Apply/Save reopens with a guard; claimed applications, disabled results and inactive logical buffers cannot apply again. Down/repeat/up tested for Return and keypad; held-key latches survive disarm."
+    },
+    "worker_footprint": {
+      "as_of": "2026-10-27",
+      "branch": "perf/worker-footprint",
+      "state": "WORKER_FOOTPRINT_COMPLETE_PENDING_LOCAL_VERIFICATION",
+      "merged_to_main": false,
+      "base_main": "14a009a4f3d7d64a6419c12638af65bc6ed9b2a8",
+      "head": "4eff5a3e98e3c396e06212f8aa2429c39ce3da67",
+      "localflow_tree_sha256": "400fa463b31eeaca24b5c1ea5322a1ceb8cfae0c2506dc5e0a9e5d8bca6627b4",
+      "source_state": "The integration branch holds the lever, the opt-in memory diagnostics and the measurement rig; it is not merged to main. The one production change: after each engine's load and warmup the worker hands the allocator's unused cached memory back once (localflow/v2/worker.py; ModelRunner.load takes an optional on_phase callback). Same two models, same output text, same latency.",
+      "installed_state": "Not changed. The installed app and its idle worker were left untouched; the worker change reaches the installed app only after a reinstall of a build that contains it.",
+      "source_contract": "docs/v2/contracts/worker.md (Memory diagnostics, Allocator release at load)",
+      "claim": "Launch peak only. The idle gain at launch is refilled by the first dictation.",
+      "tickets": {
+        "01_rig_and_baseline": "closed, done",
+        "02_launch_peak": "closed, done: shipped (85a05f1)",
+        "03_steady_state_cache": "closed on its stop rule, no code",
+        "04_verify_and_record": "closed, done: docs/v2/handoffs/WORKER-FOOTPRINT.md",
+        "05_idle_unload": "closed on a failed Residency gate, no code",
+        "loader": "not built: the allocator peak is set in the cleanup warmup, which an ASR loader cannot lower"
+      },
+      "measured_mib": {
+        "idle_at_ready": {
+          "baseline": 4154,
+          "candidate": 3980
+        },
+        "idle_gpu_line": {
+          "baseline": 3782,
+          "candidate": 3609
+        },
+        "idle_after_20_dictation_burst": {
+          "baseline": 4168.5,
+          "candidate": 4168
+        },
+        "launch_peak_cold_ish": {
+          "baseline": 6554,
+          "candidate": 5837
+        },
+        "launch_peak_warm": {
+          "baseline": 6656,
+          "candidate": 5837
+        },
+        "lifetime_peak_after_burst": {
+          "baseline": 7373,
+          "candidate": 7373
+        }
+      },
+      "verified": "Identity passes for every cleanup case and both speech clips; latency passes in all ten bands under max(spec limit, A/A value); back-to-back gap -0.0 ms against 50 ms; prefix-cache parity test and test_prompt_cache.py pass; no fault frame, generation 1, no engine loaded twice. Final runs perf02-shipping-3 (pinned to baseline-aa-shipping-3) and perf02-first-1 (pinned to baseline-aa-first-1); the baseline side is the localflow tree of 45bf38d (e8c71fe828a7f2fcd39d8ad3296697d0cad1228d5a1cd78f2fdcf9d8bbae6797). Three upper cleanup bands are short of the 30-case count (13, 6 and 3 cases).",
+      "private_evidence": "~/Library/Application Support/LocalFlow/v2-evidence/footprint/ (counters, timings and digests only; never committed)",
+      "remaining": [
+        "Install a new build: owner decision. The installed app is the build without the change.",
+        "Manual: M03-V009 in docs/v2/VERIFICATION.html, key release to inserted text in the real app on the reference condition, repeated on one synthetic job. Not run.",
+        "Reopen ticket 03 for a cache limit or a trim after an ASR result: owner decision. ASR-only request streams grow the allocator cache about 1.1 to 1.5 GB per request; it matters only when ASR runs without a cleanup request after it, which was not audited.",
+        "Delete the earlier evidence runs, the baseline export and .scratch/worker-footprint/: owner decision."
+      ],
+      "handoff": "docs/v2/handoffs/WORKER-FOOTPRINT.md"
     }
   },
   "historical_implementation": {
