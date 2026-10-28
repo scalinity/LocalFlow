@@ -11,8 +11,8 @@ state and alone owns capture, targets and insertion authority.
 
 Length-framed JSON on inherited pipes: each message is a 4-byte big-endian
 length + UTF-8 JSON, and carries `v: 1`. Parent→worker ops: `load`,
-`transcribe`, `clean`, `shutdown`. Worker→parent ops: `hello`, `engine`,
-`result`, `fault`, `diag`.
+`transcribe`, `clean`, `ensure_cleanup`, `shutdown`. Worker→parent ops:
+`hello`, `engine`, `result`, `fault`, `diag`.
 
 **There is no insertion op.** The worker cannot request an insertion; the
 supervisor ignores any unknown worker→parent message
@@ -52,8 +52,9 @@ mid-dictation) fails requests without respawning.
 ## Engine lifecycle (S09)
 
 Per-engine states reported by the worker: `loading`, `warming`, `ready`,
-`failed` (plus supervisor-level `not_started`/`restarting`/degraded). ASR
-and cleanup are displayed separately. A failed cleanup engine is degraded,
+`failed`, and `unloaded` for the cleanup engine only (plus supervisor-level
+`not_started`/`restarting`/degraded). ASR and cleanup are displayed
+separately. A failed cleanup engine is degraded,
 not dead: the worker answers in basic mode and labels it
 (`path: "basic"`, `fallback_reason: cleanup_engine_failed`); the parent's
 `cleanup_not_ready_policy` (`basic`|`wait`) decides whether a job runs the
@@ -85,8 +86,9 @@ reads the counters. With the variable unset the frame stream is unchanged.
 Once an engine's load and warmup finish, and before that engine's `ready`
 frame is written, the worker calls `mx.clear_cache()` on the GPU thread,
 so the cached blocks one load leaves behind are not held while the next
-engine loads. It runs once after the ASR warmup and once after the cleanup
-warmup, as the last step of that engine's load: never while a request runs
+engine loads. It runs once after the ASR warmup and once after each cleanup
+warmup (a reload after an idle unload is another cleanup load), as the last
+step of that engine's load: never while a request runs
 and never between the chunks of one recording. A cleanup load that waits for
 a request (a deferred load, or one queued behind requests that arrived first)
 can run, release included, between two requests. The release writes no frame
@@ -99,6 +101,72 @@ The release runs only after a successful load and warmup: after the ASR
 engine's and after the v2 cleanup engine's. It does not run after a failed
 load, and the v1 cleanup path (`cleanup_implementation` other than `v2`) never
 releases, so the launch-peak reduction does not apply there.
+
+## Idle unload of the cleanup model
+
+A worker that has been idle for the **idle period** hands the cleanup model
+back to the system; the next dictation loads it again. It exists only for
+the cleanup engine when `cleanup_mode` is `llm` and `cleanup_implementation`
+is `v2`. The speech engine never unloads, and neither does a `v1` cleanup or
+a cleanup mode other than `llm`.
+
+**State and frame.** `unloaded` is a cleanup engine state. The worker writes
+one `{"op": "engine", "engine": "cleanup", "state": "unloaded", "model_id":
+<cleanup model id>}` frame, after the model is released and the allocator
+cache cleared. A reload then writes the load's own frames, `loading` and
+`ready` (or `failed`, carrying the same reason code as any cleanup load
+failure). A failed reload leaves the engine `failed`, which answers as
+described under Engine lifecycle; the worker does not try again.
+
+**Idle period.** `CLEANUP_IDLE_UNLOAD_S`, 600 seconds. The environment
+variable `LOCALFLOW_WORKER_IDLE_UNLOAD_S`, read once at start like the memory
+switch, replaces it with a positive number of seconds; unset keeps 600, and
+any other value (zero, negative, not a number) turns unloading off. It is a
+test and measurement seam, not a setting.
+
+**When it unloads.** Only on the GPU thread's scheduling step, and only when
+all of these hold at once, decided under the lock that also guards request
+routing: the worker is not stopping, the cleanup engine is `ready` on the
+`v2` `llm` path with an engine object present, no task is queued, no load is
+pending, and the idle clock reads at least the idle period. The idle clock
+restarts at every received `transcribe`, `clean` and `ensure_cleanup`, at the
+end of every GPU task and at the end of a cleanup load. The state becomes
+`unloaded` at that decision, before the model is released. The GPU thread
+then drops the engine (and with it the model and its prefix cache), runs
+`gc.collect()`, releases the allocator cache as at load, and writes the
+frame. The unload adds no memory diagnostic label.
+
+**`ensure_cleanup`.** A request that needs no field beyond `v` and `op`:
+no `req_id`, no `generation`. It never produces a result frame and never a
+fault, in any state. It restarts the idle clock; when the cleanup engine is
+`unloaded` it queues one reload on the GPU thread, however many arrive
+before that reload finishes. In every other state, and for a cleanup path
+that cannot unload, it does nothing more. The parent sends it when a
+dictation starts, so the reload overlaps the recording.
+
+**Waiting rule for `clean`.** A `clean` that arrives while the cleanup
+engine is `unloaded`, or while a reload is queued or running, waits for the
+reload and gets the engine's real answer (`path: llm`), never
+`cleanup_not_ready`. A `clean` that finds the engine `unloaded` queues the
+reload itself, so the parent need not have sent `ensure_cleanup` first. If
+the reload fails, the clean gets the failed-engine answer. This is the one
+exception to the rule that a `clean` is answered at once while the engine is
+not usable: the first load at worker start keeps that rule, so a `clean`
+before the first `ready` is answered degraded as before.
+
+**Order on the GPU thread.** Requests run in arrival order, one at a time.
+A `transcribe` queued ahead of a `clean` runs before the reload; the reload
+runs before a `clean` at the head of the queue. A `transcribe` that arrives
+during a reload waits for it (one GPU owner). A `transcribe` while the
+engine is `unloaded` is served at once and does not start a reload, and the
+speech engine's state does not change.
+
+**What never changes.** An unload or reload does not change the generation,
+write a `fault` frame, restart the worker or count toward the circuit
+breaker, and result frames echo their request's identity unchanged. A worker
+that restarts, for any reason, starts as a fresh process that loads both
+engines as at first start. With unloading off, or before the idle period has
+passed, the frame stream is exactly the one without this section.
 
 ## M03 remediation (2026-09-25; protocol version unchanged)
 
@@ -160,7 +228,9 @@ releases, so the launch-peak reduction does not apply there.
   control thread — V2: the unchanged normalized input,
   `path: llm_fallback_normalized`, `fallback_reason: cleanup_not_ready`;
   V1: the basic pass, `path: basic` — and a failed engine keeps its
-  existing degraded answers. A spawn made for a waiting request sends
+  existing degraded answers. The one exception is the reload after an
+  idle unload (Idle unload of the cleanup model): that `clean` waits for
+  the reload. A spawn made for a waiting request sends
   `defer_cleanup_until_request`, so that request runs before the long
   cleanup load. An ASR request arriving while a cleanup load is already
   running waits for that load (one GPU owner) — the parent reports it as
