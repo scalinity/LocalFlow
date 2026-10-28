@@ -86,9 +86,12 @@ Once an engine's load and warmup finish, and before that engine's `ready`
 frame is written, the worker calls `mx.clear_cache()` on the GPU thread,
 so the cached blocks one load leaves behind are not held while the next
 engine loads. It runs once after the ASR warmup and once after the cleanup
-warmup, never between requests or between the chunks of one recording, and
-it writes no frame and changes no engine state. It frees no live array, and
-a failing call is ignored rather than failing the engine. It does not depend
+warmup, as the last step of that engine's load: never while a request runs
+and never between the chunks of one recording. A cleanup load that waits for
+a request (a deferred load, or one queued behind requests that arrived first)
+can run, release included, between two requests. The release writes no frame
+and changes no engine state. It frees no live array, and a failing call is
+ignored rather than failing the engine. It does not depend
 on `LOCALFLOW_WORKER_MEMORY_DIAG`; the `asr_warmed` and `cleanup_warmed`
 samples are read after it.
 

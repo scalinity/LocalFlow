@@ -170,6 +170,53 @@ def test_first_request_blocks_show_a_real_candidate_slowdown():
           " metric and field")
 
 
+def _same_outputs():
+    """A pair row whose two sides returned the same outputs."""
+    asr = {"text_sha256": "t", "decode_ranges_sha256": "r"}
+    clean = {"text_sha256": "c", "pass_output_tokens": [5, 7]}
+    return {"asr": {"A": dict(asr), "B": dict(asr)},
+            "clean": {"A": dict(clean), "B": dict(clean)}}
+
+
+def test_first_request_outputs_are_compared_within_each_pair():
+    assert fr.first_request_mismatches([_same_outputs()] * 2) == []
+    for metric, field, other in (("asr", "text_sha256", "x"),
+                                 ("asr", "decode_ranges_sha256", "x"),
+                                 ("clean", "text_sha256", "x"),
+                                 ("clean", "pass_output_tokens", [5, 8])):
+        rows = [_same_outputs(), _same_outputs()]
+        rows[1][metric]["B"][field] = other
+        assert fr.first_request_mismatches(rows) == [
+            f"first-request:{metric}:{field} (pair 2)"], (metric, field)
+    print("ok  first-request outputs: the ASR text and decode ranges and the"
+          " cleanup text and token counts are compared A against B, by name")
+
+
+def test_a_first_request_mismatch_fails_the_identity_verdict():
+    named = ["first-request:asr:text_sha256 (pair 1)"]
+    clean = fr.assemble_verdicts({"first_request": {"mismatches": []}})
+    assert clean["identity"] == {
+        "pass": True, "mismatches": [], "chunker_ran": None,
+        "inconsistent_across_blocks": [], "first_request_compared": True}
+    bad = fr.assemble_verdicts({"first_request": {"mismatches": named}})
+    assert bad["identity"]["pass"] is False
+    assert bad["identity"]["mismatches"] == named
+    assert "identity" not in fr.assemble_verdicts({}), \
+        "no identity verdict when neither phase compared outputs"
+    # beside the resident comparison the two lists join, resident first
+    res = {"identity": {"mismatches": ["case-1"], "chunker": {"ran": True}},
+           "latency": {}}
+    both = fr.assemble_verdicts({"resident": res,
+                                 "first_request": {"mismatches": named}})
+    assert both["identity"]["mismatches"] == ["case-1"] + named
+    only_res = fr.assemble_verdicts({"resident": {**res, "identity": {
+        "mismatches": [], "chunker": {"ran": True}}}})
+    assert only_res["identity"]["pass"] is True
+    assert only_res["identity"]["first_request_compared"] is False
+    print("ok  identity verdict: a first-request mismatch fails it by name,"
+          " beside the resident one; a first-request-only run states one")
+
+
 def test_an_odd_first_request_pair_count_stops_the_run():
     # a block is two pairs, so an odd count would leave one pair unjudged
     for odd in (1, 3, 9):
@@ -262,7 +309,13 @@ def test_back_to_back_gap_limit_is_never_tighter_than_the_measured_noise():
           " quiet")
 
 
+AA_TREE = hashlib.sha256(b"baseline tree").hexdigest()
+AA_BANDS = hashlib.sha256(b"frozen bands").hexdigest()
+
+
 def _aa_report(complete=True, run_id="aa-test", unit="abba_block"):
+    """A finished A/A report: both sides the same tree, Rig validity and
+    Identity passed."""
     band = {"paired_median_ms": 11.4, "paired_p95_ms": 236.5}
     stage = {"paired_median_ms": 11.0, "paired_p95_ms": 234.0}
     first = {"verdicts": {"rtt_ms": {"asr": band},
@@ -270,6 +323,12 @@ def _aa_report(complete=True, run_id="aa-test", unit="abba_block"):
     if unit:
         first["unit"] = unit
     return {"rig": {"run_id": run_id, "complete": complete},
+            "environment": {"code_roots": {
+                "A": {"tree_sha256": AA_TREE},
+                "B": {"tree_sha256": AA_TREE}}},
+            "bands": {"digest": AA_BANDS},
+            "verdicts": {"rig_validity": {"pass": True},
+                         "identity": {"pass": True}},
             "resident": {
                 "latency": {"asr": {
                     "30-90s": {"verdict_rtt": band, "verdict_stage": stage},
@@ -278,11 +337,17 @@ def _aa_report(complete=True, run_id="aa-test", unit="abba_block"):
             "first_request": first}
 
 
+def _load_aa(path, tree=AA_TREE, bands=AA_BANDS):
+    """``load_aa_report`` for a run whose side A holds ``tree`` and whose
+    frozen bands digest to ``bands``."""
+    return fr.load_aa_report(path, tree, bands)
+
+
 def test_the_aa_report_is_pinned_by_digest_and_must_be_complete():
     with tempfile.TemporaryDirectory() as td:
         path = pathlib.Path(td) / "report.json"
         path.write_text(json.dumps(_aa_report()))
-        got = fr.load_aa_report(path)
+        got = _load_aa(path)
         assert got["sha256"] == hashlib.sha256(path.read_bytes()).hexdigest()
         assert got["run_id"] == "aa-test"
         assert got["stats"]["rtt_ms"]["asr:30-90s"] == {
@@ -293,10 +358,10 @@ def test_the_aa_report_is_pinned_by_digest_and_must_be_complete():
             "paired_p95_ms"] == 236.5
         assert got["gap_median_ms"] == 0.1
         path.write_text(json.dumps(_aa_report(complete=False)))
-        _stops(lambda: fr.load_aa_report(path), "complete")
+        _stops(lambda: _load_aa(path), "complete")
         path.write_text("not json")
-        _stops(lambda: fr.load_aa_report(path), "A/A report")
-        _stops(lambda: fr.load_aa_report(pathlib.Path(td) / "missing.json"),
+        _stops(lambda: _load_aa(path), "A/A report")
+        _stops(lambda: _load_aa(pathlib.Path(td) / "missing.json"),
                "A/A report")
     args = fr.parse_args(["--code-root-a", ".", "--aa-report", "x.json"])
     assert args.aa_report == "x.json"
@@ -309,22 +374,72 @@ def test_first_request_stats_are_pinned_only_from_abba_block_reports():
     with tempfile.TemporaryDirectory() as td:
         path = pathlib.Path(td) / "report.json"
         path.write_text(json.dumps(_aa_report(unit=None)))
-        stats = fr.load_aa_report(path)["stats"]
+        stats = _load_aa(path)["stats"]
         # no marker: its first-request p95 is the order penalty, not noise,
         # so those bands fall back to the spec limits; the rest stay pinned
         assert "first-request:asr" not in stats["rtt_ms"]
         assert "first-request:asr" not in stats["stage_ms"]
         assert stats["rtt_ms"]["asr:30-90s"]["paired_p95_ms"] == 236.5
         path.write_text(json.dumps(_aa_report(unit="pair")))
-        assert "first-request:asr" not in fr.load_aa_report(
+        assert "first-request:asr" not in _load_aa(
             path)["stats"]["rtt_ms"]
         path.write_text(json.dumps(_aa_report()))
-        stats = fr.load_aa_report(path)["stats"]
+        stats = _load_aa(path)["stats"]
         assert stats["rtt_ms"]["first-request:asr"]["paired_p95_ms"] == 236.5
         assert stats["stage_ms"]["first-request:asr"][
             "paired_median_ms"] == 11.0
     print("ok  A/A report: first-request stats are pinned only when the"
           " report marks its unit as abba_block")
+
+
+def _refused(td, mutate, needle, **run):
+    """Write an otherwise valid A/A report changed by ``mutate`` and expect
+    the load for a run described by ``run`` to stop on ``needle``."""
+    report = _aa_report()
+    mutate(report)
+    path = pathlib.Path(td) / "report.json"
+    path.write_text(json.dumps(report))
+    msg = _stops(lambda: _load_aa(path, **run), needle)
+    assert str(td) not in msg and AA_TREE not in msg, "a plain message"
+
+
+def test_a_pinned_report_is_refused_unless_it_is_a_clean_aa_for_this_run():
+    other = hashlib.sha256(b"another tree").hexdigest()
+    with tempfile.TemporaryDirectory() as td:
+        _refused(td, lambda r: r["rig"].update(
+            aborted={"reason": "swap", "at": "x"}), "aborted")
+        _refused(td, lambda r: r["environment"]["code_roots"]["B"].update(
+            tree_sha256=other), "not an A/A run")
+        _refused(td, lambda r: r["environment"].pop("code_roots"),
+                 "not an A/A run")
+        _refused(td, lambda r: r["verdicts"]["rig_validity"].update(
+            {"pass": False}), "Rig validity")
+        _refused(td, lambda r: r["verdicts"]["identity"].update(
+            {"pass": False}), "Identity")
+        _refused(td, lambda r: r["bands"].update(digest=other),
+                 "different bands")
+        _refused(td, lambda r: None, "side A", tree=other)
+        _refused(td, lambda r: None, "different bands", bands=other)
+    print("ok  A/A report: refused when aborted, not an A/A, Rig validity or"
+          " Identity failed, other bands, or another side-A tree")
+
+
+def test_a_pinned_report_is_accepted_when_it_matches_this_run():
+    with tempfile.TemporaryDirectory() as td:
+        path = pathlib.Path(td) / "report.json"
+        report = _aa_report()
+        path.write_text(json.dumps(report))
+        assert _load_aa(path)["run_id"] == "aa-test"
+        # a first-request-only run states no Identity verdict and no
+        # resident verdicts: absent is fine, a stated failure is not
+        del report["verdicts"]["identity"]
+        path.write_text(json.dumps(report))
+        assert _load_aa(path)["run_id"] == "aa-test"
+        del report["verdicts"]
+        path.write_text(json.dumps(report))
+        assert _load_aa(path)["run_id"] == "aa-test"
+    print("ok  A/A report: accepted when it is a clean A/A over this run's"
+          " bands and side-A tree; absent verdicts are fine")
 
 
 def test_rig_validity_follows_the_median_of_every_band():

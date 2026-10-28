@@ -255,9 +255,16 @@ def test_whole_run_against_the_shim_worker_writes_a_content_free_report():
             or "GO ticket 03" in summary
         # the second run pins this run's report as its A/A
         aa_path = ctx.run_dir / "report.json"
+        # The shim never splits a clip, so Identity reads "chunker did not
+        # run" with no mismatch; the pinning is under test here, not the
+        # chunker, so this report stands in for an A/A that passed Identity.
+        assert report["verdicts"]["identity"]["mismatches"] == []
+        report["verdicts"]["identity"]["pass"] = True
+        aa_path.write_text(json.dumps(report, indent=1))
         digest = hashlib.sha256(aa_path.read_bytes()).hexdigest()
         ctx2 = _shim_context(pathlib.Path(td) / "second", counts)
-        ctx2.aa = fr.load_aa_report(aa_path)
+        ctx2.aa = fr.load_aa_report(aa_path, fr.tree_digest(ROOT),
+                                    fr.bands_digest(ctx2.bands))
         fr.measure(ctx2, ["first", "resident"], "2026-10-26T00:00:00-04:00")
         report2 = json.loads((ctx2.run_dir / "report.json").read_text())
         assert report2["rig"]["aa_report"] == {"sha256": digest,
@@ -294,6 +301,89 @@ def test_a_first_request_only_run_states_its_unit_in_the_method():
             "the ASR note belongs to runs that measured the resident bands"
     print("ok  shim run: a first-request-only summary states that its rows"
           " are judged on ABBA blocks")
+
+
+def test_a_first_request_only_run_states_an_identity_verdict():
+    counts = {"warm": 1, "cold": 1, "burst": 1, "first": 2, "gap": 2}
+    with tmpdir() as td:
+        ctx = _shim_context(td, counts)
+        fr.measure(ctx, ["first"], "2026-10-26T00:00:00-04:00")
+        report = json.loads((ctx.run_dir / "report.json").read_text())
+        assert report["first_request"]["mismatches"] == []
+        assert report["verdicts"]["identity"] == {
+            "pass": True, "mismatches": [], "chunker_ran": None,
+            "inconsistent_across_blocks": [],
+            "first_request_compared": True}
+        summary = (ctx.run_dir / "SUMMARY.md").read_text()
+        assert "Identity A against B: pass" in summary
+        assert "chunker ran: n/a" in summary
+        assert "first-request outputs compared" in summary
+    print("ok  shim run: a first-request-only run states an Identity verdict"
+          " and its summary says the first-request outputs were compared")
+
+
+def test_a_first_request_output_mismatch_fails_identity_in_a_whole_run():
+    counts = {"warm": 1, "cold": 1, "burst": 1, "first": 2, "gap": 2}
+    with tmpdir() as td:
+        ctx = _shim_context(td, counts)
+        # side B's ASR now answers with other words; side A keeps its own
+        (pathlib.Path(td) / "plan-B.json").write_text(json.dumps({
+            "hold_gpu_mib": 64, "transcribe": ["ok:other words from B"]}))
+        code = fr.measure(ctx, ["first"], "2026-10-26T00:00:00-04:00")
+        report = json.loads((ctx.run_dir / "report.json").read_text())
+        ident = report["verdicts"]["identity"]
+        assert ident["pass"] is False
+        assert ident["mismatches"] == [
+            "first-request:asr:text_sha256 (pair 1)",
+            "first-request:asr:text_sha256 (pair 2)"]
+        assert code == 1, "a failed Identity check exits non-zero"
+        summary = (ctx.run_dir / "SUMMARY.md").read_text()
+        assert "Identity A against B: FAIL" in summary
+        assert "other words from B" not in summary
+    print("ok  shim run: differing first-request ASR text fails Identity by"
+          " name, exits non-zero, and no output text reaches the summary")
+
+
+def _real_build_context(td, aa_path, code_root=ROOT):
+    """The real ``build_context`` over the synthetic corpus in ``td``, with
+    only the process list, the model identity and the model cache stubbed."""
+    td = pathlib.Path(td)
+    snap = {"snapshot": "snap", "files": []}
+    argv = ["--code-root-a", str(code_root), "--aa-report", str(aa_path),
+            "--corpus-dir", str(td / "corpus")]
+    with _patched(_tool_text=lambda *a, **k: "",
+                  resolve_model_identity=lambda *a: IDENTITY,
+                  locate_models=lambda identity: {"asr": snap,
+                                                  "cleanup": snap}):
+        return fr.build_context(fr.parse_args(argv), td / "run2",
+                                td / "corpus", "second")
+
+
+def test_the_pinned_aa_is_checked_against_this_runs_bands_and_side_a_tree():
+    counts = {"warm": 1, "cold": 1, "burst": 1, "first": 2, "gap": 2}
+    with tmpdir() as td:
+        td = pathlib.Path(td)
+        ctx = _shim_context(td, counts)
+        manifest = td / "corpus" / "manifest.json"
+        manifest.write_text(json.dumps(ctx.manifest))
+        fr.measure(ctx, ["first"], "2026-10-26T00:00:00-04:00")
+        aa_path = ctx.run_dir / "report.json"
+        # the digests build_context computes are the ones measure recorded
+        pinned = _real_build_context(td, aa_path)
+        assert pinned.aa["run_id"] == "shim-test"
+        # a corpus that freezes other bands is refused
+        fewer = {"clips": ctx.manifest["clips"][1:]}
+        manifest.write_text(json.dumps(fewer))
+        _stops(lambda: _real_build_context(td, aa_path), "different bands")
+        manifest.write_text(json.dumps(ctx.manifest))
+        # so is a side A that holds another localflow tree
+        other = td / "other"
+        (other / "localflow").mkdir(parents=True)
+        (other / "localflow" / "mod.py").write_text("x = 1\n")
+        _stops(lambda: _real_build_context(td, aa_path, other),
+               "different localflow tree")
+    print("ok  build_context: the pinned A/A must hold this run's bands and"
+          " side-A tree; an honest A/A is accepted")
 
 
 def _requests_seen(path):
@@ -345,6 +435,15 @@ def test_asr_bands_interleave_an_unmeasured_cleanup_on_both_sides():
                 " request") in summary
     print("ok  shim run: every ASR request is followed by one unmeasured"
           " cleanup, identical on both sides, outside every record")
+
+
+def _stops(fn, needle):
+    try:
+        fn()
+    except fr.RigStop as e:
+        assert needle in str(e), (needle, str(e))
+        return
+    raise AssertionError("expected RigStop")
 
 
 class _patched:
@@ -508,6 +607,9 @@ def main():
          test_back_to_back_sends_return_in_order,
          test_whole_run_against_the_shim_worker_writes_a_content_free_report,
          test_a_first_request_only_run_states_its_unit_in_the_method,
+         test_a_first_request_only_run_states_an_identity_verdict,
+         test_a_first_request_output_mismatch_fails_identity_in_a_whole_run,
+         test_the_pinned_aa_is_checked_against_this_runs_bands_and_side_a_tree,
          test_asr_bands_interleave_an_unmeasured_cleanup_on_both_sides,
          test_a_worker_over_the_footprint_limit_aborts_the_run,
          test_swap_growth_aborts_the_run,

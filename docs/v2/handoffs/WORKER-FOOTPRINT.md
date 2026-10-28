@@ -10,9 +10,12 @@ same output text and the same speed.
 footprint after the first dictation is unchanged, so the idle gain at launch
 does not last. The other levers closed without code.
 **Base commit:** `14a009a4f3d7d64a6419c12638af65bc6ed9b2a8` (`main`).
-**Integration head:** `4eff5a3e98e3c396e06212f8aa2429c39ce3da67` on
+**Measured code head:** `4eff5a3e98e3c396e06212f8aa2429c39ce3da67` on
 `perf/worker-footprint`; `localflow/` tree SHA-256
-`400fa463b31eeaca24b5c1ea5322a1ceb8cfae0c2506dc5e0a9e5d8bca6627b4`.
+`400fa463b31eeaca24b5c1ea5322a1ceb8cfae0c2506dc5e0a9e5d8bca6627b4`. The
+branch tip carries later commits that change only the rig's abort, pinned A/A
+and Identity handling, its tests, documentation and the records; `localflow/`
+is byte-identical to the measured head (tree digest unchanged).
 **This record:** this file, `STATUS.json` (`current_state.worker_footprint`)
 and the pending runbook entry M03-V009 land in one commit on
 `perf/04-verify-and-record`, cut from the integration head. The commit
@@ -32,9 +35,12 @@ Records: this file, `docs/v2/STATUS.json`, `docs/v2/VERIFICATION.html`.
 
 Once an engine's load and warmup finish, and before its `ready` frame, the
 worker hands the allocator's unused cached memory back once, on the GPU
-thread. It runs after the ASR warmup and after the cleanup warmup, never
-between requests or between the chunks of one recording, and it adds no
-frame and no engine state. With `LOCALFLOW_WORKER_MEMORY_DIAG=1` the worker
+thread. It runs after the ASR warmup and after the cleanup warmup, as the
+last step of that engine's load: never while a request runs and never between
+the chunks of one recording. A cleanup load that waits for a request (a
+deferred load, or one queued behind requests that arrived first) can run,
+release included, between two requests. The release adds no frame and no
+engine state. With `LOCALFLOW_WORKER_MEMORY_DIAG=1` the worker
 also writes content-free memory counters at six labels as `diag` frames;
 with the variable unset the frame stream is unchanged. The contract holds
 the exact rules and is not repeated here.
@@ -44,7 +50,7 @@ the exact rules and is not repeated here.
 Side A is the baseline: the `localflow/` tree of commit `45bf38d` (the rig
 and the inert diagnostics, no release), SHA-256
 `e8c71fe828a7f2fcd39d8ad3296697d0cad1228d5a1cd78f2fdcf9d8bbae6797`, frozen as
-an export. Side B is the candidate: the integration tree above. Runs are in
+an export. Side B is the candidate: the measured tree above. Runs are in
 the private evidence root `~/Library/Application Support/LocalFlow/v2-evidence/footprint/`
 and are never copied into the repository:
 
@@ -132,9 +138,9 @@ bands.
   burst spawns of `baseline-aa-shipping-2`, the footprint 2 s after a
   20-dictation burst is 13 to 17 MiB above the same spawn's idle (median 15)
   against the Idle floor of 100 MB; the cleanup library already returns the
-  allocator cache to 173 MiB after every result. Not a lever: the 173 MiB
-  block is also present at idle after warmup, so a trim would lower idle by
-  at most that much while the pool refills at the next dictation.
+  allocator cache to 173 to 266 MiB after every result. Not a lever: the
+  173 MiB block is also present at idle after warmup, so a trim would lower
+  idle by at most that much while the pool refills at the next dictation.
 - **04, verify and record: this record.** It records the outcome and the
   numbers above; no production code changes in it.
 - **05, gated idle unload: closed on a failed Residency gate, no code.** The
@@ -183,6 +189,12 @@ bands.
 
 ## Limits of this evidence
 
+- **The Gate table's 30-case shipping claim is not met in three bands.** The
+  cleanup bands of 21 to 50, 51 to 100 and 101 to 200 words hold 13, 6 and 3
+  committed cases, a spec requirement this evidence does not meet. Every
+  committed case in them ran all 5 repeats (65, 30 and 15 measured blocks)
+  and the corpus has no more cases in those bands, so the verdict for those
+  bands rests on all available cases, not on the claimed count.
 - The worker protocol seam does not see the interval from releasing the key
   to the text appearing in an app. That check is M03-V009 in
   `VERIFICATION.html`, **Not run**.
@@ -220,3 +232,6 @@ bands.
 pinning a finished A/A run with `--aa-report`. One run at a time; AC power; no
 dictation during the run; run suites with `LOCALFLOW_DATA_HOME` set to a
 scratch directory. Pin only an A/A run made by the rig at or after `fdc4e2f`.
+The rig refuses a pinned report unless it is complete and not aborted, was an
+A/A (both sides one tree), passed Rig validity and Identity where it states
+them, and froze the same bands and ran the same baseline tree as this run.

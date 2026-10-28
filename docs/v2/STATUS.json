@@ -162,9 +162,10 @@
       "state": "WORKER_FOOTPRINT_COMPLETE_PENDING_LOCAL_VERIFICATION",
       "merged_to_main": false,
       "base_main": "14a009a4f3d7d64a6419c12638af65bc6ed9b2a8",
-      "head": "4eff5a3e98e3c396e06212f8aa2429c39ce3da67",
+      "measured_head": "4eff5a3e98e3c396e06212f8aa2429c39ce3da67",
       "localflow_tree_sha256": "400fa463b31eeaca24b5c1ea5322a1ceb8cfae0c2506dc5e0a9e5d8bca6627b4",
       "source_state": "The integration branch holds the lever, the opt-in memory diagnostics and the measurement rig; it is not merged to main. The one production change: after each engine's load and warmup the worker hands the allocator's unused cached memory back once (localflow/v2/worker.py; ModelRunner.load takes an optional on_phase callback). Same two models, same output text, same latency.",
+      "branch_tip_note": "The branch tip carries later commits that change only the rig's abort, pinned A/A and Identity handling, its tests, documentation and the records; localflow/ is byte-identical to the measured head (tree digest unchanged).",
       "installed_state": "Not changed. The installed app and its idle worker were left untouched; the worker change reaches the installed app only after a reinstall of a build that contains it.",
       "source_contract": "docs/v2/contracts/worker.md (Memory diagnostics, Allocator release at load)",
       "claim": "Launch peak only. The idle gain at launch is refilled by the first dictation.",
@@ -202,9 +203,10 @@
           "candidate": 7373
         }
       },
-      "verified": "Identity passes for every cleanup case and both speech clips; latency passes in all ten bands under max(spec limit, A/A value); back-to-back gap -0.0 ms against 50 ms; prefix-cache parity test and test_prompt_cache.py pass; no fault frame, generation 1, no engine loaded twice. Final runs perf02-shipping-3 (pinned to baseline-aa-shipping-3) and perf02-first-1 (pinned to baseline-aa-first-1); the baseline side is the localflow tree of 45bf38d (e8c71fe828a7f2fcd39d8ad3296697d0cad1228d5a1cd78f2fdcf9d8bbae6797). Three upper cleanup bands are short of the 30-case count (13, 6 and 3 cases).",
+      "verified": "Identity passes for every cleanup case and both speech clips; latency passes in all ten bands under max(spec limit, A/A value); back-to-back gap -0.0 ms against 50 ms; prefix-cache parity test and test_prompt_cache.py pass; no fault frame, generation 1, no engine loaded twice. Final runs perf02-shipping-3 (pinned to baseline-aa-shipping-3) and perf02-first-1 (pinned to baseline-aa-first-1); the baseline side is the localflow tree of 45bf38d (e8c71fe828a7f2fcd39d8ad3296697d0cad1228d5a1cd78f2fdcf9d8bbae6797). The Gate table's 30-case shipping claim is not met in the three upper cleanup bands: 21 to 50, 51 to 100 and 101 to 200 words hold 13, 6 and 3 committed cases, every case ran 5 repeats (65, 30 and 15 measured blocks) and the corpus has no more cases there, so those three verdicts rest on all available cases.",
       "private_evidence": "~/Library/Application Support/LocalFlow/v2-evidence/footprint/ (counters, timings and digests only; never committed)",
       "remaining": [
+        "Spec requirement not met: the Gate table's 30-case shipping claim, in the cleanup bands of 21 to 50, 51 to 100 and 101 to 200 words (13, 6 and 3 committed cases, all run with 5 repeats). The corpus has no more cases in those bands, so the count stays short until fixtures are added.",
         "Install a new build: owner decision. The installed app is the build without the change.",
         "Manual: M03-V009 in docs/v2/VERIFICATION.html, key release to inserted text in the real app on the reference condition, repeated on one synthetic job. Not run.",
         "Reopen ticket 03 for a cache limit or a trim after an ASR result: owner decision. ASR-only request streams grow the allocator cache about 1.1 to 1.5 GB per request; it matters only when ASR runs without a cleanup request after it, which was not audited.",

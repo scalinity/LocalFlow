@@ -149,6 +149,11 @@ def sha256_text(text):
     return hashlib.sha256(text.encode("utf-8")).hexdigest()
 
 
+def bands_digest(bands):
+    """The digest a report records for its frozen cleanup and ASR bands."""
+    return digest_json({k: bands[k] for k in ("cleanup", "asr")})
+
+
 # ---- paired statistics -------------------------------------------------------
 
 def median(values):
@@ -227,6 +232,21 @@ def first_request_blocks(rows, metric, field):
     return diffs, baseline
 
 
+def first_request_mismatches(rows):
+    """Names of the first-request outputs that differ between side A and
+    side B within a pair: the ASR text and decode ranges, the cleanup text
+    and its per-pass token counts. Names only, never content."""
+    names = []
+    for k, row in enumerate(rows, 1):
+        for metric, fields in (
+                ("asr", ("text_sha256", "decode_ranges_sha256")),
+                ("clean", ("text_sha256", "pass_output_tokens"))):
+            names += [f"first-request:{metric}:{field} (pair {k})"
+                      for field in fields
+                      if row[metric]["A"][field] != row[metric]["B"][field]]
+    return names
+
+
 def latency_verdict(diffs, baseline_times, aa=None):
     """The Latency rule on paired candidate-minus-baseline differences.
     With ``aa`` (this band's paired median and p95 from the pinned A/A
@@ -286,9 +306,13 @@ def gap_verdict(gaps_a, gaps_b, aa_median_ms=None):
             "pass": paired_median < limit}
 
 
-def load_aa_report(path):
+def load_aa_report(path, tree_sha256, bands_sha256):
     """A finished A/A report, pinned by its SHA-256 and run id, whose
-    paired statistics set the noise floor for later limits."""
+    paired statistics set the noise floor for later limits. Its noise stands
+    for this run's only if it is complete and not aborted, an A/A (both
+    sides one tree), passed Rig validity and Identity where it states them,
+    froze the bands of ``bands_sha256`` and ran the tree ``tree_sha256`` now
+    on side A. Any other report could pass a real regression as noise."""
     try:
         raw = pathlib.Path(path).read_bytes()
         report = json.loads(raw)
@@ -298,6 +322,24 @@ def load_aa_report(path):
     if not isinstance(rig, dict) or rig.get("complete") is not True:
         raise RigStop("the A/A report is not complete (rig.complete is not"
                       " true)")
+    if rig.get("aborted") is not None:
+        raise RigStop("the A/A report was aborted")
+    roots = (report.get("environment") or {}).get("code_roots") or {}
+    trees = {side: (roots.get(side) or {}).get("tree_sha256")
+             for side in ("A", "B")}
+    if not trees["A"] or trees["A"] != trees["B"]:
+        raise RigStop("the A/A report is not an A/A run: its two sides do"
+                      " not hold one localflow tree")
+    verdicts = report.get("verdicts") or {}
+    for key, name in (("rig_validity", "Rig validity"),
+                      ("identity", "Identity")):
+        if verdicts.get(key) and verdicts[key].get("pass") is not True:
+            raise RigStop(f"the A/A report's {name} verdict did not pass")
+    if (report.get("bands") or {}).get("digest") != bands_sha256:
+        raise RigStop("the A/A report froze different bands than this run")
+    if trees["A"] != tree_sha256:
+        raise RigStop("the A/A report ran a different localflow tree than"
+                      " this run's side A")
 
     def pick(v):
         return {"paired_median_ms": v["paired_median_ms"],
@@ -1541,7 +1583,8 @@ def phase_first(ctx):
             verdicts.setdefault(field, {})[metric] = latency_verdict(
                 diffs, base, aa_stats(ctx, f"first-request:{metric}", field))
     return {"clip": clip, "case": case_id, "pairs": rows,
-            "unit": "abba_block", "verdicts": verdicts}
+            "unit": "abba_block", "verdicts": verdicts,
+            "mismatches": first_request_mismatches(rows)}
 
 
 # ---- the resident pair: identity, paired latency, back-to-back gap -----------------------------
@@ -1746,16 +1789,21 @@ def assemble_verdicts(report):
     out["rig_validity"] = rig_validity(bands) if bands else None
     out["back_to_back_gap"] = (res.get("gap") or {}).get("verdict")
     ident = res.get("identity")
-    if ident:
+    compared = "mismatches" in first
+    if ident or compared:
         inconsistent = sorted(
             f"{kind}:{band}" for kind, by_band in res["latency"].items()
-            for band, d in by_band.items() if not d["identity_consistent"])
+            for band, d in by_band.items() if not d["identity_consistent"]) \
+            if ident else []
+        mismatches = (ident["mismatches"] if ident else []) \
+            + first.get("mismatches", [])
+        chunker_ran = ident["chunker"]["ran"] if ident else None
         out["identity"] = {
-            "pass": not ident["mismatches"] and ident["chunker"]["ran"]
-            and not inconsistent,
-            "mismatches": ident["mismatches"],
-            "chunker_ran": ident["chunker"]["ran"],
-            "inconsistent_across_blocks": inconsistent}
+            "pass": not mismatches and not inconsistent
+            and chunker_ran is not False,
+            "mismatches": mismatches, "chunker_ran": chunker_ran,
+            "inconsistent_across_blocks": inconsistent,
+            "first_request_compared": compared}
     return out
 
 
@@ -1994,9 +2042,12 @@ def render_summary(report):
                    f" {g['limit_ms']:.1f} ms (spec {g['spec_limit_ms']:.0f}"
                    f" ms, A/A {aa}): {_yes(g['pass'])}.")
     if v.get("identity"):
-        out.append(f"Identity A against B: {_yes(v['identity']['pass'])};"
-                   f" mismatches {v['identity']['mismatches']}; chunker ran:"
-                   f" {v['identity']['chunker_ran']}.")
+        i = v["identity"]
+        chunker = "n/a" if i["chunker_ran"] is None else i["chunker_ran"]
+        clause = "; first-request outputs compared" \
+            if i["first_request_compared"] else ""
+        out.append(f"Identity A against B: {_yes(i['pass'])}; mismatches"
+                   f" {i['mismatches']}; chunker ran: {chunker}{clause}.")
     j = r.get("judgement")
     if j:
         out += ["", "## Go / no-go", "", f"- {j['ticket_02']['line']}",
@@ -2229,7 +2280,6 @@ def parse_args(argv):
 
 
 def build_context(args, run_dir, corpus_dir, run_id):
-    aa = load_aa_report(args.aa_report) if args.aa_report else None
     roots = {"A": pathlib.Path(args.code_root_a).resolve()}
     roots["B"] = pathlib.Path(args.code_root_b).resolve() \
         if args.code_root_b else roots["A"]
@@ -2262,6 +2312,8 @@ def build_context(args, run_dir, corpus_dir, run_id):
     bands = {"cleanup": freeze_bands(
         [(cid, c["words"]) for cid, c in cases.items()], CLEANUP_BANDS),
         "asr": freeze_bands(clips, ASR_BANDS)}
+    aa = load_aa_report(args.aa_report, tree_digest(roots["A"]),
+                        bands_digest(bands)) if args.aa_report else None
     mode_counts = dict(MODE_COUNTS[args.mode])
     for key, value in (("warm", args.warm_spawns), ("cold", args.cold_spawns),
                        ("burst", args.burst_spawns),
@@ -2295,8 +2347,7 @@ def measure(ctx, phases, started):
                         for k in ("cleanup", "asr")},
              "short": {k: short_bands(ctx.bands[k], SHIPPING_CASES)
                        for k in ("cleanup", "asr")}}
-    bands["digest"] = digest_json({k: ctx.bands[k]
-                                   for k in ("cleanup", "asr")})
+    bands["digest"] = bands_digest(ctx.bands)
     # Frozen first: the bands and every case's membership are on disk
     # before any comparison runs.
     (run_dir / "bands.json").write_text(json.dumps(bands, indent=1))
