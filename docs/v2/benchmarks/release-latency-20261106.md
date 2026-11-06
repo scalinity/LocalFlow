@@ -42,7 +42,7 @@ MLX-LM 0.31.3, Python 3.14.10, macOS on Apple silicon.
 | Thread scheduling | PASS: three cases; native child-thread QoS, unchanged calling-thread QoS, denied request and unavailable API |
 | Insertion races | PASS: 13 cases, including unreadable destinations, delayed consumption, selection changes, clipboard ownership and queued results |
 | Native insertion cohort | NOT RUN: the launching terminal lacks Accessibility permission |
-| Physical Fn release to visible text | NOT RUN |
+| Installed-app responsiveness | MANUAL ACCEPTANCE: responsiveness accepted in ordinary use; physical Fn-to-visible latency is uninstrumented |
 
 Model-backed checks are opt-in:
 
@@ -85,13 +85,13 @@ Worker allocator samples retain about 16 MiB more active state with the
 candidate (3,622.6 versus 3,606.6 MiB after requests). Cached allocator memory
 also varies and is not a measurement of physical process footprint.
 
-These timings end at the worker result. They omit recorder shutdown, parent
+These automated timings end at the worker result. They omit recorder shutdown, parent
 normalization/context work, insertion scheduling, keyboard delivery and the
 destination application's response. They establish a useful reduction in
 model work, not near-instant visible insertion under arbitrary system load.
-Moving useful cleanup work into capture remains a separate incomplete step;
-it needs final full-recording ASR, exact final cleanup-input matching and
-cancellation that cannot delay final work behind a stale candidate.
+The installed build was subsequently accepted through manual use as much
+faster with no bothersome release delay. That observation establishes the
+practical acceptance outcome; it supplies no instrumented physical latency.
 
 ## Review and project state
 
@@ -102,6 +102,7 @@ was full; its native behavior and failure paths were checked locally.
 
 `ORCHESTRATION.html` already has unrelated uncommitted edits and is left with
 its owner. This qualification changes no milestone completion or dependency;
-the page would gain this latency follow-up and retain physical insertion as
-unverified. Private raw reports, review packets and package/rollback copies
+the page would gain this latency follow-up and its manual acceptance while
+retaining instrumented physical insertion as unverified. Private raw reports,
+review packets and rollback copies
 remain in the ignored `build/dictation-latency/` directory.
