@@ -911,8 +911,10 @@ class InsertionService:
         when any of it cannot be read — no confirmation is then
         possible."""
         total = self.host.number_of_characters(el)
+        if total is None:
+            return None
         sel = ax_range(self.host.attribute(el, "AXSelectedTextRange"))
-        if total is None or sel is None:
+        if sel is None:
             return None
         if lease.replace_selection and lease.selected_range:
             start, end = lease.selected_range

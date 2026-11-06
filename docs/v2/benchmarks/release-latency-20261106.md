@@ -17,6 +17,11 @@ before model loading. The request affects that thread and native threads that
 inherit its scheduling; it changes no process-wide priority. A refused or
 unavailable scheduling API leaves inference usable with inherited scheduling.
 
+Insertion skips a redundant selection read when the destination's character
+count is already unavailable. This preserves the existing unavailable pre-state
+and can avoid an extra synchronous Accessibility call before posting text.
+Native latency savings for this small change are unmeasured.
+
 ## Qualification
 
 Model: `local/LocalFlow-Cleanup-M2-Qwen3.5-4B-4bit`, snapshot
@@ -35,6 +40,7 @@ MLX-LM 0.31.3, Python 3.14.10, macOS on Apple silicon.
 | Application lifecycle | PASS: 14 cases |
 | Worker idle unload | PASS: 16 cases, including reload ordering and releasing the real engine/cache |
 | Thread scheduling | PASS: three cases; native child-thread QoS, unchanged calling-thread QoS, denied request and unavailable API |
+| Insertion races | PASS: 13 cases, including unreadable destinations, delayed consumption, selection changes, clipboard ownership and queued results |
 | Native insertion cohort | NOT RUN: the launching terminal lacks Accessibility permission |
 | Physical Fn release to visible text | NOT RUN |
 
