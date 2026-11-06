@@ -5,9 +5,10 @@ Loads the real cleanup model, so it is skipped unless enabled:
     LOCALFLOW_PREFIX_CACHE_PARITY=1 .venv/bin/python -m unittest \
         tests.v2.cleanup.test_prompt_cache_parity
 
-LOCALFLOW_PARITY_MODEL overrides the model. Token identity depends on the
-prefix being whole PREFILL_STEP blocks and on mlx-lm's prefill loop, which
-is not pinned, so each run reports the mlx-lm version it checked.
+LOCALFLOW_PARITY_MODEL overrides the model. Both the original block-aligned
+cache and the full static-prefix cache are compared with uncached generation.
+The full-prefix cache changes prefill grouping, so parity is an empirical
+qualification of the model and mlx-lm version reported by each run.
 """
 import os
 import pathlib
@@ -36,6 +37,8 @@ class PrefixCacheParityTests(unittest.TestCase):
         import mlx_lm
         cls.version = mlx_lm.__version__
         cls.runner = ModelRunner(MODEL)
+        cls.runner.use_lookup = False
+        cls.runner.cache_full_prefix = False
         cls.runner.load()
 
     def cleanup_messages(self, transcript):
@@ -77,12 +80,14 @@ class PrefixCacheParityTests(unittest.TestCase):
             with self.subTest(prompt=name):
                 prompt = self.runner.render_cached(messages)
                 expected = self.uncached(prompt)
-                self.runner._prefix_caches.clear()
-                for attempt in ("cold", "warm"):
-                    got = [r.token for r in self.runner.stream(prompt, TOKENS)]
-                    self.assertEqual(got, expected, f"{name} {attempt}, mlx_lm {self.version}")
-                # The cleanup prefix spans a whole block; the corrections one does not.
-                self.assertEqual(len(self.runner._prefix_caches), 0 if name == "corrections" else 1)
+                for full in (False, True):
+                    self.runner.cache_full_prefix = full
+                    self.runner._prefix_caches.clear()
+                    for attempt in ("cold", "warm"):
+                        got = [r.token for r in self.runner.stream(prompt, TOKENS)]
+                        self.assertEqual(got, expected, f"{name} {attempt} full={full}, mlx_lm {self.version}")
+                    self.assertEqual(len(self.runner._prefix_caches),
+                                     0 if name == "corrections" and not full else 1)
 
 
 if __name__ == "__main__":

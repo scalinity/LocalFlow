@@ -56,6 +56,26 @@ _WRITE_LOCK = threading.Lock()
 CLEANUP_IDLE_UNLOAD_S = 600.0
 
 
+def _set_inference_qos():
+    """Give the dedicated inference thread user-initiated scheduling on macOS.
+
+    Set this before loading MLX so newly created native threads can inherit it.
+    The thread exits with the worker; no process-wide priority is changed.
+    Return the native error code, or None where the API is unavailable.
+    """
+    if sys.platform != "darwin":
+        return None
+    try:
+        import ctypes
+        system = ctypes.CDLL("/usr/lib/libSystem.B.dylib")
+        setter = system.pthread_set_qos_class_self_np
+        setter.argtypes = [ctypes.c_uint, ctypes.c_int]
+        setter.restype = ctypes.c_int
+        return setter(0x19, 0)  # QOS_CLASS_USER_INITIATED, default relative priority
+    except (OSError, AttributeError):
+        return None
+
+
 class ProtocolError(Exception):
     """A request the worker refuses; ``code`` is a controlled token."""
 
@@ -736,6 +756,9 @@ class Worker:
                     "model_id": self._cleanup_model})
 
     def _gpu_loop(self):
+        if _set_inference_qos() not in (None, 0):
+            print("LocalFlow inference QoS unavailable; using inherited scheduling",
+                  file=sys.stderr)
         while True:
             task = self._next_task()
             if task is None:

@@ -36,6 +36,7 @@ class Model:
 class PromptCacheTests(unittest.TestCase):
     def setUp(self):
         self.runner = ModelRunner('fixture')
+        self.runner.cache_full_prefix = False
         self.runner._model = Model()
         self.runner._tokenizer = Tokenizer()
         self.prefix = 'Shared instruction. ' * 240
@@ -52,7 +53,7 @@ class PromptCacheTests(unittest.TestCase):
         suffix, branch = self.runner._cached_prompt(first)
         calls = len(self.runner._model.calls)
         self.assertGreater(calls, 0)
-        self.assertTrue(all(len(c) == 2048 for c in self.runner._model.calls))
+        self.assertTrue(all(0 < len(c) <= 2048 for c in self.runner._model.calls))
         self.assertNotIn(b'private', bytes(branch[0].state))
         self.assertIn(b'private alpha', bytes(suffix))
         branch[0].state.extend(b'private generated suffix')
@@ -63,11 +64,61 @@ class PromptCacheTests(unittest.TestCase):
         self.assertNotIn(b'private alpha', bytes(suffix2))
         self.assertIsNot(branch[0], branch2[0])
 
+    def test_lookup_draft_requires_cleanup_prompt_family(self):
+        from localflow.v2.cleanup import prompts
+        from localflow.v2.cleanup.engine import CORRECTIONS_INSTRUCTION
+        self.runner.render_cached(prompts.build_messages({'transcript': 'send report'}))
+        self.assertEqual(self.runner._draft[1], 'send report')
+        self.runner.render_cached([
+            {'role': 'system', 'content': CORRECTIONS_INSTRUCTION},
+            {'role': 'user', 'content': '{"transcript":"actually send report"}'}])
+        self.assertIsNone(self.runner._draft)
+
+    def test_malformed_payloads_clear_the_previous_draft(self):
+        from localflow.v2.cleanup import prompts
+        for payload in ('not json', '[]', 'null', '{"transcript": 4}',
+                        '{"transcript":""}', '{}'):
+            self.runner.render_cached(prompts.build_messages({'transcript': 'first'}))
+            self.assertIsNotNone(self.runner._draft)
+            self.runner.render_cached([
+                {'role': 'system', 'content': prompts.CONTRACT},
+                {'role': 'user', 'content': payload}])
+            self.assertIsNone(self.runner._draft)
+
+    def test_stream_dispatch_requires_exact_prompt_and_enabled_lookup(self):
+        from unittest.mock import patch
+        from localflow.v2.cleanup import prompts
+        prompt = self.runner.render_cached(prompts.build_messages({'transcript':'send report'}))
+        with patch('localflow.v2.cleanup.lookup.stream_lookup', return_value=iter(['lookup'])) as fast, \
+                patch('mlx_lm.generate.stream_generate', return_value=iter(['ordinary'])) as ordinary:
+            self.assertEqual(list(self.runner.stream(prompt, 10)), ['lookup'])
+            self.assertEqual(fast.call_count, 1)
+            self.assertEqual(list(self.runner.stream(prompt + ' changed', 10)), ['ordinary'])
+            self.runner.use_lookup = False
+            ordinary.return_value = iter(['disabled'])
+            self.assertEqual(list(self.runner.stream(prompt, 10)), ['disabled'])
+            self.assertEqual(fast.call_count, 1)
+
+    def test_full_static_prefix_caches_short_instructions_without_payload(self):
+        self.runner.cache_full_prefix = True
+        prompt = self.prompt('private first payload', 'Shared short instruction')
+        suffix, first = self.runner._cached_prompt(prompt)
+        self.assertNotIn(b'private', bytes(first[0].state))
+        self.assertEqual(bytes(first[0].state) + bytes(suffix), prompt.encode())
+        count = len(self.runner._model.calls)
+        first[0].state.extend(b'generated first result')
+        suffix, second = self.runner._cached_prompt(
+            self.prompt('different private payload', 'Shared short instruction'))
+        self.assertEqual(len(self.runner._model.calls), count)
+        self.assertNotIn(b'generated', bytes(second[0].state))
+        self.assertIn(b'different private payload', bytes(suffix))
+
     def test_changed_instruction_selects_different_cache_and_bound_is_finite(self):
         for prefix in ('A' * 5000, 'B' * 5000, 'C' * 5000):
             prompt = self.prompt('dictation', prefix)
             _, cache = self.runner._cached_prompt(prompt)
-            self.assertEqual(cache[0].state, list(prompt[:4096].encode()))
+            boundary = self.runner._rendered[1] if self.runner.cache_full_prefix else 4096
+            self.assertEqual(cache[0].state, list(prompt[:boundary].encode()))
         self.assertEqual(len(self.runner._prefix_caches), 2)
 
     def test_short_and_unknown_templates_use_the_original_prompt(self):
@@ -75,8 +126,12 @@ class PromptCacheTests(unittest.TestCase):
                          ('unrecognized template', None))
         # An encoded prompt with no whole cacheable block is passed on encoded.
         short = self.prompt('short', 'Short instruction.')
-        self.assertEqual(self.runner._cached_prompt(short), (list(short.encode()), None))
-        self.assertEqual(self.runner._model.calls, [])
+        suffix, cache = self.runner._cached_prompt(short)
+        if self.runner.cache_full_prefix:
+            self.assertEqual(cache[0].state + suffix, list(short.encode()))
+        else:
+            self.assertEqual((suffix, cache), (list(short.encode()), None))
+            self.assertEqual(self.runner._model.calls, [])
 
     def test_only_cleanup_renders_are_cached_and_draft_markers_do_not_move_the_turn(self):
         messages = [{"role": "system", "content": self.prefix},
@@ -103,6 +158,12 @@ class PromptCacheTests(unittest.TestCase):
         tokens = self.runner._tokenizer.encode(prompt, True)
         self.assertEqual(self.runner._cached_prompt(prompt), (tokens, None))
         self.assertEqual(self.runner._model.calls, [])
+
+
+class FullPrefixCacheTests(PromptCacheTests):
+    def setUp(self):
+        super().setUp()
+        self.runner.cache_full_prefix = True
 
 
 if __name__ == '__main__':

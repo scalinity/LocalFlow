@@ -174,7 +174,10 @@ class Recorder:
         journal_stats = {}
         if journal is not None:
             try:
-                journal_stats = journal.finalize()
+                # The complete capture is already in memory. Let the crash
+                # journal drain independently: a busy disk must not hold up
+                # transcription (or the main thread) after key release.
+                journal_stats = journal.finalize(timeout=0)
             except Exception as e:
                 journal_stats = {"degraded": True,
                                  "degrade_reason": type(e).__name__}
@@ -191,6 +194,7 @@ class Recorder:
             # writing. Journal state is crash-recovery diagnostics only,
             # never a discontinuity of the audio used (M03-AUDIT-08/19).
             "crash_journal": {
+                # Release-time snapshot; the writer may finish/degrade later.
                 "enabled": journal is not None,
                 "queue_dropped": journal_stats.get("queue_dropped", 0),
                 "degraded": journal_stats.get("degraded", False),

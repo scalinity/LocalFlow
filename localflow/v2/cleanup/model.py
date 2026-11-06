@@ -12,13 +12,13 @@ the engine and its tests import cleanly without MLX present.
 from __future__ import annotations
 
 import hashlib
+import json
 import re
 import copy
 from collections import OrderedDict
 
 # Prompt tokens per prefill forward pass, shared by the prefix cache and
-# generation. A cached prefix is whole blocks of this size, so the cached
-# and uncached paths process the prompt in the same groups.
+# generation. Full static-prefix caching also retains the final short block.
 PREFILL_STEP = 2048
 # Cached instruction prefixes, least recently used dropped first: one slot
 # each for the cleanup and the corrections prompt families.
@@ -55,6 +55,12 @@ class ModelRunner:
         self._prefix_caches = OrderedDict()
         # (prompt, offset of its final user turn) from the last render_cached.
         self._rendered = None
+        self._draft = None
+        self.use_lookup = True
+        self.cache_full_prefix = True
+        self.lookup_stats = None
+        self.last_prefix_tokens = 0
+        self.last_prefix_hit = False
         # mlx entry points the prefix cache uses, bound by load().
         self._mx = None
         self._make_prompt_cache = None
@@ -105,6 +111,17 @@ class ModelRunner:
         turn = final - len(_USER_TURN)
         self._rendered = (prompt, turn) if (
             final >= 0 and turn >= 0 and prompt[turn:final] == _USER_TURN) else None
+        self._draft = None
+        from . import prompts
+        if (self._rendered is not None and messages
+                and messages[0]["content"].startswith(prompts.CONTRACT)):
+            try:
+                payload = json.loads(messages[-1]["content"])
+                transcript = payload.get("transcript") if isinstance(payload, dict) else None
+                if isinstance(transcript, str) and transcript:
+                    self._draft = (prompt, transcript)
+            except (ValueError, TypeError):
+                pass  # Corrections and other prompt families use ordinary decoding.
         return prompt
 
     def engine(self, notifier=None):
@@ -116,15 +133,16 @@ class ModelRunner:
                              template_revision=self.template_revision)
 
     def _cached_prompt(self, prompt):
-        """Reuse only complete prefill blocks before the final user turn of a
-        prompt from render_cached; any other prompt is generated uncached.
+        """Reuse instructions before the final user turn of a cached render.
 
         Prefix tokens must match the actual whole-prompt tokenization. Each
         call branches from a private copy: no dictation or generated suffix
-        can become another call's history. Whole PREFILL_STEP blocks preserve
-        the uncached generator's prefill grouping for recurrent model layers.
+        can become another call's history. The block-only switch retains the
+        original prefill grouping for A/B qualification of recurrent models.
         """
         mx = self._mx
+        self.last_prefix_tokens = 0
+        self.last_prefix_hit = False
         if self._rendered is None or self._rendered[0] != prompt:
             return prompt, None
         boundary = self._rendered[1]
@@ -133,13 +151,15 @@ class ModelRunner:
         # Encoded exactly as stream_generate would, so an uncached prompt
         # is passed on as these tokens rather than encoded again.
         tokens = tok.encode(prompt, add_special_tokens=special)
-        if len(tokens) <= PREFILL_STEP:
+        if not self.cache_full_prefix and len(tokens) <= PREFILL_STEP:
             return tokens, None
         prefix = tok.encode(prompt[:boundary], add_special_tokens=special)
-        count = (len(prefix) // PREFILL_STEP) * PREFILL_STEP
+        count = (len(prefix) if self.cache_full_prefix else
+                 (len(prefix) // PREFILL_STEP) * PREFILL_STEP)
         if not count or tokens[:len(prefix)] != prefix or count >= len(tokens):
             return tokens, None
         key = tuple(prefix[:count])
+        self.last_prefix_hit = key in self._prefix_caches
         if key not in self._prefix_caches:
             cache = self._make_prompt_cache(self._model)
             for offset in range(0, count, PREFILL_STEP):
@@ -150,6 +170,7 @@ class ModelRunner:
             while len(self._prefix_caches) > PREFIX_CACHE_SLOTS:
                 self._prefix_caches.popitem(last=False)
         self._prefix_caches.move_to_end(key)
+        self.last_prefix_tokens = count
         # Generation writes into the copy's arrays; an mx.array update makes
         # a new array, so the stored prefix state is never changed.
         return tokens[count:], copy.deepcopy(self._prefix_caches[key])
@@ -159,6 +180,13 @@ class ModelRunner:
         from mlx_lm.generate import stream_generate
         from mlx_lm.sample_utils import make_sampler
         suffix, cache = self._cached_prompt(prompt)
+        self.lookup_stats = None
+        if self.use_lookup and max_tokens > 0 and self._draft is not None \
+                and self._draft[0] == prompt:
+            from .lookup import stream_lookup
+            source = self._tokenizer.encode(self._draft[1], add_special_tokens=False)
+            yield from stream_lookup(self, suffix, cache, source, max_tokens)
+            return
         yield from stream_generate(
             self._model, self._tokenizer, prompt=suffix,
             max_tokens=max_tokens, sampler=make_sampler(temp=0.0),

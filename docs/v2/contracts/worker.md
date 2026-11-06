@@ -72,6 +72,12 @@ across processes (S07). Worker stderr is drained into a bounded tail used
 only for fault diagnostics; event `detail` carries a size-capped, sanitized
 excerpt — transcripts never appear there.
 
+On macOS the dedicated inference thread requests `QOS_CLASS_USER_INITIATED`
+before loading either engine, so user-triggered work can receive appropriate
+scheduling under CPU contention. This is a thread scheduling request, not a
+process-wide priority change. A refused or unavailable API preserves inherited
+scheduling and does not fail a dictation.
+
 ## Memory diagnostics (off by default)
 
 With `LOCALFLOW_WORKER_MEMORY_DIAG=1` in the worker's environment (read once

@@ -252,6 +252,67 @@ def test_19_recorder_memory_complete_while_journal_degrades():
           " memory; journal degraded; no false live discontinuity")
 
 
+def test_release_does_not_wait_for_journal_writer(discard=False):
+    sd = native_shims.sounddevice()
+    with tmpdir() as td:
+        gate, entered, returned = (threading.Event() for _ in range(3))
+        original = cj.CaptureJournal._open_file
+
+        def held(self, *args, **kwargs):
+            entered.set()
+            gate.wait(10)
+            return original(self, *args, **kwargs)
+
+        cj.CaptureJournal._open_file = held
+        journal = None
+        thread = None
+        try:
+            recorder = audio_mod.Recorder(sample_rate=16000)
+            journal = cj.CaptureJournal(td, job_id="job-release",
+                                        sample_rate=16000)
+            recorder.journal = journal
+            recorder.start()
+            block = np.full((800, 1), 0.1, dtype=np.float32)
+            sd.streams[-1].callback(block, 800, None, None)
+            assert entered.wait(5), "writer never reached gate"
+            result = []
+
+            def stop():
+                result.append(recorder.stop())
+                returned.set()
+
+            thread = threading.Thread(target=stop)
+            thread.start()
+            assert returned.wait(1), "release waited for crash-journal disk I/O"
+            assert np.array_equal(result[0], block[:, 0])
+            stats = recorder.stats["crash_journal"]
+            assert stats["writer_alive"] and not stats["finalized"]
+            if discard:
+                journal.close_discard(join_timeout=0)
+            gate.set()
+            thread.join(5)
+            journal.finalize()
+            if discard:
+                assert not journal.blk_path.exists()
+                assert not journal._thread.is_alive()
+            else:
+                recovered = cj.reconstruct(journal.blk_path)
+                assert recovered.finalized
+                assert np.array_equal(recovered.samples, block[:, 0])
+        finally:
+            gate.set()
+            if thread is not None:
+                thread.join(5)
+            cj.CaptureJournal._open_file = original
+            if journal is not None:
+                journal.finalize()
+    print("ok  release returns complete audio before journal drains")
+
+
+def test_release_then_discard_while_writer_is_blocked():
+    test_release_does_not_wait_for_journal_writer(discard=True)
+
+
 CHILD = r"""
 import sys, time
 sys.path.insert(0, sys.argv[1])
@@ -370,6 +431,8 @@ def main():
     run([test_08_v1_integrity_matrix, test_08_v2_positions_crc_and_gaps,
          test_19_writer_overflow_persists_gap_positions,
          test_19_recorder_memory_complete_while_journal_degrades,
+         test_release_does_not_wait_for_journal_writer,
+         test_release_then_discard_while_writer_is_blocked,
          test_01_is_live_ownership, test_02_delayed_writer_cannot_recreate],
         "m03 remediation journal tests")
 
