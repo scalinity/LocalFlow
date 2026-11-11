@@ -144,12 +144,17 @@ def greedy_step(model, cache, tokens):
 
 
 def evaluate(model, cache, tokens):
-    """Advance ``cache`` by ``tokens`` without computing predictions."""
+    """Advance ``cache`` by ``tokens`` without computing predictions.
+
+    Lookup uses this only to replay accepted tokens. The evaluation is
+    asynchronous, as in generate_step: the GPU replays while the next
+    verification graph is built, and that step's result waits for it.
+    """
     import mlx.core as mx
     from mlx_lm.generate import generation_stream
     with mx.stream(generation_stream):
         model(mx.array([tokens]), cache=cache)
-        mx.eval([c.state for c in cache])
+        mx.async_eval([c.state for c in cache])
 
 
 def snapshot_cache(cache):
