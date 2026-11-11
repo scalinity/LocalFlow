@@ -9,6 +9,7 @@ full-token parity on the exact model/runtime is a deployment check.
 from __future__ import annotations
 
 import copy
+import functools
 import time
 
 MAX_MATCH = 4      # longest output suffix looked up in the transcript
@@ -102,6 +103,36 @@ def verified_tokens(model, cache, pending, source, *, max_tokens, eos_ids,
         pending = predicted[accepted]
 
 
+# The MLX model callables. They live at module level so that tests drive
+# the same functions production uses against real caches.
+
+def greedy_step(model, cache, tokens):
+    """Advance ``cache`` by ``tokens``; return the greedy token after each."""
+    import mlx.core as mx
+    logits = model(mx.array([tokens]), cache=cache)[0]
+    # Use the same arithmetic as the ordinary greedy sampler, including
+    # normalization: near ties can round differently without it.
+    scores = logits - mx.logsumexp(logits, axis=-1, keepdims=True)
+    return mx.argmax(scores, axis=-1).tolist()
+
+
+def evaluate(model, cache, tokens):
+    """Advance ``cache`` by ``tokens`` without computing predictions."""
+    import mlx.core as mx
+    model(mx.array([tokens]), cache=cache)
+    mx.eval([c.state for c in cache])
+
+
+def resume_ordinary(model, cache, pending, remaining, *, prefill_step):
+    """Continue with mlx_lm's asynchronous decoder from the accepted state."""
+    import mlx.core as mx
+    from mlx_lm.generate import generate_step
+    for token, _ in generate_step(mx.array([pending]), model,
+                                  prompt_cache=cache, max_tokens=remaining,
+                                  prefill_step_size=prefill_step):
+        yield token
+
+
 def stream_lookup(model, tokenizer, tokens, cache, source, max_tokens, *,
                   prefill_step, stats):
     """Stream verified generation as mlx_lm ``GenerationResponse`` objects.
@@ -111,29 +142,12 @@ def stream_lookup(model, tokenizer, tokens, cache, source, max_tokens, *,
     encoded transcript; ``stats`` receives the per-call counters.
     """
     import mlx.core as mx
-    from mlx_lm.generate import (GenerationResponse, generate_step,
-                                 generation_stream, wired_limit)
+    from mlx_lm.generate import (GenerationResponse, generation_stream,
+                                 wired_limit)
 
     eos = tokenizer.eos_token_ids
     prompt_size = len(tokens)
-
-    def evaluate(model, cache, tokens):
-        model(mx.array([tokens]), cache=cache)
-        mx.eval([c.state for c in cache])
-
-    def step(model, cache, tokens):
-        logits = model(mx.array([tokens]), cache=cache)[0]
-        # Use the same arithmetic as the ordinary greedy sampler, including
-        # normalization: near ties can round differently without it.
-        scores = logits - mx.logsumexp(logits, axis=-1, keepdims=True)
-        return mx.argmax(scores, axis=-1).tolist()
-
-    def fallback(model, cache, pending, remaining):
-        # Resume ordinary asynchronous decoding from the accepted state.
-        for token, _ in generate_step(mx.array([pending]), model,
-                prompt_cache=cache, max_tokens=remaining,
-                prefill_step_size=prefill_step):
-            yield token
+    fallback = functools.partial(resume_ordinary, prefill_step=prefill_step)
 
     with wired_limit(model, [generation_stream]), mx.stream(generation_stream):
         started = time.perf_counter()
@@ -142,14 +156,14 @@ def stream_lookup(model, tokenizer, tokens, cache, source, max_tokens, *,
             evaluate(model, cache, tokens[:chunk])
             tokens = tokens[chunk:]
             mx.clear_cache()
-        pending = step(model, cache, tokens)[-1]
+        pending = greedy_step(model, cache, tokens)[-1]
         prompt_time = time.perf_counter() - started
         started = time.perf_counter()
         detokenizer = tokenizer.detokenizer
         detokenizer.reset()
         for generated, token in enumerate(verified_tokens(
                 model, cache, pending, source, max_tokens=max_tokens,
-                eos_ids=eos, step=step, evaluate=evaluate,
+                eos_ids=eos, step=greedy_step, evaluate=evaluate,
                 stats=stats, fallback=fallback), 1):
             is_eos = token in eos
             finished = is_eos or generated == max_tokens

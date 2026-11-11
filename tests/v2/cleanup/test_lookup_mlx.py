@@ -9,6 +9,7 @@ import importlib
 import importlib.util
 import pathlib
 import sys
+import types
 import unittest
 from unittest.mock import patch
 
@@ -23,61 +24,102 @@ if HAVE_MLX:
     from mlx_lm.models.qwen3_5 import TextModel, TextModelArgs
     from mlx_lm.tokenizer_utils import TokenizerWrapper
 
-from localflow.v2.cleanup.lookup import stream_lookup, verified_tokens
+from localflow.v2.cleanup import lookup
+from localflow.v2.cleanup.lookup import (evaluate, greedy_step, resume_ordinary,
+                                         stream_lookup, verified_tokens)
+
+
+def tiny_qwen():
+    """An untrained two-layer Qwen3.5: one recurrent and one attention layer."""
+    mx.random.seed(17)
+    model = TextModel(TextModelArgs(model_type='qwen3_5', hidden_size=32,
+        intermediate_size=64, num_hidden_layers=2, num_attention_heads=2,
+        num_key_value_heads=1, head_dim=16, vocab_size=32,
+        linear_num_value_heads=2, linear_num_key_heads=1,
+        linear_key_head_dim=8, linear_value_head_dim=8,
+        full_attention_interval=2))
+    model.train()  # CPU recurrent operations, without a Metal kernel.
+    return model
+
+
+def disagree_on_third(baseline):
+    """A proposal that agrees twice and then differs, even if the untrained
+    model happens to repeat a token indefinitely."""
+    def wrong(history, source, width):
+        start = len(history)
+        draft = baseline[start:start + width]
+        if len(draft) > 2:
+            draft[2] = (draft[2] + 1) % 32
+        return draft
+    return wrong
+
+
+@contextlib.contextmanager
+def cpu_generation():
+    gen = importlib.import_module('mlx_lm.generate')
+    with mx.stream(mx.cpu), \
+            patch.object(gen, 'generation_stream', mx.new_stream(mx.cpu)), \
+            patch.object(gen, 'wired_limit', lambda *a: contextlib.nullcontext()):
+        yield gen
 
 
 @unittest.skipUnless(HAVE_MLX, 'MLX is not installed')
 class LookupMLXTests(unittest.TestCase):
     def test_rejected_draft_restores_real_recurrent_and_attention_caches(self):
-        with mx.stream(mx.cpu):
-            mx.random.seed(17)
-            model = TextModel(TextModelArgs(model_type='qwen3_5', hidden_size=32,
-                intermediate_size=64, num_hidden_layers=2, num_attention_heads=2,
-                num_key_value_heads=1, head_dim=16, vocab_size=32,
-                linear_num_value_heads=2, linear_num_key_heads=1,
-                linear_key_head_dim=8, linear_value_head_dim=8,
-                full_attention_interval=2))
-            model.train()  # CPU recurrent operations, without a Metal kernel.
+        with cpu_generation():
+            model = tiny_qwen()
             prefix = make_prompt_cache(model)
-            def step(model, cache, tokens):
-                logits = model(mx.array([tokens]), cache=cache)[0]
-                return mx.argmax(logits - mx.logsumexp(logits, axis=-1, keepdims=True), axis=-1).tolist()
-            def evaluate(model, cache, tokens):
-                model(mx.array([tokens]), cache=cache)
-                mx.eval([c.state for c in cache])
-            first = step(model, prefix, [4, 5])[-1]
+            first = greedy_step(model, prefix, [4, 5])[-1]
             frozen = [[None if a is None else a.tolist() for a in c.state] for c in prefix]
             baseline = [first]
             baseline_cache = copy.deepcopy(prefix)
             for _ in range(15):
-                baseline.append(step(model, baseline_cache, [baseline[-1]])[0])
+                baseline.append(greedy_step(model, baseline_cache, [baseline[-1]])[0])
             stats = {}
-            # Force a proposal that agrees twice and then differs, even if
-            # the untrained model happens to repeat a token indefinitely.
-            def wrong(history, source, width):
-                start = len(history)
-                draft = baseline[start:start + width]
-                if len(draft) > 2:
-                    draft[2] = (draft[2] + 1) % 32
-                return draft
-            with patch('localflow.v2.cleanup.lookup.propose', side_effect=wrong):
+            with patch.object(lookup, 'propose', side_effect=disagree_on_third(baseline)):
                 got = list(verified_tokens(model, copy.deepcopy(prefix), first, [],
-                    max_tokens=16, eos_ids=set(), step=step, evaluate=evaluate, stats=stats))
+                    max_tokens=16, eos_ids=set(), step=greedy_step, evaluate=evaluate,
+                    stats=stats))
             self.assertEqual(got, baseline)
             self.assertGreater(stats['replay_rounds'], 0)
             self.assertGreater(stats['accepted_tokens'], 0)
             self.assertEqual(frozen, [[None if a is None else a.tolist() for a in c.state] for c in prefix])
-            gen = importlib.import_module('mlx_lm.generate')
-            def fallback(model, cache, pending, remaining):
-                for token, _ in gen.generate_step(mx.array([pending]), model,
-                        prompt_cache=cache, max_tokens=remaining):
-                    yield token
-            with patch.object(gen, 'generation_stream', mx.new_stream(mx.cpu)):
-                got = list(verified_tokens(model, copy.deepcopy(prefix), first, [],
-                    max_tokens=16, eos_ids=set(), step=step, evaluate=evaluate,
-                    stats=stats, fallback=fallback))
+            fallback = lambda *args: resume_ordinary(*args, prefill_step=2048)
+            got = list(verified_tokens(model, copy.deepcopy(prefix), first, [],
+                max_tokens=16, eos_ids=set(), step=greedy_step, evaluate=evaluate,
+                stats=stats, fallback=fallback))
             self.assertEqual(got, baseline)
             self.assertEqual(stats['fallbacks'], 1)
+
+    def test_chunked_prefill_and_replay_match_the_library_decoder(self):
+        class Detokenizer:
+            last_segment = ''
+            def reset(self): pass
+            def add_token(self, token): pass
+            def finalize(self): pass
+        tok = types.SimpleNamespace(eos_token_ids=set(), detokenizer=Detokenizer())
+        # This prompt continues differently once replay corrupts the cache
+        # (checked by disabling the checkpoint restore); not every prompt
+        # does for an untrained model.
+        prompt = [1, 2, 3, 9, 8, 4, 5]
+        with cpu_generation() as gen:
+            model = tiny_qwen()
+            # A three-token prefill step splits the prompt into 3 + 3 tokens
+            # before the final one, as generate_step groups it.
+            expected = [token for token, _ in gen.generate_step(
+                mx.array(prompt), model, max_tokens=12, prefill_step_size=3)]
+            no_proposals = {}
+            got = [r.token for r in stream_lookup(model, tok, prompt, make_prompt_cache(model),
+                                                  [], 12, prefill_step=3, stats=no_proposals)]
+            self.assertEqual(got, expected)
+            self.assertEqual(no_proposals['fallbacks'], 1)
+            replayed = {}
+            with patch.object(lookup, 'propose', side_effect=disagree_on_third(expected)):
+                got = [r.token for r in stream_lookup(model, tok, prompt, make_prompt_cache(model),
+                                                      [], 12, prefill_step=3, stats=replayed)]
+            self.assertEqual(got, expected)
+            self.assertGreater(replayed['replay_rounds'], 0)
+            self.assertGreater(replayed['accepted_tokens'], 0)
 
     def test_adapter_matches_library_for_eos_limits_and_utf8_boundaries(self):
         gen = importlib.import_module('mlx_lm.generate')
