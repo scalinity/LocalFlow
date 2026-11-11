@@ -19,20 +19,26 @@ MISS_LIMIT = 3     # consecutive rounds accepting nothing before ordinary decodi
 CLEAR_EVERY = 256  # mx.clear_cache cadence, as in mlx_lm.generate_step
 
 
-def propose(history, source, width=DRAFT_WIDTH):
-    """Propose up to ``width`` transcript tokens to verify next.
+def propose(history, source, width=DRAFT_WIDTH, cursor=0):
+    """Return ``(end, tokens)``: up to ``width`` transcript tokens to verify.
 
     Find the longest suffix of the output so far (up to MAX_MATCH tokens)
-    inside ``source`` and return the tokens after its first occurrence.
-    An occurrence that ends the transcript has nothing after it and is
-    skipped.
+    in ``source``. Of its occurrences, take the first that ends at or after
+    ``cursor``, where the last verified proposal stopped, so a repeated
+    phrase continues from the current place rather than an earlier one;
+    with none there, take the first. ``end`` is where that occurrence ends
+    and the proposal follows it. An occurrence that ends the transcript
+    means the output has caught up with it: nothing is proposed, rather
+    than a shorter suffix matched earlier in the transcript.
     """
     for size in range(min(MAX_MATCH, len(history)), 0, -1):
         tail = history[-size:]
-        for pos in range(len(source) - size):
-            if source[pos:pos + size] == tail:
-                return source[pos + size:pos + size + width]
-    return []
+        ends = [pos + size for pos in range(len(source) - size + 1)
+                if source[pos:pos + size] == tail]
+        if ends:
+            end = next((e for e in ends if e >= cursor), ends[0])
+            return end, source[end:end + width]
+    return cursor, []
 
 
 def _restore_all(cache, saved):
@@ -65,6 +71,7 @@ def verified_tokens(model, cache, pending, source, *, max_tokens, eos_ids,
     """
     history = []
     misses = 0
+    cursor = 0  # transcript position just after the verified proposal
     stats = stats if stats is not None else {}
     for name in ("drafted_tokens", "accepted_tokens", "replay_rounds",
                  "full_rounds", "fallbacks", "decode_calls"):
@@ -82,9 +89,10 @@ def verified_tokens(model, cache, pending, source, *, max_tokens, eos_ids,
                 if token in eos_ids:
                     return
             return
-        draft = (propose(history, source,
-                         min(DRAFT_WIDTH, max_tokens - len(history) - 1))
-                 if drafting else [])
+        start, draft = (propose(history, source,
+                                min(DRAFT_WIDTH, max_tokens - len(history) - 1),
+                                cursor)
+                        if drafting else (cursor, []))
         saved = snapshot(cache) if draft else None
         predicted = step(model, cache, [pending] + draft)
         stats["decode_calls"] += 1
@@ -107,6 +115,7 @@ def verified_tokens(model, cache, pending, source, *, max_tokens, eos_ids,
                 evaluate(model, cache, [pending] + draft[:accepted])
             else:
                 stats["full_rounds"] += 1
+            cursor = start + accepted
         # A round without a proposal also accepts nothing.
         misses = 0 if accepted else misses + 1
         pending = predicted[accepted]

@@ -62,7 +62,29 @@ class LookupTests(unittest.TestCase):
         self.assertEqual(calls, [])
 
     def test_longest_suffix_disambiguates_repeated_tokens(self):
-        self.assertEqual(propose([7, 1, 2], [1, 2, 9, 7, 1, 2, 3]), [3])
+        self.assertEqual(propose([7, 1, 2], [1, 2, 9, 7, 1, 2, 3]), (6, [3]))
+
+    def test_repeated_phrase_continues_from_the_cursor(self):
+        # "call the vendor ... call the bank": past the first phrase, the
+        # same suffix continues from its second occurrence.
+        source = [5, 6, 7, 1, 8, 5, 6, 7, 2]
+        self.assertEqual(propose([5, 6, 7], source), (3, [1, 8, 5, 6, 7, 2]))
+        self.assertEqual(propose([5, 6, 7], source, cursor=5), (8, [2]))
+        # With no occurrence at or after the cursor, the first one is used.
+        self.assertEqual(propose([5, 6, 7], source, cursor=9), (3, [1, 8, 5, 6, 7, 2]))
+
+    def test_caught_up_output_proposes_nothing(self):
+        # Output equal to the whole transcript: its suffix ends the source,
+        # so no shorter, earlier match ("." -> " Then call.") is proposed.
+        source = [10, 11, 12, 13, 14, 12]
+        self.assertEqual(propose(source, source, cursor=6), (6, []))
+
+    def test_realigned_proposal_avoids_a_second_replay(self):
+        # The model inserts 9 into a repeated phrase. After the insertion the
+        # proposal continues from the second "1 5 6 7", not the first.
+        target = [1, 5, 6, 7, 2, 9, 1, 5, 6, 7, 3, 0]
+        _, replays = self.generate(target, [1, 5, 6, 7, 2, 1, 5, 6, 7, 3])
+        self.assertEqual(len(replays), 1)
 
     def test_exception_consumes_private_branch_only(self):
         def step(model, cache, tokens):

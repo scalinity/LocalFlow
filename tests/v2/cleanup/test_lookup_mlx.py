@@ -46,12 +46,12 @@ def tiny_qwen():
 def disagree_on_third(baseline):
     """A proposal that agrees twice and then differs, even if the untrained
     model happens to repeat a token indefinitely."""
-    def wrong(history, source, width):
+    def wrong(history, source, width, cursor):
         start = len(history)
         draft = baseline[start:start + width]
         if len(draft) > 2:
             draft[2] = (draft[2] + 1) % 32
-        return draft
+        return cursor, draft
     return wrong
 
 
