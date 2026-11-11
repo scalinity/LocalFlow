@@ -17,7 +17,13 @@ CLEAR_EVERY = 256  # mx.clear_cache cadence, as in mlx_lm.generate_step
 
 
 def propose(history, source, width=DRAFT_WIDTH):
-    """Continue the longest (up to four tokens) matching source suffix."""
+    """Propose up to ``width`` transcript tokens to verify next.
+
+    Find the longest suffix of the output so far (up to MAX_MATCH tokens)
+    inside ``source`` and return the tokens after its first occurrence.
+    An occurrence that ends the transcript has nothing after it and is
+    skipped.
+    """
     for size in range(min(MAX_MATCH, len(history)), 0, -1):
         tail = history[-size:]
         for pos in range(len(source) - size):
@@ -30,10 +36,21 @@ def verified_tokens(model, cache, pending, source, *, max_tokens, eos_ids,
                     step, evaluate, stats=None, fallback=None):
     """Yield verified tokens; ``cache`` excludes the pending token.
 
-    ``step`` consumes tokens and returns the target's greedy predictions.
-    Keeping the state machine independent of MLX permits adverse-cache tests.
+    The model callables keep this state machine independent of MLX, which
+    permits adverse-cache tests:
+
+    - ``step(model, cache, tokens)`` advances the cache by ``tokens`` and
+      returns the target's greedy prediction after each of them.
+    - ``evaluate(model, cache, tokens)`` advances the cache by ``tokens``
+      and returns nothing; it replays the accepted part of a rejected
+      proposal after the checkpoint is restored.
+    - ``fallback(model, cache, pending, remaining)``, when given, yields up
+      to ``remaining`` tokens after ``pending`` with ordinary decoding. It
+      takes over after MISS_LIMIT consecutive rounds that accept nothing.
+
     The caller supplies a private disposable cache; model calls consume it,
     including on failure. Never pass the stored reusable prefix itself.
+    ``stats``, when given, receives the per-call counters.
     """
     history = []
     misses = 0
