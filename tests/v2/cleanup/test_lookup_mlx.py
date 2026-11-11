@@ -154,8 +154,14 @@ class LookupMLXTests(unittest.TestCase):
                     with self.subTest(budget=budget, source=source):
                         expected = list(gen.stream_generate(model, tok, [13], max_tokens=budget, prompt_cache=[]))
                         stats = {}
-                        actual = list(stream_lookup(model, tok, [13], [], source, budget,
-                                                    prefill_step=2048, stats=stats))
+                        caller_stream = mx.default_stream(mx.default_device())
+                        actual = []
+                        for response in stream_lookup(model, tok, [13], [], source, budget,
+                                                      prefill_step=2048, stats=stats):
+                            # The generation stream is not left as the
+                            # caller's default between tokens.
+                            self.assertEqual(mx.default_stream(mx.default_device()), caller_stream)
+                            actual.append(response)
                         fields = lambda rows: [(r.text, r.token, r.finish_reason, r.generation_tokens) for r in rows]
                         self.assertEqual(fields(actual), fields(expected))
                         if not source and budget > 4:

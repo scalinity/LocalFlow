@@ -118,23 +118,29 @@ def prefill(mx, model, cache, tokens, step):
 
 
 # The MLX model callables. They live at module level so that tests drive
-# the same functions production uses against real caches.
+# the same functions production uses against real caches. Each runs its
+# model call on mlx_lm's generation stream, as generate_step does; the
+# stream is not held across the adapter's yields.
 
 def greedy_step(model, cache, tokens):
     """Advance ``cache`` by ``tokens``; return the greedy token after each."""
     import mlx.core as mx
-    logits = model(mx.array([tokens]), cache=cache)[0]
-    # Use the same arithmetic as the ordinary greedy sampler, including
-    # normalization: near ties can round differently without it.
-    scores = logits - mx.logsumexp(logits, axis=-1, keepdims=True)
-    return mx.argmax(scores, axis=-1).tolist()
+    from mlx_lm.generate import generation_stream
+    with mx.stream(generation_stream):
+        logits = model(mx.array([tokens]), cache=cache)[0]
+        # Use the same arithmetic as the ordinary greedy sampler, including
+        # normalization: near ties can round differently without it.
+        scores = logits - mx.logsumexp(logits, axis=-1, keepdims=True)
+        return mx.argmax(scores, axis=-1).tolist()
 
 
 def evaluate(model, cache, tokens):
     """Advance ``cache`` by ``tokens`` without computing predictions."""
     import mlx.core as mx
-    model(mx.array([tokens]), cache=cache)
-    mx.eval([c.state for c in cache])
+    from mlx_lm.generate import generation_stream
+    with mx.stream(generation_stream):
+        model(mx.array([tokens]), cache=cache)
+        mx.eval([c.state for c in cache])
 
 
 def resume_ordinary(model, cache, pending, remaining, *, prefill_step):
@@ -154,6 +160,11 @@ def stream_lookup(model, tokenizer, tokens, cache, source, max_tokens, *,
     ``tokens`` is the encoded prompt after any cached prefix and ``cache`` a
     private cache that already holds everything before it. ``source`` is the
     encoded transcript; ``stats`` receives the per-call counters.
+
+    Responses match ``mlx_lm.stream_generate`` field for field except two
+    that nothing in LocalFlow reads: ``logprobs`` is None, and
+    ``from_draft`` is False even for accepted proposals, because every
+    emitted token is the target model's own greedy choice.
     """
     import mlx.core as mx
     from mlx_lm.generate import (GenerationResponse, generation_stream,
@@ -163,9 +174,11 @@ def stream_lookup(model, tokenizer, tokens, cache, source, max_tokens, *,
     prompt_size = len(tokens)
     fallback = functools.partial(resume_ordinary, prefill_step=prefill_step)
 
-    with wired_limit(model, [generation_stream]), mx.stream(generation_stream):
+    # Like stream_generate, only the wired limit spans the yields.
+    with wired_limit(model, [generation_stream]):
         started = time.perf_counter()
-        prefill(mx, model, cache, tokens[:-1], prefill_step)
+        with mx.stream(generation_stream):
+            prefill(mx, model, cache, tokens[:-1], prefill_step)
         pending = greedy_step(model, cache, tokens[-1:])[-1]
         prompt_time = time.perf_counter() - started
         started = time.perf_counter()
