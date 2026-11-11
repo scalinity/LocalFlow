@@ -1,9 +1,10 @@
 """Greedy cleanup generation with transcript-token proposals.
 
 The transcript supplies guesses only. The target model verifies every token.
-On rejection, replay from a private checkpoint instead of trimming the cache:
-Qwen3.5's recurrent layers cannot roll their state back by token count.
-Batch arithmetic can differ from singleton decoding near numerical ties;
+On rejection, restore a checkpoint and replay the accepted tokens instead of
+trimming the whole cache: Qwen3.5's recurrent layers cannot roll their state
+back by token count. Its attention layers can, so their checkpoint is just
+an offset. Batch arithmetic can differ from singleton decoding near numerical ties;
 full-token parity on the exact model/runtime is a deployment check.
 """
 from __future__ import annotations
@@ -34,8 +35,13 @@ def propose(history, source, width=DRAFT_WIDTH):
     return []
 
 
+def _restore_all(cache, saved):
+    cache[:] = saved
+
+
 def verified_tokens(model, cache, pending, source, *, max_tokens, eos_ids,
-                    step, evaluate, stats=None, fallback=None):
+                    step, evaluate, stats=None, fallback=None,
+                    snapshot=copy.deepcopy, restore=_restore_all):
     """Yield verified tokens; ``cache`` excludes the pending token.
 
     The model callables keep this state machine independent of MLX, which
@@ -49,6 +55,9 @@ def verified_tokens(model, cache, pending, source, *, max_tokens, eos_ids,
     - ``fallback(model, cache, pending, remaining)``, when given, yields up
       to ``remaining`` tokens after ``pending`` with ordinary decoding. It
       takes over after MISS_LIMIT consecutive rounds that accept nothing.
+    - ``snapshot(cache)`` saves what ``restore(cache, saved)`` needs to put
+      the cache back as it was before a proposal; the defaults copy and
+      replace the whole cache.
 
     The caller supplies a private disposable cache; model calls consume it,
     including on failure. Never pass the stored reusable prefix itself.
@@ -76,7 +85,7 @@ def verified_tokens(model, cache, pending, source, *, max_tokens, eos_ids,
         draft = (propose(history, source,
                          min(DRAFT_WIDTH, max_tokens - len(history) - 1))
                  if drafting else [])
-        checkpoint = copy.deepcopy(cache) if draft else None
+        saved = snapshot(cache) if draft else None
         predicted = step(model, cache, [pending] + draft)
         stats["decode_calls"] += 1
         stats["drafted_tokens"] += len(draft)
@@ -91,7 +100,7 @@ def verified_tokens(model, cache, pending, source, *, max_tokens, eos_ids,
                 return
         if draft:
             if accepted < len(draft):
-                cache[:] = checkpoint
+                restore(cache, saved)
                 stats["replay_rounds"] += 1
                 # Advancing by accepted tokens alone restores recurrent state;
                 # the rejected suffix must never influence subsequent tokens.
@@ -143,6 +152,30 @@ def evaluate(model, cache, tokens):
         mx.eval([c.state for c in cache])
 
 
+def snapshot_cache(cache):
+    """Checkpoint a model cache without holding its attention buffers.
+
+    A KVCache writes keys and values into its buffers in place and reads
+    only the first ``offset`` positions, so its offset is a complete
+    checkpoint: the replay overwrites anything past it. A deep copy would
+    keep a second reference to those buffers and make the next write copy
+    every layer's keys and values (about 80 MiB for the cleanup prompt).
+    Other caches, such as Qwen3.5's recurrent state, replace their arrays on
+    update, so a deep copy shares them at no cost.
+    """
+    from mlx_lm.models.cache import KVCache
+    return [c.offset if type(c) is KVCache else copy.deepcopy(c) for c in cache]
+
+
+def restore_cache(cache, saved):
+    """Undo a verification step from a ``snapshot_cache`` checkpoint."""
+    for i, entry in enumerate(saved):
+        if isinstance(entry, int):
+            cache[i].trim(cache[i].offset - entry)
+        else:
+            cache[i] = entry
+
+
 def resume_ordinary(model, cache, pending, remaining, *, prefill_step):
     """Continue with mlx_lm's asynchronous decoder from the accepted state."""
     import mlx.core as mx
@@ -187,7 +220,8 @@ def stream_lookup(model, tokenizer, tokens, cache, source, max_tokens, *,
         for generated, token in enumerate(verified_tokens(
                 model, cache, pending, source, max_tokens=max_tokens,
                 eos_ids=eos, step=greedy_step, evaluate=evaluate,
-                stats=stats, fallback=fallback), 1):
+                stats=stats, fallback=fallback, snapshot=snapshot_cache,
+                restore=restore_cache), 1):
             is_eos = token in eos
             finished = is_eos or generated == max_tokens
             if not is_eos:

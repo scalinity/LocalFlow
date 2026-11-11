@@ -25,7 +25,8 @@ if HAVE_MLX:
     from mlx_lm.tokenizer_utils import TokenizerWrapper
 
 from localflow.v2.cleanup import lookup
-from localflow.v2.cleanup.lookup import (evaluate, greedy_step, resume_ordinary,
+from localflow.v2.cleanup.lookup import (evaluate, greedy_step, restore_cache,
+                                         resume_ordinary, snapshot_cache,
                                          stream_lookup, verified_tokens)
 
 
@@ -75,15 +76,18 @@ class LookupMLXTests(unittest.TestCase):
             baseline_cache = copy.deepcopy(prefix)
             for _ in range(15):
                 baseline.append(greedy_step(model, baseline_cache, [baseline[-1]])[0])
-            stats = {}
-            with patch.object(lookup, 'propose', side_effect=disagree_on_third(baseline)):
-                got = list(verified_tokens(model, copy.deepcopy(prefix), first, [],
-                    max_tokens=16, eos_ids=set(), step=greedy_step, evaluate=evaluate,
-                    stats=stats))
-            self.assertEqual(got, baseline)
-            self.assertGreater(stats['replay_rounds'], 0)
-            self.assertGreater(stats['accepted_tokens'], 0)
-            self.assertEqual(frozen, [[None if a is None else a.tolist() for a in c.state] for c in prefix])
+            # Whole-cache copies, then the production per-layer checkpoint.
+            for checkpoints in ({}, {'snapshot': snapshot_cache, 'restore': restore_cache}):
+                stats = {}
+                with self.subTest(checkpoints=sorted(checkpoints)), \
+                        patch.object(lookup, 'propose', side_effect=disagree_on_third(baseline)):
+                    got = list(verified_tokens(model, copy.deepcopy(prefix), first, [],
+                        max_tokens=16, eos_ids=set(), step=greedy_step, evaluate=evaluate,
+                        stats=stats, **checkpoints))
+                    self.assertEqual(got, baseline)
+                    self.assertGreater(stats['replay_rounds'], 0)
+                    self.assertGreater(stats['accepted_tokens'], 0)
+                    self.assertEqual(frozen, [[None if a is None else a.tolist() for a in c.state] for c in prefix])
             fallback = lambda *args: resume_ordinary(*args, prefill_step=2048)
             got = list(verified_tokens(model, copy.deepcopy(prefix), first, [],
                 max_tokens=16, eos_ids=set(), step=greedy_step, evaluate=evaluate,
