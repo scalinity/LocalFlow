@@ -9,6 +9,7 @@ full-token parity on the exact model/runtime is a deployment check.
 from __future__ import annotations
 
 import copy
+import time
 
 MAX_MATCH = 4      # longest output suffix looked up in the transcript
 DRAFT_WIDTH = 8    # proposed tokens per verification batch
@@ -55,8 +56,8 @@ def verified_tokens(model, cache, pending, source, *, max_tokens, eos_ids,
     history = []
     misses = 0
     stats = stats if stats is not None else {}
-    for name in ('drafted_tokens', 'accepted_tokens', 'replay_rounds',
-                 'full_rounds', 'fallbacks', 'decode_calls'):
+    for name in ("drafted_tokens", "accepted_tokens", "replay_rounds",
+                 "full_rounds", "fallbacks", "decode_calls"):
         stats[name] = 0
     while len(history) < max_tokens:
         history.append(pending)
@@ -65,7 +66,7 @@ def verified_tokens(model, cache, pending, source, *, max_tokens, eos_ids,
             return
         drafting = misses < MISS_LIMIT
         if not drafting and fallback is not None:
-            stats['fallbacks'] += 1
+            stats["fallbacks"] += 1
             for token in fallback(model, cache, pending, max_tokens - len(history)):
                 yield token
                 if token in eos_ids:
@@ -76,46 +77,45 @@ def verified_tokens(model, cache, pending, source, *, max_tokens, eos_ids,
                  if drafting else [])
         checkpoint = copy.deepcopy(cache) if draft else None
         predicted = step(model, cache, [pending] + draft)
-        stats['decode_calls'] += 1
-        stats['drafted_tokens'] += len(draft)
+        stats["decode_calls"] += 1
+        stats["drafted_tokens"] += len(draft)
         accepted = 0
         while accepted < len(draft) and draft[accepted] == predicted[accepted]:
             token = draft[accepted]
             history.append(token)
             accepted += 1
-            stats['accepted_tokens'] += 1
+            stats["accepted_tokens"] += 1
             yield token
             if token in eos_ids:
                 return
         if draft:
             if accepted < len(draft):
                 cache[:] = checkpoint
-                stats['replay_rounds'] += 1
+                stats["replay_rounds"] += 1
                 # Advancing by accepted tokens alone restores recurrent state;
                 # the rejected suffix must never influence subsequent tokens.
                 evaluate(model, cache, [pending] + draft[:accepted])
             else:
-                stats['full_rounds'] += 1
+                stats["full_rounds"] += 1
         # A round without a proposal also accepts nothing.
         misses = 0 if accepted else misses + 1
         pending = predicted[accepted]
 
 
-def stream_lookup(runner, suffix, cache, source, max_tokens):
-    """Adapt verified generation to the existing runner stream interface."""
-    import time
+def stream_lookup(model, tokenizer, tokens, cache, source, max_tokens, *,
+                  prefill_step, stats):
+    """Stream verified generation as mlx_lm ``GenerationResponse`` objects.
+
+    ``tokens`` is the encoded prompt after any cached prefix and ``cache`` a
+    private cache that already holds everything before it. ``source`` is the
+    encoded transcript; ``stats`` receives the per-call counters.
+    """
     import mlx.core as mx
     from mlx_lm.generate import (GenerationResponse, generate_step,
                                  generation_stream, wired_limit)
-    from .model import PREFILL_STEP
 
-    tok = runner._tokenizer
-    model = runner._model
-    if isinstance(suffix, str):
-        special = tok.bos_token is None or not suffix.startswith(tok.bos_token)
-        suffix = tok.encode(suffix, add_special_tokens=special)
-    cache = cache if cache is not None else runner._make_prompt_cache(model)
-    prompt_size = len(suffix)
+    eos = tokenizer.eos_token_ids
+    prompt_size = len(tokens)
 
     def evaluate(model, cache, tokens):
         model(mx.array([tokens]), cache=cache)
@@ -132,39 +132,38 @@ def stream_lookup(runner, suffix, cache, source, max_tokens):
         # Resume ordinary asynchronous decoding from the accepted state.
         for token, _ in generate_step(mx.array([pending]), model,
                 prompt_cache=cache, max_tokens=remaining,
-                prefill_step_size=PREFILL_STEP):
+                prefill_step_size=prefill_step):
             yield token
 
     with wired_limit(model, [generation_stream]), mx.stream(generation_stream):
         started = time.perf_counter()
-        while len(suffix) > 1:
-            count = min(PREFILL_STEP, len(suffix) - 1)
-            evaluate(model, cache, suffix[:count])
-            suffix = suffix[count:]
+        while len(tokens) > 1:
+            chunk = min(prefill_step, len(tokens) - 1)
+            evaluate(model, cache, tokens[:chunk])
+            tokens = tokens[chunk:]
             mx.clear_cache()
-        pending = step(model, cache, suffix)[-1]
+        pending = step(model, cache, tokens)[-1]
         prompt_time = time.perf_counter() - started
         started = time.perf_counter()
-        detokenizer = tok.detokenizer
+        detokenizer = tokenizer.detokenizer
         detokenizer.reset()
-        runner.lookup_stats = {}
-        for count, token in enumerate(verified_tokens(
+        for generated, token in enumerate(verified_tokens(
                 model, cache, pending, source, max_tokens=max_tokens,
-                eos_ids=tok.eos_token_ids, step=step, evaluate=evaluate,
-                stats=runner.lookup_stats, fallback=fallback), 1):
-            finished = token in tok.eos_token_ids or count == max_tokens
-            if token not in tok.eos_token_ids:
+                eos_ids=eos, step=step, evaluate=evaluate,
+                stats=stats, fallback=fallback), 1):
+            is_eos = token in eos
+            finished = is_eos or generated == max_tokens
+            if not is_eos:
                 detokenizer.add_token(token)
             if finished:
                 detokenizer.finalize()
-            if count == 1 or count % CLEAR_EVERY == 0:
+            if generated == 1 or generated % CLEAR_EVERY == 0:
                 mx.clear_cache()
             yield GenerationResponse(
                 text=detokenizer.last_segment, token=token, logprobs=None,
                 from_draft=False, prompt_tokens=prompt_size,
                 prompt_tps=prompt_size / max(prompt_time, 1e-9),
-                generation_tokens=count,
-                generation_tps=count / max(time.perf_counter() - started, 1e-9),
+                generation_tokens=generated,
+                generation_tps=generated / max(time.perf_counter() - started, 1e-9),
                 peak_memory=mx.get_peak_memory() / 1e9,
-                finish_reason=(('stop' if token in tok.eos_token_ids else 'length')
-                               if finished else None))
+                finish_reason=("stop" if is_eos else "length") if finished else None)

@@ -99,11 +99,35 @@ class PromptCacheTests(unittest.TestCase):
                 patch.dict(sys.modules, stubs):
             self.assertEqual(list(self.runner.stream(prompt, 10)), ['lookup'])
             self.assertEqual(fast.call_count, 1)
+            args, kwargs = fast.call_args
+            self.assertIs(args[0], self.runner._model)
+            self.assertIs(args[1], self.runner._tokenizer)
+            self.assertEqual(args[4], list(b'send report'))
+            self.assertEqual(args[5], 10)
+            self.assertIs(kwargs['stats'], self.runner.lookup_stats)
             self.assertEqual(list(self.runner.stream(prompt + ' changed', 10)), ['ordinary'])
             self.runner.use_lookup = False
             ordinary.return_value = iter(['disabled'])
             self.assertEqual(list(self.runner.stream(prompt, 10)), ['disabled'])
             self.assertEqual(fast.call_count, 1)
+
+    def test_lookup_without_a_cached_prefix_starts_from_an_empty_cache(self):
+        from unittest.mock import patch
+        from localflow.v2.cleanup import prompts
+        class Mismatch(Tokenizer):
+            # Only the whole prompt ends with the generation turn, so its
+            # tokens never start with the prefix's tokens.
+            def encode(self, text, add_special_tokens):
+                tokens = super().encode(text, add_special_tokens)
+                return [999] + tokens if text.endswith('<|im_start|>assistant\n') else tokens
+        self.runner._tokenizer = Mismatch()
+        prompt = self.runner.render_cached(prompts.build_messages({'transcript': 'send report'}))
+        with patch('localflow.v2.cleanup.lookup.stream_lookup', return_value=iter(['lookup'])) as fast:
+            self.assertEqual(list(self.runner.stream(prompt, 10)), ['lookup'])
+        tokens, cache = fast.call_args[0][2:4]
+        self.assertEqual(tokens, self.runner._tokenizer.encode(prompt, True))
+        self.assertEqual([c.state for c in cache], [[]])
+        self.assertEqual(self.runner._prefix_caches, {})
 
     def test_full_static_prefix_caches_short_instructions_without_payload(self):
         self.runner.cache_full_prefix = True

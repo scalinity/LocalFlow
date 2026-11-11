@@ -9,7 +9,6 @@ import importlib
 import importlib.util
 import pathlib
 import sys
-import types
 import unittest
 from unittest.mock import patch
 
@@ -106,19 +105,19 @@ class LookupMLXTests(unittest.TestCase):
                 following = mx.array([0] + list(range(2, 13)) + [0, 1])[inputs]
                 return mx.eye(14)[following] * 100
         tok, model = Tokenizer(), Scripted()
-        runner = types.SimpleNamespace(_model=model, _tokenizer=tok,
-                                      _make_prompt_cache=lambda _: [])
         with patch.object(gen, 'generation_stream', mx.new_stream(mx.cpu)), \
                 patch.object(gen, 'wired_limit', lambda *a: contextlib.nullcontext()):
             for budget in (1, 2, 3, 4, 8, 16):
-                for draft in ([], [1, 2, 3, 0], [1, 4, 3, 0]):
-                    with self.subTest(budget=budget, draft=draft):
+                for source in ([], [1, 2, 3, 0], [1, 4, 3, 0]):
+                    with self.subTest(budget=budget, source=source):
                         expected = list(gen.stream_generate(model, tok, [13], max_tokens=budget, prompt_cache=[]))
-                        actual = list(stream_lookup(runner, [13], [], draft, budget))
+                        stats = {}
+                        actual = list(stream_lookup(model, tok, [13], [], source, budget,
+                                                    prefill_step=2048, stats=stats))
                         fields = lambda rows: [(r.text, r.token, r.finish_reason, r.generation_tokens) for r in rows]
                         self.assertEqual(fields(actual), fields(expected))
-                        if not draft and budget > 4:
-                            self.assertEqual(runner.lookup_stats['fallbacks'], 1)
+                        if not source and budget > 4:
+                            self.assertEqual(stats['fallbacks'], 1)
 
 
 if __name__ == '__main__':

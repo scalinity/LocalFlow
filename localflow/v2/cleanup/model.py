@@ -184,8 +184,16 @@ class ModelRunner:
         if self.use_lookup and max_tokens > 0 and self._draft is not None \
                 and self._draft[0] == prompt:
             from .lookup import stream_lookup
+            # A lookup prompt matches the cached render, so ``suffix`` is
+            # already token ids; a prefix that could not be cached starts
+            # from an empty cache.
+            if cache is None:
+                cache = self._make_prompt_cache(self._model)
             source = self._tokenizer.encode(self._draft[1], add_special_tokens=False)
-            yield from stream_lookup(self, suffix, cache, source, max_tokens)
+            self.lookup_stats = {}
+            yield from stream_lookup(
+                self._model, self._tokenizer, suffix, cache, source, max_tokens,
+                prefill_step=PREFILL_STEP, stats=self.lookup_stats)
             return
         yield from stream_generate(
             self._model, self._tokenizer, prompt=suffix,
