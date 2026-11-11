@@ -176,8 +176,6 @@ class ModelRunner:
 
     def stream(self, prompt: str, max_tokens: int):
         """The production generation path, also used by timed evaluation."""
-        from mlx_lm.generate import stream_generate
-        from mlx_lm.sample_utils import make_sampler
         suffix, cache = self._cached_prompt(prompt)
         self.lookup_stats = None
         if self.use_lookup and max_tokens > 0 and self._draft is not None \
@@ -194,6 +192,8 @@ class ModelRunner:
                 self._model, self._tokenizer, suffix, cache, source, max_tokens,
                 prefill_step=PREFILL_STEP, stats=self.lookup_stats)
             return
+        from mlx_lm.generate import stream_generate
+        from mlx_lm.sample_utils import make_sampler
         yield from stream_generate(
             self._model, self._tokenizer, prompt=suffix,
             max_tokens=max_tokens, sampler=make_sampler(temp=0.0),
