@@ -115,7 +115,7 @@ class LookupParityTests(unittest.TestCase):
                     'summary': summary, 'rows': rows}, indent=2) + '\n')
         self.assertEqual(failures, [], 'full engine/token parity failed')
         coverage = [m for row in rows for m in row['lookup_metrics']]
-        for field in ('accepted_tokens', 'replay_rounds', 'full_rounds', 'disabled'):
+        for field in ('accepted_tokens', 'replay_rounds', 'full_rounds', 'fallbacks'):
             self.assertGreater(sum(m.get(field, 0) for m in coverage), 0, field)
         self.assertTrue(any(m['prefix_tokens'] > 0 and m['prefix_hit'] for m in coverage))
         self.assertTrue(any(m['prefix_tokens'] > 0 and m['prefix_hit']

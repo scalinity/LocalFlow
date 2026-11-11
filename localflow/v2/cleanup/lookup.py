@@ -39,7 +39,7 @@ def verified_tokens(model, cache, pending, source, *, max_tokens, eos_ids,
     misses = 0
     stats = stats if stats is not None else {}
     for name in ('drafted_tokens', 'accepted_tokens', 'replay_rounds',
-                 'full_rounds', 'disabled', 'decode_calls'):
+                 'full_rounds', 'fallbacks', 'decode_calls'):
         stats[name] = 0
     while len(history) < max_tokens:
         history.append(pending)
@@ -48,7 +48,7 @@ def verified_tokens(model, cache, pending, source, *, max_tokens, eos_ids,
             return
         drafting = misses < MISS_LIMIT
         if not drafting and fallback is not None:
-            stats['disabled'] += 1
+            stats['fallbacks'] += 1
             for token in fallback(model, cache, pending, max_tokens - len(history)):
                 yield token
                 if token in eos_ids:
@@ -70,19 +70,17 @@ def verified_tokens(model, cache, pending, source, *, max_tokens, eos_ids,
             yield token
             if token in eos_ids:
                 return
-        if draft and accepted < len(draft):
-            cache[:] = checkpoint
-            stats['replay_rounds'] += 1
-            # Advancing by accepted tokens alone restores recurrent state;
-            # the rejected suffix must never influence subsequent tokens.
-            model_tokens = [pending] + draft[:accepted]
-            evaluate(model, cache, model_tokens)
-        if draft and accepted == len(draft):
-            stats['full_rounds'] += 1
         if draft:
-            misses = misses + 1 if accepted == 0 else 0
-        else:
-            misses += 1
+            if accepted < len(draft):
+                cache[:] = checkpoint
+                stats['replay_rounds'] += 1
+                # Advancing by accepted tokens alone restores recurrent state;
+                # the rejected suffix must never influence subsequent tokens.
+                evaluate(model, cache, [pending] + draft[:accepted])
+            else:
+                stats['full_rounds'] += 1
+        # A round without a proposal also accepts nothing.
+        misses = 0 if accepted else misses + 1
         pending = predicted[accepted]
 
 

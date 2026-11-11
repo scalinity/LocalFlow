@@ -95,7 +95,7 @@ class LookupTests(unittest.TestCase):
             stats=stats, fallback=fallback))
         self.assertEqual(got, list(range(1, 8)))
         self.assertEqual(calls, [([1, 2, 3], 4, 3)])
-        self.assertEqual(stats['disabled'], 1)
+        self.assertEqual(stats['fallbacks'], 1)
 
 
 if __name__ == '__main__':

@@ -78,7 +78,7 @@ class LookupMLXTests(unittest.TestCase):
                     max_tokens=16, eos_ids=set(), step=step, evaluate=evaluate,
                     stats=stats, fallback=fallback))
             self.assertEqual(got, baseline)
-            self.assertEqual(stats['disabled'], 1)
+            self.assertEqual(stats['fallbacks'], 1)
 
     def test_adapter_matches_library_for_eos_limits_and_utf8_boundaries(self):
         gen = importlib.import_module('mlx_lm.generate')
@@ -118,7 +118,7 @@ class LookupMLXTests(unittest.TestCase):
                         fields = lambda rows: [(r.text, r.token, r.finish_reason, r.generation_tokens) for r in rows]
                         self.assertEqual(fields(actual), fields(expected))
                         if not draft and budget > 4:
-                            self.assertEqual(runner.lookup_stats['disabled'], 1)
+                            self.assertEqual(runner.lookup_stats['fallbacks'], 1)
 
 
 if __name__ == '__main__':
