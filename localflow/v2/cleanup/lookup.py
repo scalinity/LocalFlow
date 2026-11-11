@@ -10,10 +10,15 @@ from __future__ import annotations
 
 import copy
 
+MAX_MATCH = 4      # longest output suffix looked up in the transcript
+DRAFT_WIDTH = 8    # proposed tokens per verification batch
+MISS_LIMIT = 3     # consecutive rounds accepting nothing before ordinary decoding
+CLEAR_EVERY = 256  # mx.clear_cache cadence, as in mlx_lm.generate_step
 
-def propose(history, source, width=8):
+
+def propose(history, source, width=DRAFT_WIDTH):
     """Continue the longest (up to four tokens) matching source suffix."""
-    for size in range(min(4, len(history)), 0, -1):
+    for size in range(min(MAX_MATCH, len(history)), 0, -1):
         tail = history[-size:]
         for pos in range(len(source) - size):
             if source[pos:pos + size] == tail:
@@ -22,7 +27,7 @@ def propose(history, source, width=8):
 
 
 def verified_tokens(model, cache, pending, source, *, max_tokens, eos_ids,
-                    step, evaluate, width=8, stats=None, fallback=None):
+                    step, evaluate, stats=None, fallback=None):
     """Yield verified tokens; ``cache`` excludes the pending token.
 
     ``step`` consumes tokens and returns the target's greedy predictions.
@@ -41,7 +46,8 @@ def verified_tokens(model, cache, pending, source, *, max_tokens, eos_ids,
         yield pending
         if pending in eos_ids or len(history) == max_tokens:
             return
-        if misses >= 3 and fallback is not None:
+        drafting = misses < MISS_LIMIT
+        if not drafting and fallback is not None:
             stats['disabled'] += 1
             for token in fallback(model, cache, pending, max_tokens - len(history)):
                 yield token
@@ -49,8 +55,8 @@ def verified_tokens(model, cache, pending, source, *, max_tokens, eos_ids,
                     return
             return
         draft = (propose(history, source,
-                         min(width, max_tokens - len(history) - 1))
-                 if misses < 3 else [])
+                         min(DRAFT_WIDTH, max_tokens - len(history) - 1))
+                 if drafting else [])
         checkpoint = copy.deepcopy(cache) if draft else None
         predicted = step(model, cache, [pending] + draft)
         stats['decode_calls'] += 1
@@ -136,7 +142,7 @@ def stream_lookup(runner, suffix, cache, source, max_tokens):
                 detokenizer.add_token(token)
             if finished:
                 detokenizer.finalize()
-            if count == 1 or count % 256 == 0:
+            if count == 1 or count % CLEAR_EVERY == 0:
                 mx.clear_cache()
             yield GenerationResponse(
                 text=detokenizer.last_segment, token=token, logprobs=None,
