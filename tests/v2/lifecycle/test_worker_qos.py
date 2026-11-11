@@ -1,10 +1,12 @@
 """Native thread scheduling and graceful fallback without loading a model."""
 import ctypes
+import pathlib
 import sys
 import threading
 import unittest
 from unittest.mock import patch
 
+sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[3]))
 from localflow.v2 import worker
 
 

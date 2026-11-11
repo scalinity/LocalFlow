@@ -6,9 +6,13 @@ import codecs
 import contextlib
 import copy
 import importlib
+import pathlib
+import sys
 import types
 import unittest
 from unittest.mock import patch
+
+sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[3]))
 
 import mlx.core as mx
 import mlx.nn as nn

@@ -16,7 +16,10 @@ from collections import OrderedDict
 from pathlib import Path
 import time
 import unittest
+import pathlib
+import sys
 
+sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[3]))
 from localflow.v2.cleanup.model import ModelRunner
 
 
