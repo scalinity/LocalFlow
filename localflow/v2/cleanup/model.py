@@ -12,7 +12,6 @@ the engine and its tests import cleanly without MLX present.
 from __future__ import annotations
 
 import hashlib
-import json
 import re
 import copy
 from collections import OrderedDict
@@ -57,7 +56,9 @@ class ModelRunner:
         self._prefix_caches = OrderedDict()
         # (prompt, offset of its final user turn) from the last render_cached.
         self._rendered = None
-        self._draft = None
+        # The transcript of that render when it is a cleanup prompt: the
+        # source of lookup decoding's proposals (prompts.lookup_source).
+        self._transcript = None
         self.use_lookup = True
         self.cache_full_prefix = True
         self.lookup_stats = None
@@ -113,17 +114,9 @@ class ModelRunner:
         turn = final - len(_USER_TURN)
         self._rendered = (prompt, turn) if (
             final >= 0 and turn >= 0 and prompt[turn:final] == _USER_TURN) else None
-        self._draft = None
         from . import prompts
-        if (self._rendered is not None and messages
-                and messages[0]["content"].startswith(prompts.CONTRACT)):
-            try:
-                payload = json.loads(messages[-1]["content"])
-                transcript = payload.get("transcript") if isinstance(payload, dict) else None
-                if isinstance(transcript, str) and transcript:
-                    self._draft = (prompt, transcript)
-            except (ValueError, TypeError):
-                pass  # Corrections and other prompt families use ordinary decoding.
+        self._transcript = (prompts.lookup_source(messages)
+                            if self._rendered is not None else None)
         return prompt
 
     def engine(self, notifier=None):
@@ -178,15 +171,15 @@ class ModelRunner:
         """The production generation path, also used by timed evaluation."""
         suffix, cache = self._cached_prompt(prompt)
         self.lookup_stats = None
-        if self.use_lookup and max_tokens > 0 and self._draft is not None \
-                and self._draft[0] == prompt:
+        if self.use_lookup and max_tokens > 0 and self._transcript \
+                and self._rendered is not None and self._rendered[0] == prompt:
             from .lookup import stream_lookup
             # A lookup prompt matches the cached render, so ``suffix`` is
             # already token ids; a prefix that could not be cached starts
             # from an empty cache.
             if cache is None:
                 cache = self._make_prompt_cache(self._model)
-            source = self._tokenizer.encode(self._draft[1], add_special_tokens=False)
+            source = self._tokenizer.encode(self._transcript, add_special_tokens=False)
             self.lookup_stats = {}
             yield from stream_lookup(
                 self._model, self._tokenizer, suffix, cache, source, max_tokens,

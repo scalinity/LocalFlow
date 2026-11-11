@@ -325,3 +325,19 @@ def build_messages(payload: dict) -> list[dict]:
     messages.append({"role": "user",
                      "content": json.dumps(payload, ensure_ascii=False)})
     return messages
+
+
+def lookup_source(messages: list[dict]) -> str | None:
+    """The transcript of a cleanup prompt from ``build_messages``, which
+    lookup decoding uses for proposals. Any other prompt family
+    (corrections, transforms) or a malformed payload returns None and is
+    decoded ordinarily."""
+    system = messages[0].get("content") if messages else None
+    if not isinstance(system, str) or not system.startswith(CONTRACT):
+        return None
+    try:
+        payload = json.loads(messages[-1]["content"])
+    except (ValueError, TypeError):
+        return None
+    transcript = payload.get("transcript") if isinstance(payload, dict) else None
+    return transcript if isinstance(transcript, str) and transcript else None

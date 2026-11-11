@@ -41,7 +41,7 @@ class LookupParityTests(unittest.TestCase):
         candidate = copy.copy(runner)
         candidate.use_lookup = candidate.cache_full_prefix = True
         candidate._prefix_caches = OrderedDict()
-        candidate._rendered = candidate._draft = None
+        candidate._rendered = candidate._transcript = None
         tokens = []
         metrics = []
         def observe(stream, owner):

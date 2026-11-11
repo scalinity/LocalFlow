@@ -64,26 +64,41 @@ class PromptCacheTests(unittest.TestCase):
         self.assertNotIn(b'private alpha', bytes(suffix2))
         self.assertIsNot(branch[0], branch2[0])
 
-    def test_lookup_draft_requires_cleanup_prompt_family(self):
+    def test_lookup_source_requires_cleanup_prompt_family(self):
         from localflow.v2.cleanup import prompts
         from localflow.v2.cleanup.engine import CORRECTIONS_INSTRUCTION
         self.runner.render_cached(prompts.build_messages({'transcript': 'send report'}))
-        self.assertEqual(self.runner._draft[1], 'send report')
+        self.assertEqual(self.runner._transcript, 'send report')
         self.runner.render_cached([
             {'role': 'system', 'content': CORRECTIONS_INSTRUCTION},
             {'role': 'user', 'content': '{"transcript":"actually send report"}'}])
-        self.assertIsNone(self.runner._draft)
+        self.assertIsNone(self.runner._transcript)
 
-    def test_malformed_payloads_clear_the_previous_draft(self):
+    def test_malformed_payloads_clear_the_previous_transcript(self):
         from localflow.v2.cleanup import prompts
         for payload in ('not json', '[]', 'null', '{"transcript": 4}',
                         '{"transcript":""}', '{}'):
             self.runner.render_cached(prompts.build_messages({'transcript': 'first'}))
-            self.assertIsNotNone(self.runner._draft)
+            self.assertIsNotNone(self.runner._transcript)
             self.runner.render_cached([
                 {'role': 'system', 'content': prompts.CONTRACT},
                 {'role': 'user', 'content': payload}])
-            self.assertIsNone(self.runner._draft)
+            self.assertIsNone(self.runner._transcript)
+
+    def test_lookup_source_rejects_other_message_shapes(self):
+        from localflow.v2.cleanup import prompts
+        payload = '{"transcript": "send report"}'
+        for messages in ([],
+                         # Content parts instead of a string system prompt.
+                         [{'role': 'system', 'content': [{'text': prompts.CONTRACT}]},
+                          {'role': 'user', 'content': payload}],
+                         [{'role': 'system', 'content': prompts.CONTRACT},
+                          {'role': 'user', 'content': None}]):
+            with self.subTest(messages=messages):
+                self.assertIsNone(prompts.lookup_source(messages))
+        self.assertEqual(prompts.lookup_source([
+            {'role': 'system', 'content': prompts.CONTRACT},
+            {'role': 'user', 'content': payload}]), 'send report')
 
     def test_stream_dispatch_requires_exact_prompt_and_enabled_lookup(self):
         from unittest.mock import MagicMock, patch
