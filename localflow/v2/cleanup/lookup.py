@@ -103,6 +103,20 @@ def verified_tokens(model, cache, pending, source, *, max_tokens, eos_ids,
         pending = predicted[accepted]
 
 
+def prefill(mx, model, cache, tokens, step):
+    """Advance ``cache`` by ``tokens`` in forward passes of ``step`` tokens.
+
+    mlx_lm.generate_step groups a prompt the same way. The prefix cache and
+    lookup decoding both use this function, so their grouping cannot drift
+    apart. ``mx`` is passed in so that the prefix-cache tests can run
+    without MLX.
+    """
+    for start in range(0, len(tokens), step):
+        model(mx.array([tokens[start:start + step]]), cache=cache)
+        mx.eval([c.state for c in cache])
+        mx.clear_cache()
+
+
 # The MLX model callables. They live at module level so that tests drive
 # the same functions production uses against real caches.
 
@@ -151,12 +165,8 @@ def stream_lookup(model, tokenizer, tokens, cache, source, max_tokens, *,
 
     with wired_limit(model, [generation_stream]), mx.stream(generation_stream):
         started = time.perf_counter()
-        while len(tokens) > 1:
-            chunk = min(prefill_step, len(tokens) - 1)
-            evaluate(model, cache, tokens[:chunk])
-            tokens = tokens[chunk:]
-            mx.clear_cache()
-        pending = greedy_step(model, cache, tokens)[-1]
+        prefill(mx, model, cache, tokens[:-1], prefill_step)
+        pending = greedy_step(model, cache, tokens[-1:])[-1]
         prompt_time = time.perf_counter() - started
         started = time.perf_counter()
         detokenizer = tokenizer.detokenizer

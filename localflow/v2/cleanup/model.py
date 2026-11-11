@@ -17,6 +17,8 @@ import re
 import copy
 from collections import OrderedDict
 
+from .lookup import prefill
+
 # Prompt tokens per prefill forward pass, shared by the prefix cache and
 # generation. Full static-prefix caching also retains the final short block.
 PREFILL_STEP = 2048
@@ -162,10 +164,7 @@ class ModelRunner:
         self.last_prefix_hit = key in self._prefix_caches
         if key not in self._prefix_caches:
             cache = self._make_prompt_cache(self._model)
-            for offset in range(0, count, PREFILL_STEP):
-                self._model(mx.array([prefix[offset:offset + PREFILL_STEP]]), cache=cache)
-                mx.eval([c.state for c in cache])
-                mx.clear_cache()
+            prefill(mx, self._model, cache, prefix[:count], PREFILL_STEP)
             self._prefix_caches[key] = cache
             while len(self._prefix_caches) > PREFIX_CACHE_SLOTS:
                 self._prefix_caches.popitem(last=False)
