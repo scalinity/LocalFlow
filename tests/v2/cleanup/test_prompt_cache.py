@@ -86,11 +86,17 @@ class PromptCacheTests(unittest.TestCase):
             self.assertIsNone(self.runner._draft)
 
     def test_stream_dispatch_requires_exact_prompt_and_enabled_lookup(self):
-        from unittest.mock import patch
+        from unittest.mock import MagicMock, patch
         from localflow.v2.cleanup import prompts
         prompt = self.runner.render_cached(prompts.build_messages({'transcript':'send report'}))
+        # Stub modules keep this dispatch check independent of an MLX install.
+        ordinary = MagicMock(return_value=iter(['ordinary']))
+        stubs = {name: types.ModuleType(name) for name in
+                 ('mlx_lm', 'mlx_lm.generate', 'mlx_lm.sample_utils')}
+        stubs['mlx_lm.generate'].stream_generate = ordinary
+        stubs['mlx_lm.sample_utils'].make_sampler = lambda **kwargs: None
         with patch('localflow.v2.cleanup.lookup.stream_lookup', return_value=iter(['lookup'])) as fast, \
-                patch('mlx_lm.generate.stream_generate', return_value=iter(['ordinary'])) as ordinary:
+                patch.dict(sys.modules, stubs):
             self.assertEqual(list(self.runner.stream(prompt, 10)), ['lookup'])
             self.assertEqual(fast.call_count, 1)
             self.assertEqual(list(self.runner.stream(prompt + ' changed', 10)), ['ordinary'])

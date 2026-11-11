@@ -6,6 +6,7 @@ import codecs
 import contextlib
 import copy
 import importlib
+import importlib.util
 import pathlib
 import sys
 import types
@@ -14,15 +15,19 @@ from unittest.mock import patch
 
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[3]))
 
-import mlx.core as mx
-import mlx.nn as nn
-from mlx_lm.models.cache import make_prompt_cache
-from mlx_lm.models.qwen3_5 import TextModel, TextModelArgs
-from mlx_lm.tokenizer_utils import TokenizerWrapper
+# The cleanup suite loads without MLX (model.py); only these cases need it.
+HAVE_MLX = all(importlib.util.find_spec(name) for name in ('mlx', 'mlx_lm'))
+if HAVE_MLX:
+    import mlx.core as mx
+    import mlx.nn as nn
+    from mlx_lm.models.cache import make_prompt_cache
+    from mlx_lm.models.qwen3_5 import TextModel, TextModelArgs
+    from mlx_lm.tokenizer_utils import TokenizerWrapper
 
 from localflow.v2.cleanup.lookup import stream_lookup, verified_tokens
 
 
+@unittest.skipUnless(HAVE_MLX, 'MLX is not installed')
 class LookupMLXTests(unittest.TestCase):
     def test_rejected_draft_restores_real_recurrent_and_attention_caches(self):
         with mx.stream(mx.cpu):
